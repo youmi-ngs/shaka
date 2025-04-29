@@ -10,9 +10,9 @@ import FirebaseCore
 
 @main
 struct ShakaApp: App {
-    init() {
-        FirebaseApp.configure()
-    }
+//    init() {
+//        FirebaseApp.configure()
+//    }
 
     var body: some Scene {
         WindowGroup {
