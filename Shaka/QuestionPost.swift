@@ -6,3 +6,10 @@
 //
 
 import Foundation
+
+struct QuestionPost: Identifiable {
+    let id = UUID()
+    let title: String
+    let body: String
+    let createdAt: Date
+}

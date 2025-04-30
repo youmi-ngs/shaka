@@ -8,6 +8,10 @@
 import SwiftUI
 
 struct PostQuestionView: View {
+    
+    @ObservedObject var viewModel: QuestionPostViewModel
+    @Environment(\.dismiss)	var dismiss
+    
     @State private var title: String = ""
     @State private var bodyText: String = ""
     
@@ -27,14 +31,17 @@ struct PostQuestionView: View {
                         )
                 }
                 Button(action: {
+                    viewModel.addPost(title: title, body: bodyText)
+                    dismiss()
                     print("Submit buttion tapped!")
                 }) {
                     Text("Submit")
                         .frame(maxWidth: .infinity)
                         .padding()
-                        .background(Color.purple)
+                        .background(title.isEmpty || bodyText.isEmpty ? Color.gray : Color.purple)
                         .foregroundColor(.white)
                         .cornerRadius(8)
+                        .disabled(title.isEmpty || bodyText.isEmpty)
                 }
             }
         }
@@ -43,5 +50,5 @@ struct PostQuestionView: View {
 }
 
 #Preview {
-    PostQuestionView()
+    PostQuestionView(viewModel: QuestionPostViewModel())
 }

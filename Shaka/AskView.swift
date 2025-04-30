@@ -8,12 +8,25 @@
 import SwiftUI
 
 struct AskView: View {
+    @StateObject private var ViewModel = QuestionPostViewModel()
     @State private var showPostQuestion = false
     
     var body: some View {
         NavigationView {
             ZStack {
-                Text("Ask Page")
+                List(ViewModel.posts) { post in
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(post.title)
+                            .font(.headline)
+                        Text(post.body)
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        Text(post.createdAt.formatted(date: .abbreviated, time: .shortened))
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                    }
+                    .padding(.vertical, 4)
+                }
                 
                 VStack {
                     Spacer()
@@ -33,7 +46,7 @@ struct AskView: View {
                         }
                         .padding()
                         .sheet(isPresented: $showPostQuestion) {
-                            PostQuestionView()
+                            PostQuestionView(viewModel: ViewModel)
                         }
                     }
                 }
