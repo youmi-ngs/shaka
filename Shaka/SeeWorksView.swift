@@ -17,8 +17,11 @@ struct SeeWorksView: View {
                 ScrollView {
                     LazyVStack(spacing: 16) {
                         ForEach(viewModel.posts) { post in
-                            WorkPostCard(post: post)
-                                .padding(.horizontal)
+                            NavigationLink(destination: WorkDetailView(post: post)) {
+                                WorkPostCard(post: post)
+                                    .padding(.horizontal)
+                            }
+                            .buttonStyle(PlainButtonStyle())
                         }
                     }
                     .padding(.vertical)
