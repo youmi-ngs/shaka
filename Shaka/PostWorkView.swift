@@ -15,6 +15,10 @@ struct PostWorkView: View {
     
     @State private var title = ""
     @State private var description = ""
+    @State private var photoDate: Date?
+    @State private var isPhotoDateEnabled = false
+    @State private var location = ""
+    @State private var cameraSettings = ""
     @State private var selectedItem: PhotosPickerItem?
     @State private var selectedImage: UIImage?
     @State private var isUploading = false
@@ -34,10 +38,15 @@ struct PostWorkView: View {
                 errorMessage: uploadError,
                 canSubmit: canSubmit,
                 onSubmit: submitWork,
-                onCancel: { dismiss() }
-            ) {
+                onCancel: { dismiss() },
+                imageSection: {
                 // Image picker section
-                Section(header: Text("Photo (Required)")) {
+                Section(header: HStack {
+                    Text("Photo")
+                    Text("(Required)")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }) {
                     PhotosPicker(selection: $selectedItem, matching: .images) {
                         if let selectedImage = selectedImage {
                             Image(uiImage: selectedImage)
@@ -71,26 +80,59 @@ struct PostWorkView: View {
                         }
                     }
                 }
-                
-                // Warning message when no image selected
-                if selectedImage == nil {
-                    Section {
-                        HStack {
-                            Image(systemName: "exclamationmark.circle.fill")
-                                .foregroundColor(.orange)
-                            Text("Please select a photo to continue")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
+            },
+            additionalContent: {
+                // Photo details section (optional)
+                Section(header: HStack {
+                    Text("Photo Details")
+                    Text("(Optional)")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }) {
+                    Toggle("Shooting Date", isOn: $isPhotoDateEnabled)
+                    
+                    if isPhotoDateEnabled {
+                        DatePicker("", selection: Binding(
+                            get: { photoDate ?? Date() },
+                            set: { photoDate = $0 }
+                        ), displayedComponents: .date)
+                        .datePickerStyle(.compact)
+                    }
+                    
+                    HStack {
+                        Text("Location")
+                        TextField("e.g., Tokyo, Japan", text: $location)
+                            .multilineTextAlignment(.trailing)
+                    }
+                    
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Camera Settings")
+                            .font(.subheadline)
+                            .padding(.top, 8)
+                        TextEditor(text: $cameraSettings)
+                            .frame(minHeight: 60)
+                            .overlay(
+                                Group {
+                                    if cameraSettings.isEmpty {
+                                        Text("e.g., f/2.8, 1/200s, ISO 400, 50mm")
+                                            .foregroundColor(.gray.opacity(0.5))
+                                            .padding(.horizontal, 4)
+                                            .padding(.vertical, 8)
+                                            .allowsHitTesting(false)
+                                    }
+                                },
+                                alignment: .topLeading
+                            )
                     }
                 }
             }
+            )
             .navigationTitle("Post a Work")
         }
     }
     
     private var canSubmit: Bool {
-        !title.isEmpty && !description.isEmpty && selectedImage != nil
+        !title.isEmpty && selectedImage != nil
     }
     
     private func submitWork() {
@@ -132,7 +174,27 @@ struct PostWorkView: View {
                 // Add post with image URL
                 await MainActor.run {
                     let url = URL(string: urlString)
-                    viewModel.addPost(title: title, description: description, imageURL: url)
+                    
+                    // Combine photo details into a single string if any are provided
+                    var detailComponents: [String] = []
+                    
+                    if isPhotoDateEnabled, let date = photoDate {
+                        let formatter = DateFormatter()
+                        formatter.dateStyle = .medium
+                        detailComponents.append("Date: \(formatter.string(from: date))")
+                    }
+                    
+                    if !location.isEmpty {
+                        detailComponents.append("Location: \(location)")
+                    }
+                    
+                    if !cameraSettings.isEmpty {
+                        detailComponents.append("Settings: \(cameraSettings)")
+                    }
+                    
+                    let detail = detailComponents.isEmpty ? nil : detailComponents.joined(separator: "\n")
+                    
+                    viewModel.addPost(title: title, description: description.isEmpty ? nil : description, detail: detail, imageURL: url)
                     dismiss()
                 }
                 

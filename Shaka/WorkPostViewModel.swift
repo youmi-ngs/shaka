@@ -18,16 +18,23 @@ class WorkPostViewModel: ObservableObject {
 //        posts.insert(newPost, at: 0)
 //    }
     
-    func addPost(title: String, description: String, imageURL: URL?) {
-        let newPost = WorkPost(title: title, description: description, imageURL: imageURL, createdAt: Date())
+    func addPost(title: String, description: String?, detail: String? = nil, imageURL: URL?) {
+        let newPost = WorkPost(title: title, description: description, detail: detail, imageURL: imageURL, createdAt: Date())
         posts.insert(newPost, at: 0)
 
-        let data: [String: Any] = [
+        var data: [String: Any] = [
             "title": newPost.title,
-            "description": newPost.description,
             "imageURL": newPost.imageURL?.absoluteString ?? "",
             "createdAt": Timestamp(date: newPost.createdAt)
         ]
+        
+        if let description = newPost.description, !description.isEmpty {
+            data["description"] = description
+        }
+        
+        if let detail = newPost.detail, !detail.isEmpty {
+            data["detail"] = detail
+        }
 
         db.collection("works").addDocument(data: data) { error in
             if let error = error {
@@ -54,12 +61,13 @@ class WorkPostViewModel: ObservableObject {
                 self.posts = snapshot.documents.compactMap { doc in
                     let data = doc.data()
                     let title = data["title"] as? String ?? ""
-                    let description = data["description"] as? String ?? ""
+                    let description = data["description"] as? String
+                    let detail = data["detail"] as? String
                     let imageURLString = data["imageURL"] as? String
                     let imageURL: URL? = imageURLString != nil ? URL(string: imageURLString!) : nil
                     let createdAt = (data["createdAt"] as? Timestamp)?.dateValue() ?? Date()
 
-                    return WorkPost(title: title, description: description, imageURL: imageURL, createdAt: createdAt)
+                    return WorkPost(title: title, description: description, detail: detail, imageURL: imageURL, createdAt: createdAt)
                 }
             }
     }

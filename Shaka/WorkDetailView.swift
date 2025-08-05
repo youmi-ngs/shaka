@@ -77,11 +77,30 @@ struct WorkDetailView: View {
                 Divider()
                     .padding(.horizontal)
                 
-                // Description
-                Text(post.description)
-                    .font(.body)
-                    .padding(.horizontal)
-                    .padding(.bottom, 50)
+                // Description (if exists)
+                if let description = post.description, !description.isEmpty {
+                    Text(description)
+                        .font(.body)
+                        .padding(.horizontal)
+                }
+                
+                // Detail (if exists)
+                if let detail = post.detail, !detail.isEmpty {
+                    Divider()
+                        .padding(.horizontal)
+                        .padding(.vertical, 8)
+                    
+                    Text("Details")
+                        .font(.headline)
+                        .padding(.horizontal)
+                        .padding(.bottom, 4)
+                    
+                    Text(detail)
+                        .font(.body)
+                        .padding(.horizontal)
+                }
+                
+                Spacer(minLength: 50)
             }
             .padding(.top)
         }
@@ -96,6 +115,7 @@ struct WorkDetailView: View {
             post: WorkPost(
                 title: "Sample Work",
                 description: "This is a sample description for the work post. It can be quite long and contain multiple lines of text to show how the layout handles longer content.",
+                detail: "Date: Jan 5, 2025\nLocation: Tokyo, Japan\nSettings: f/2.8, 1/200s, ISO 400, 50mm",
                 imageURL: URL(string: "https://picsum.photos/400/300"),
                 createdAt: Date()
             )

@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct ReusablePostFormView<ImageContent: View>: View {
+struct ReusablePostFormView<ImageContent: View, AdditionalContent: View>: View {
     @Binding var title: String
     @Binding var bodyText: String
     @Binding var isSubmitting: Bool
@@ -23,6 +23,7 @@ struct ReusablePostFormView<ImageContent: View>: View {
     let onCancel: () -> Void
     
     @ViewBuilder let imageSection: () -> ImageContent
+    @ViewBuilder let additionalContent: () -> AdditionalContent
     
     init(
         title: Binding<String>,
@@ -37,7 +38,8 @@ struct ReusablePostFormView<ImageContent: View>: View {
         canSubmit: Bool,
         onSubmit: @escaping () -> Void,
         onCancel: @escaping () -> Void,
-        @ViewBuilder imageSection: @escaping () -> ImageContent = { EmptyView() }
+        @ViewBuilder imageSection: @escaping () -> ImageContent = { EmptyView() },
+        @ViewBuilder additionalContent: @escaping () -> AdditionalContent = { EmptyView() }
     ) {
         self._title = title
         self._bodyText = bodyText
@@ -52,6 +54,7 @@ struct ReusablePostFormView<ImageContent: View>: View {
         self.onSubmit = onSubmit
         self.onCancel = onCancel
         self.imageSection = imageSection
+        self.additionalContent = additionalContent
     }
     
     var body: some View {
@@ -60,15 +63,28 @@ struct ReusablePostFormView<ImageContent: View>: View {
             imageSection()
             
             // Title section
-            Section(header: Text("Title")) {
+            Section(header: HStack {
+                Text("Title")
+                Text("(Required)")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }) {
                 TextField(titlePlaceholder, text: $title)
             }
             
             // Body/Description section
-            Section(header: Text(bodyLabel)) {
+            Section(header: HStack {
+                Text(bodyLabel)
+                Text("(Optional)")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }) {
                 TextEditor(text: $bodyText)
                     .frame(minHeight: 100)
             }
+            
+            // Additional content section
+            additionalContent()
             
             // Error message section
             if let errorMessage = errorMessage {
@@ -112,7 +128,7 @@ struct ReusablePostFormView<ImageContent: View>: View {
 }
 
 // Extension for cases without image content
-extension ReusablePostFormView where ImageContent == EmptyView {
+extension ReusablePostFormView where ImageContent == EmptyView, AdditionalContent == EmptyView {
     init(
         title: Binding<String>,
         bodyText: Binding<String>,
@@ -140,7 +156,8 @@ extension ReusablePostFormView where ImageContent == EmptyView {
             canSubmit: canSubmit,
             onSubmit: onSubmit,
             onCancel: onCancel,
-            imageSection: { EmptyView() }
+            imageSection: { EmptyView() },
+            additionalContent: { EmptyView() }
         )
     }
 }

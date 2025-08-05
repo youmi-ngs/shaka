@@ -10,7 +10,8 @@ import Foundation
 struct WorkPost: Identifiable {
     let id = UUID()
     let title: String
-    let description: String
+    let description: String?
+    let detail: String?
     let imageURL: URL?
     let createdAt: Date
 }

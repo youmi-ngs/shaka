@@ -104,10 +104,12 @@ struct WorkPostCard: View {
                     .font(.headline)
                     .fontWeight(.semibold)
                 
-                Text(post.description)
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                    .lineLimit(3)
+                if let description = post.description {
+                    Text(description)
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .lineLimit(3)
+                }
                 
                 HStack {
                     Image(systemName: "clock")
