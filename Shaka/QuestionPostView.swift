@@ -1,5 +1,5 @@
 //
-//  QuestionPostViewModel.swift
+//  QuestionPostView.swift
 //  Shaka
 //
 //  Created by Youmi Nagase on 2025/05/01.
@@ -7,6 +7,7 @@
 
 import Foundation
 import FirebaseFirestore
+import FirebaseStorage
 
 class QuestionPostViewModel: ObservableObject {
     @Published var posts: [QuestionPost] = []
@@ -26,6 +27,5 @@ class QuestionPostViewModel: ObservableObject {
               print("Question successfully saved to Firestore!")
             }
         }
-        
     }
 }

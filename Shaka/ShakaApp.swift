@@ -7,12 +7,15 @@
 
 import SwiftUI
 import FirebaseCore
+import FirebaseFirestore
 
 @main
 struct ShakaApp: App {
-//    init() {
-//        FirebaseApp.configure()
-//    }
+    init() {
+        FirebaseApp.configure()
+        let db = Firestore.firestore()
+        print("Firestore instance:", db)
+    }
 
     var body: some Scene {
         WindowGroup {

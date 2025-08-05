@@ -37,12 +37,6 @@ struct ContentView: View {
                     Text("Profile")
                 }
         }
-        
-//        VStack {
-//            Text("Hello, Shaka!")
-//        }
-//        .padding()
-        
     }
 }
 

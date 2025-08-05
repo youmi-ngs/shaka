@@ -14,7 +14,7 @@ struct AskView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                List(ViewModel.posts) { post in
+                List(ViewModel.posts.sorted { $0.createdAt > $1.createdAt }) { post in
                     VStack(alignment: .leading, spacing: 4) {
                         Text(post.title)
                             .font(.headline)
