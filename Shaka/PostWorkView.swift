@@ -42,9 +42,8 @@ struct PostWorkView: View {
                         if let selectedImage = selectedImage {
                             Image(uiImage: selectedImage)
                                 .resizable()
-                                .scaledToFill()
-                                .frame(height: 200)
-                                .clipped()
+                                .scaledToFit()
+                                .frame(maxWidth: .infinity)
                                 .cornerRadius(8)
                         } else {
                             ZStack {

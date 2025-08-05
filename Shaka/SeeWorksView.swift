@@ -15,7 +15,7 @@ struct SeeWorksView: View {
         NavigationView {
             ZStack {
                 List(viewModel.posts) { post in
-                    VStack(alignment: .leading, spacing: 4) {
+                    VStack(alignment: .leading, spacing: 8) {
                         Text(post.title)
                             .font(.headline)
                         Text(post.description)
@@ -28,9 +28,8 @@ struct SeeWorksView: View {
                                 case .success(let image):
                                     image
                                         .resizable()
-                                        .scaledToFill()
-                                        .frame(height: 200)
-                                        .clipped()
+                                        .scaledToFit()
+                                        .frame(maxWidth: .infinity)
                                         .cornerRadius(8)
                                 case .failure(_):
                                     Color.gray
