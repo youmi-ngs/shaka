@@ -8,24 +8,20 @@
 import SwiftUI
 
 struct AskView: View {
-    @StateObject private var ViewModel = QuestionPostViewModel()
+    @StateObject private var viewModel = QuestionPostViewModel()
     @State private var showPostQuestion = false
     
     var body: some View {
         NavigationView {
             ZStack {
-                List(ViewModel.posts.sorted { $0.createdAt > $1.createdAt }) { post in
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(post.title)
-                            .font(.headline)
-                        Text(post.body)
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                        Text(post.createdAt.formatted(date: .abbreviated, time: .shortened))
-                            .font(.caption)
-                            .foregroundColor(.gray)
+                ScrollView {
+                    LazyVStack(spacing: 16) {
+                        ForEach(viewModel.posts.sorted { $0.createdAt > $1.createdAt }) { post in
+                            QuestionPostCard(post: post)
+                                .padding(.horizontal)
+                        }
                     }
-                    .padding(.vertical, 4)
+                    .padding(.vertical)
                 }
                 
                 VStack {
@@ -46,13 +42,50 @@ struct AskView: View {
                         }
                         .padding()
                         .sheet(isPresented: $showPostQuestion) {
-                            PostQuestionView(viewModel: ViewModel)
+                            PostQuestionView(viewModel: viewModel)
                         }
                     }
                 }
             }
             .navigationTitle("Ask Friends")
+            .background(Color(UIColor.systemGroupedBackground))
         }
+    }
+}
+
+struct QuestionPostCard: View {
+    let post: QuestionPost
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // Text content
+            VStack(alignment: .leading, spacing: 8) {
+                Text(post.title)
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                
+                Text(post.body)
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                    .lineLimit(4)
+                
+                HStack {
+                    Image(systemName: "clock")
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                    
+                    Text(post.createdAt.formatted(date: .abbreviated, time: .shortened))
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                    
+                    Spacer()
+                }
+            }
+        }
+        .padding()
+        .background(Color(UIColor.systemBackground))
+        .cornerRadius(16)
+        .shadow(color: Color.black.opacity(0.08), radius: 8, x: 0, y: 2)
     }
 }
 
