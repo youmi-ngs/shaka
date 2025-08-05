@@ -19,28 +19,40 @@ class WorkPostViewModel: ObservableObject {
 //    }
     
     func addPost(title: String, description: String?, detail: String? = nil, imageURL: URL?) {
-        let newPost = WorkPost(title: title, description: description, detail: detail, imageURL: imageURL, createdAt: Date())
-        posts.insert(newPost, at: 0)
-
         var data: [String: Any] = [
-            "title": newPost.title,
-            "imageURL": newPost.imageURL?.absoluteString ?? "",
-            "createdAt": Timestamp(date: newPost.createdAt)
+            "title": title,
+            "imageURL": imageURL?.absoluteString ?? "",
+            "createdAt": Timestamp(date: Date())
         ]
         
-        if let description = newPost.description, !description.isEmpty {
+        if let description = description, !description.isEmpty {
             data["description"] = description
         }
         
-        if let detail = newPost.detail, !detail.isEmpty {
+        if let detail = detail, !detail.isEmpty {
             data["detail"] = detail
         }
 
-        db.collection("works").addDocument(data: data) { error in
+        let docRef = db.collection("works").document()
+        data["id"] = docRef.documentID
+        
+        docRef.setData(data) { error in
             if let error = error {
                 print("🔥 Firestore 書き込み失敗:", error.localizedDescription)
             } else {
                 print("✅ Firestore に保存完了！")
+                // Add to local array after successful save
+                let newPost = WorkPost(
+                    id: docRef.documentID,
+                    title: title,
+                    description: description,
+                    detail: detail,
+                    imageURL: imageURL,
+                    createdAt: Date()
+                )
+                DispatchQueue.main.async {
+                    self.posts.insert(newPost, at: 0)
+                }
             }
         }
     }
@@ -60,6 +72,7 @@ class WorkPostViewModel: ObservableObject {
 
                 self.posts = snapshot.documents.compactMap { doc in
                     let data = doc.data()
+                    let id = doc.documentID
                     let title = data["title"] as? String ?? ""
                     let description = data["description"] as? String
                     let detail = data["detail"] as? String
@@ -67,8 +80,24 @@ class WorkPostViewModel: ObservableObject {
                     let imageURL: URL? = imageURLString != nil ? URL(string: imageURLString!) : nil
                     let createdAt = (data["createdAt"] as? Timestamp)?.dateValue() ?? Date()
 
-                    return WorkPost(title: title, description: description, detail: detail, imageURL: imageURL, createdAt: createdAt)
+                    return WorkPost(id: id, title: title, description: description, detail: detail, imageURL: imageURL, createdAt: createdAt)
                 }
             }
+    }
+    
+    func deletePost(_ post: WorkPost, completion: @escaping (Bool) -> Void) {
+        db.collection("works").document(post.id).delete { error in
+            if let error = error {
+                print("❌ Failed to delete post: \(error.localizedDescription)")
+                completion(false)
+            } else {
+                print("✅ Post deleted successfully")
+                // Remove from local array
+                DispatchQueue.main.async {
+                    self.posts.removeAll { $0.id == post.id }
+                }
+                completion(true)
+            }
+        }
     }
 }

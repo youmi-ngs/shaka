@@ -8,7 +8,7 @@
 import Foundation
 
 struct WorkPost: Identifiable {
-    let id = UUID()
+    let id: String
     let title: String
     let description: String?
     let detail: String?

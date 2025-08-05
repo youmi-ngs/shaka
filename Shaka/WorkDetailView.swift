@@ -9,6 +9,10 @@ import SwiftUI
 
 struct WorkDetailView: View {
     let post: WorkPost
+    @ObservedObject var viewModel: WorkPostViewModel
+    @Environment(\.dismiss) var dismiss
+    @State private var showDeleteAlert = false
+    @State private var isDeleting = false
     
     var body: some View {
         ScrollView {
@@ -106,6 +110,36 @@ struct WorkDetailView: View {
         }
         .navigationTitle("Work Detail")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button(action: {
+                    showDeleteAlert = true
+                }) {
+                    Image(systemName: "trash")
+                        .foregroundColor(.red)
+                }
+                .disabled(isDeleting)
+            }
+        }
+        .alert("Delete Post", isPresented: $showDeleteAlert) {
+            Button("Cancel", role: .cancel) { }
+            Button("Delete", role: .destructive) {
+                deletePost()
+            }
+        } message: {
+            Text("Are you sure you want to delete this post? This action cannot be undone.")
+        }
+    }
+    
+    private func deletePost() {
+        isDeleting = true
+        viewModel.deletePost(post) { success in
+            if success {
+                dismiss()
+            } else {
+                isDeleting = false
+            }
+        }
     }
 }
 
@@ -113,12 +147,14 @@ struct WorkDetailView: View {
     NavigationView {
         WorkDetailView(
             post: WorkPost(
+                id: "sample-id",
                 title: "Sample Work",
                 description: "This is a sample description for the work post. It can be quite long and contain multiple lines of text to show how the layout handles longer content.",
                 detail: "Date: Jan 5, 2025\nLocation: Tokyo, Japan\nSettings: f/2.8, 1/200s, ISO 400, 50mm",
                 imageURL: URL(string: "https://picsum.photos/400/300"),
                 createdAt: Date()
-            )
+            ),
+            viewModel: WorkPostViewModel()
         )
     }
 }

@@ -17,7 +17,7 @@ struct SeeWorksView: View {
                 ScrollView {
                     LazyVStack(spacing: 16) {
                         ForEach(viewModel.posts) { post in
-                            NavigationLink(destination: WorkDetailView(post: post)) {
+                            NavigationLink(destination: WorkDetailView(post: post, viewModel: viewModel)) {
                                 WorkPostCard(post: post)
                                     .padding(.horizontal)
                             }
@@ -52,6 +52,9 @@ struct SeeWorksView: View {
             }
             .navigationTitle("See Works")
             .background(Color(UIColor.systemGroupedBackground))
+            .onAppear {
+                viewModel.fetchPosts()
+            }
         }
     }
 }

@@ -16,9 +16,12 @@ struct AskView: View {
             ZStack {
                 ScrollView {
                     LazyVStack(spacing: 16) {
-                        ForEach(viewModel.posts.sorted { $0.createdAt > $1.createdAt }) { post in
-                            QuestionPostCard(post: post)
-                                .padding(.horizontal)
+                        ForEach(viewModel.posts) { post in
+                            NavigationLink(destination: QuestionDetailView(post: post, viewModel: viewModel)) {
+                                QuestionPostCard(post: post)
+                                    .padding(.horizontal)
+                            }
+                            .buttonStyle(PlainButtonStyle())
                         }
                     }
                     .padding(.vertical)
@@ -49,6 +52,9 @@ struct AskView: View {
             }
             .navigationTitle("Ask Friends")
             .background(Color(UIColor.systemGroupedBackground))
+            .onAppear {
+                viewModel.fetchPosts()
+            }
         }
     }
 }

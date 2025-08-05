@@ -27,7 +27,7 @@ struct PostQuestionView: View {
                 submitButtonText: "Submit Question",
                 submitButtonColor: .purple,
                 errorMessage: nil,
-                canSubmit: !title.isEmpty && !bodyText.isEmpty,
+                canSubmit: !title.isEmpty,
                 onSubmit: submitQuestion,
                 onCancel: { dismiss() }
             )
