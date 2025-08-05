@@ -44,8 +44,8 @@ struct PostQuestionView: View {
                         .disabled(title.isEmpty || bodyText.isEmpty)
                 }
             }
+            .navigationTitle("Post a Question")
         }
-        .navigationTitle(Text("Ask a Question"))
     }
 }
 
