@@ -8,44 +8,43 @@
 import SwiftUI
 
 struct PostQuestionView: View {
-    
     @ObservedObject var viewModel: QuestionPostViewModel
-    @Environment(\.dismiss)	var dismiss
+    @Environment(\.dismiss) var dismiss
     
     @State private var title: String = ""
     @State private var bodyText: String = ""
+    @State private var isSubmitting: Bool = false
     
     var body: some View {
         NavigationView {
-            Form {
-                Section(header: Text("Title")) {
-                    TextField("Enter your question title", text: $title)
-                }
-                
-                Section(header: Text("Question Details")) {
-                    TextEditor(text: $bodyText)
-                        .frame(minHeight: 208)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(Color.gray.opacity(0.5), lineWidth: 1)
-                        )
-                }
-                Button(action: {
-                    viewModel.addPost(title: title, body: bodyText)
-                    dismiss()
-                    print("Submit buttion tapped!")
-                }) {
-                    Text("Submit")
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(title.isEmpty || bodyText.isEmpty ? Color.gray : Color.purple)
-                        .foregroundColor(.white)
-                        .cornerRadius(8)
-                        .disabled(title.isEmpty || bodyText.isEmpty)
-                }
-            }
-            .navigationTitle("Post a Question")
+            ReusablePostFormView(
+                title: $title,
+                bodyText: $bodyText,
+                isSubmitting: $isSubmitting,
+                titlePlaceholder: "Enter your question title",
+                bodyPlaceholder: "What would you like to ask?",
+                bodyLabel: "Question Details",
+                submitButtonText: "Submit Question",
+                submitButtonColor: .purple,
+                errorMessage: nil,
+                canSubmit: !title.isEmpty && !bodyText.isEmpty,
+                onSubmit: submitQuestion,
+                onCancel: { dismiss() }
+            )
+            .navigationTitle("Ask a Question")
         }
+    }
+    
+    private func submitQuestion() {
+        isSubmitting = true
+        
+        // Add the question
+        viewModel.addPost(title: title, body: bodyText)
+        
+        // Close the view
+        dismiss()
+        
+        print("Question submitted!")
     }
 }
 

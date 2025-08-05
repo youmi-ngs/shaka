@@ -12,116 +12,151 @@ import FirebaseStorage
 struct PostWorkView: View {
     @ObservedObject var viewModel: WorkPostViewModel
     @Environment(\.dismiss) var dismiss
-
+    
     @State private var title = ""
     @State private var description = ""
-    @State private var imageURL: URL? = nil
-    @State private var selectedItem: PhotosPickerItem? = nil
-    @State private var selectedImageData: Data? = nil
+    @State private var selectedItem: PhotosPickerItem?
+    @State private var selectedImage: UIImage?
+    @State private var isUploading = false
+    @State private var uploadError: String?
 
     var body: some View {
         NavigationView {
-            
-            if let url = imageURL {
-                AsyncImage(url: url) { image in
-                    image
-                        .resizable()
-                        .scaledToFill()
-                        .frame(height: 200)
-                        .clipped()
-                        .cornerRadius(8)
-                        .padding(.horizontal)
-                } placeholder: {
-                    ProgressView()
-                        .frame(height: 200)
-                }
-            }
-            
-            Form {
-                
-                Section(header: Text("Title")) {
-                    TextField("Enter the work title", text: $title)
-                }
-                
-                Section(header: Text("Description")) {
-                    TextEditor(text: $description)
-                        .frame(height: 200)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(Color.gray.opacity(0.5), lineWidth: 1)
-                        )
-                }
-                
-                
-                Section(header: Text("Photo")) {
-                    PhotosPicker(
-                        selection: $selectedItem,
-                        matching: .images,
-                        photoLibrary: .shared()) {
-                            Text("Select photo")
-                                .padding()
-                                .background(Color.blue)
-                                .foregroundColor(.white)
+            ReusablePostFormView(
+                title: $title,
+                bodyText: $description,
+                isSubmitting: $isUploading,
+                titlePlaceholder: "Enter the work title",
+                bodyPlaceholder: "Enter the work description",
+                bodyLabel: "Description",
+                submitButtonText: "Submit Work",
+                submitButtonColor: .orange,
+                errorMessage: uploadError,
+                canSubmit: canSubmit,
+                onSubmit: submitWork,
+                onCancel: { dismiss() }
+            ) {
+                // Image picker section
+                Section(header: Text("Photo (Required)")) {
+                    PhotosPicker(selection: $selectedItem, matching: .images) {
+                        if let selectedImage = selectedImage {
+                            Image(uiImage: selectedImage)
+                                .resizable()
+                                .scaledToFill()
+                                .frame(height: 200)
+                                .clipped()
                                 .cornerRadius(8)
-                        }
-                        .onChange(of: selectedItem) { newItem in
-                            Task {
-                                if let data = try? await newItem?.loadTransferable(type: Data.self) {
-                                    selectedImageData = data
+                        } else {
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(Color.gray.opacity(0.2))
+                                    .frame(height: 200)
+                                
+                                VStack(spacing: 8) {
+                                    Image(systemName: "camera.fill")
+                                        .font(.system(size: 40))
+                                        .foregroundColor(.gray)
+                                    Text("Select a photo")
+                                        .foregroundColor(.gray)
                                 }
                             }
                         }
-                    
-                    if let imageData = selectedImageData,
-                       let uiImage = UIImage(data: imageData) {
-                        Image(uiImage: uiImage)
-                            .resizable()
-                            .scaledToFit()
-                            .frame(height: 200)
-                            .cornerRadius(8)
+                    }
+                    .onChange(of: selectedItem) { newItem in
+                        Task {
+                            if let newItem = newItem {
+                                if let data = try? await newItem.loadTransferable(type: Data.self) {
+                                    selectedImage = UIImage(data: data)
+                                }
+                            }
+                        }
                     }
                 }
                 
-                Button(action: {
-                    Task {
-                        var uploadedURL: URL? = nil
-
-                        if let data = selectedImageData {
-                            uploadedURL = await uploadImageToStorage(data: data)
+                // Warning message when no image selected
+                if selectedImage == nil {
+                    Section {
+                        HStack {
+                            Image(systemName: "exclamationmark.circle.fill")
+                                .foregroundColor(.orange)
+                            Text("Please select a photo to continue")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
                         }
-
-                        viewModel.addPost(title: title, description: description, imageURL: uploadedURL)
-                        dismiss()
-                        print("Submit Work button tapped!")
                     }
-                }) {
-                    Text("Submit Work")
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(title.isEmpty || description.isEmpty ? Color.gray : Color.orange)
-                        .foregroundColor(.white)
-                        .cornerRadius(8)
                 }
-                .disabled(title.isEmpty || description.isEmpty)
             }
             .navigationTitle("Post a Work")
         }
     }
     
-    func uploadImageToStorage(data: Data) async -> URL? {
-        let filename = UUID().uuidString + ".jpg"
-        let storageRef = Storage.storage().reference().child("images/\(filename)")
-
-        do {
-            let _ = try await storageRef.putDataAsync(data)
-            let url = try await storageRef.downloadURL()
-            return url
-        } catch {
-            print("Upload failed: \(error)")
-            return nil
-        }
+    private var canSubmit: Bool {
+        !title.isEmpty && !description.isEmpty && selectedImage != nil
     }
     
+    private func submitWork() {
+        guard let image = selectedImage else { return }
+        
+        print("📸 Starting image upload to Firebase Storage...")
+        
+        isUploading = true
+        uploadError = nil
+        
+        Task {
+            do {
+                // Convert image to JPEG data
+                guard let imageData = image.jpegData(compressionQuality: 0.8) else {
+                    throw UploadError.imageConversionFailed
+                }
+                
+                print("📸 Image data size: \(imageData.count / 1024)KB")
+                
+                // Create unique filename
+                let filename = "\(UUID().uuidString).jpg"
+                let storageRef = Storage.storage().reference().child("works/\(filename)")
+                
+                print("📸 Uploading to: works/\(filename)")
+                
+                // Upload image
+                let metadata = StorageMetadata()
+                metadata.contentType = "image/jpeg"
+                
+                _ = try await storageRef.putDataAsync(imageData, metadata: metadata)
+                print("✅ Upload successful!")
+                
+                // Get download URL
+                let downloadURL = try await storageRef.downloadURL()
+                let urlString = downloadURL.absoluteString
+                
+                print("✅ Got download URL: \(urlString)")
+                
+                // Add post with image URL
+                await MainActor.run {
+                    let url = URL(string: urlString)
+                    viewModel.addPost(title: title, description: description, imageURL: url)
+                    dismiss()
+                }
+                
+            } catch {
+                await MainActor.run {
+                    print("❌ Upload error: \(error)")
+                    uploadError = "Failed to upload image: \(error.localizedDescription)"
+                    isUploading = false
+                }
+            }
+        }
+    }
+}
+
+enum UploadError: LocalizedError {
+    case imageConversionFailed
+    
+    var errorDescription: String? {
+        switch self {
+        case .imageConversionFailed:
+            return "Failed to convert image"
+        }
+    }
 }
 
 #Preview {
