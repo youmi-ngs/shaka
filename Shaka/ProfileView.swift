@@ -11,8 +11,7 @@ import AuthenticationServices
 struct ProfileView: View {
     @EnvironmentObject var authManager: AuthManager
     @State private var showCopiedAlert = false
-    @State private var showLinkError = false
-    @State private var linkErrorMessage = ""
+    @State private var showSignInView = false
     
     var body: some View {
         NavigationView {
@@ -78,14 +77,27 @@ struct ProfileView: View {
                     HStack {
                         Text("Status")
                         Spacer()
-                        Text(authManager.isAuthenticated ? "Signed In" : "Not Signed In")
-                            .foregroundColor(authManager.isAuthenticated ? .green : .red)
+                        if authManager.isAuthenticated {
+                            if authManager.currentUser?.isAnonymous == true {
+                                Text("Anonymous User")
+                                    .foregroundColor(.orange)
+                            } else if authManager.isLinkedWithApple {
+                                Text("Apple ID User")
+                                    .foregroundColor(.green)
+                            } else {
+                                Text("Signed In")
+                                    .foregroundColor(.green)
+                            }
+                        } else {
+                            Text("Not Signed In")
+                                .foregroundColor(.red)
+                        }
                     }
                     
                     HStack {
-                        Text("Guest User")
+                        Text("Account Type")
                         Spacer()
-                        Text(authManager.currentUser?.isAnonymous ?? false ? "Yes" : "No")
+                        Text(authManager.currentUser?.isAnonymous ?? false ? "Guest" : "Permanent")
                             .foregroundColor(.secondary)
                     }
                     
@@ -101,60 +113,41 @@ struct ProfileView: View {
                 
                 // Account Protection Section
                 Section(header: Text("Account Protection")) {
-                    if authManager.isLinkedWithApple {
-                        HStack {
-                            Image(systemName: "checkmark.shield.fill")
-                                .foregroundColor(.green)
-                            Text("Protected with Apple ID")
-                                .foregroundColor(.secondary)
-                        }
-                        .padding(.vertical, 8)
-                    } else {
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("Protect your account")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                            
-                            Text("Link with Apple ID to recover your account if you lose your device")
-                                .font(.caption2)
-                                .foregroundColor(.secondary)
-                            
-                            Button(action: {
-                                // Apple Sign Inを開始
-                                let request = authManager.startAppleSignInFlow()
-                                let authorizationController = ASAuthorizationController(authorizationRequests: [request])
-                                authorizationController.delegate = AppleSignInCoordinator(
-                                    onSuccess: { authorization in
-                                        Task {
-                                            do {
-                                                try await authManager.linkWithAppleCredential(authorization)
-                                            } catch {
-                                                linkErrorMessage = error.localizedDescription
-                                                showLinkError = true
-                                            }
-                                        }
-                                    },
-                                    onError: { error in
-                                        linkErrorMessage = error.localizedDescription
-                                        showLinkError = true
-                                    }
-                                )
-                                authorizationController.performRequests()
-                            }) {
-                                HStack {
-                                    Image(systemName: "apple.logo")
-                                    Text("Link with Apple")
-                                }
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(Color.black)
-                                .foregroundColor(.white)
-                                .cornerRadius(8)
+                    AppleSignInButton()
+                }
+                
+                // Sign In Section for anonymous users
+                if authManager.currentUser?.isAnonymous == true {
+                    Section(header: Text("Have an account?")) {
+                        Button(action: {
+                            showSignInView = true
+                        }) {
+                            HStack {
+                                Image(systemName: "person.badge.key")
+                                Text("Sign In with Existing Account")
+                                    .foregroundColor(.blue)
                             }
                         }
-                        .padding(.vertical, 8)
                     }
                 }
+                
+                // Debug Section (開発時のみ)
+                #if DEBUG
+                Section(header: Text("Debug - Testing Only")) {
+                    Button(action: {
+                        Task {
+                            // 完全にサインアウトして新規匿名ユーザーを作成
+                            authManager.signOut()
+                            try? await Task.sleep(nanoseconds: 500_000_000) // 0.5秒待機
+                            try? await authManager.signInAnonymously()
+                        }
+                    }) {
+                        Text("Create New Test User")
+                            .foregroundColor(.orange)
+                    }
+                    .help("Creates a fresh anonymous user for testing")
+                }
+                #endif
                 
             }
             .navigationTitle("Profile")
@@ -163,10 +156,9 @@ struct ProfileView: View {
             } message: {
                 Text("Saved to clipboard")
             }
-            .alert("Link Failed", isPresented: $showLinkError) {
-                Button("OK", role: .cancel) { }
-            } message: {
-                Text(linkErrorMessage)
+            .sheet(isPresented: $showSignInView) {
+                AppleSignInView()
+                    .environmentObject(authManager)
             }
         }
     }
@@ -175,23 +167,4 @@ struct ProfileView: View {
 #Preview {
     ProfileView()
         .environmentObject(AuthManager.shared)
-}
-
-// Apple Sign In Coordinator
-class AppleSignInCoordinator: NSObject, ASAuthorizationControllerDelegate {
-    let onSuccess: (ASAuthorization) -> Void
-    let onError: (Error) -> Void
-    
-    init(onSuccess: @escaping (ASAuthorization) -> Void, onError: @escaping (Error) -> Void) {
-        self.onSuccess = onSuccess
-        self.onError = onError
-    }
-    
-    func authorizationController(controller: ASAuthorizationController, didCompleteWithAuthorization authorization: ASAuthorization) {
-        onSuccess(authorization)
-    }
-    
-    func authorizationController(controller: ASAuthorizationController, didCompleteWithError error: Error) {
-        onError(error)
-    }
 }

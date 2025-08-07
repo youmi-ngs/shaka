@@ -152,6 +152,36 @@ class AuthManager: ObservableObject {
         return request
     }
     
+    /// Apple IDでサインイン（既存ユーザー用）
+    func signInWithAppleCredential(_ authorization: ASAuthorization) async throws {
+        guard let appleIDCredential = authorization.credential as? ASAuthorizationAppleIDCredential,
+              let nonce = currentNonce,
+              let appleIDToken = appleIDCredential.identityToken,
+              let idTokenString = String(data: appleIDToken, encoding: .utf8) else {
+            throw AuthError.invalidCredential
+        }
+        
+        // Firebase用のクレデンシャルを作成
+        let credential = OAuthProvider.credential(
+            withProviderID: "apple.com",
+            idToken: idTokenString,
+            rawNonce: nonce
+        )
+        
+        do {
+            // Apple IDでサインイン
+            let authResult = try await Auth.auth().signIn(with: credential)
+            print("✅ Signed in with Apple ID!")
+            print("🆔 User: \(authResult.user.uid)")
+            print("📧 Email: \(authResult.user.email ?? "No email")")
+            
+            checkLinkedProviders()
+        } catch {
+            print("❌ Failed to sign in with Apple: \(error.localizedDescription)")
+            throw error
+        }
+    }
+    
     /// Apple Sign Inの結果を処理してアカウントをリンク
     func linkWithAppleCredential(_ authorization: ASAuthorization) async throws {
         guard let appleIDCredential = authorization.credential as? ASAuthorizationAppleIDCredential,
@@ -168,20 +198,46 @@ class AuthManager: ObservableObject {
             rawNonce: nonce
         )
         
-        // 現在の匿名ユーザーとリンク
+        guard let currentUser = Auth.auth().currentUser else {
+            throw AuthError.noUser
+        }
+        
         do {
-            guard let currentUser = Auth.auth().currentUser else {
-                throw AuthError.noUser
-            }
-            
+            // リンクを試みる
             let authResult = try await currentUser.link(with: credential)
             print("🔗 Successfully linked with Apple ID!")
             print("🍎 User: \(authResult.user.uid)")
             
             checkLinkedProviders()
-        } catch {
-            print("❌ Failed to link with Apple: \(error.localizedDescription)")
-            throw error
+        } catch let error as NSError {
+            // エラーコードをチェック
+            if error.code == 17025 { // FIRAuthErrorCodeProviderAlreadyLinked
+                print("ℹ️ This credential is already associated with a different account")
+                
+                // 既存のApple IDユーザーにサインインして、匿名データを移行
+                do {
+                    // 現在の匿名ユーザーのUIDを保存
+                    let anonymousUID = currentUser.uid
+                    print("📝 Current anonymous UID: \(anonymousUID)")
+                    
+                    // Apple IDでサインイン
+                    let authResult = try await Auth.auth().signIn(with: credential)
+                    print("✅ Signed in with existing Apple ID")
+                    print("🆔 New UID: \(authResult.user.uid)")
+                    
+                    // TODO: ここで必要に応じてデータ移行処理を実装
+                    // 例: Firestoreの匿名ユーザーのデータを新しいユーザーに移行
+                    
+                    checkLinkedProviders()
+                } catch {
+                    print("❌ Failed to sign in with Apple: \(error.localizedDescription)")
+                    throw AuthError.credentialAlreadyInUse
+                }
+            } else {
+                print("❌ Failed to link with Apple: \(error.localizedDescription)")
+                print("🔍 Error code: \(error.code)")
+                throw error
+            }
         }
     }
     
@@ -189,6 +245,7 @@ class AuthManager: ObservableObject {
     enum AuthError: LocalizedError {
         case invalidCredential
         case noUser
+        case credentialAlreadyInUse
         
         var errorDescription: String? {
             switch self {
@@ -196,6 +253,8 @@ class AuthManager: ObservableObject {
                 return "Invalid Apple ID credential"
             case .noUser:
                 return "No user is currently signed in"
+            case .credentialAlreadyInUse:
+                return "This Apple ID is already linked to another account. Signed in with existing account instead."
             }
         }
     }
