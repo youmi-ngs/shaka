@@ -57,11 +57,12 @@ struct AppleSignInButton: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
                     
-                    Text("Link with Apple ID to recover your account if you lose your device")
+                    Text("Continue with Apple to protect your data")
                         .font(.caption2)
                         .foregroundColor(.secondary)
                     
                     SignInWithAppleButtonRepresentable(
+                        buttonType: .continue,  // リンク用は"Continue with Apple"
                         onRequest: { request in
                             // AuthManagerからリクエストを設定
                             let appleRequest = authManager.startAppleSignInFlow()
@@ -105,12 +106,13 @@ struct AppleSignInButton: View {
 
 // SwiftUIでネイティブのAppleサインインボタンを使用
 struct SignInWithAppleButtonRepresentable: UIViewRepresentable {
+    var buttonType: ASAuthorizationAppleIDButton.ButtonType = .signIn
     let onRequest: (ASAuthorizationAppleIDRequest) -> Void
     let onCompletion: (Result<ASAuthorization, Error>) -> Void
     
     func makeUIView(context: Context) -> ASAuthorizationAppleIDButton {
         let button = ASAuthorizationAppleIDButton(
-            authorizationButtonType: .signIn,
+            authorizationButtonType: buttonType,
             authorizationButtonStyle: .black
         )
         button.addTarget(

@@ -26,11 +26,20 @@ struct ShakaApp: App {
             ContentView()
                 .environmentObject(authManager)
                 .task {
-                    // アプリ起動時に匿名ログイン
-                    do {
-                        try await authManager.signInAnonymously()
-                    } catch {
-                        print("❌ Failed to sign in anonymously: \(error)")
+                    // アプリ起動時に認証状態をチェック
+                    // Firebase Authは自動的にセッションを復元する
+                    if let currentUser = Auth.auth().currentUser {
+                        print("✅ Session restored for user: \(currentUser.uid)")
+                        print("   Anonymous: \(currentUser.isAnonymous)")
+                        print("   Providers: \(currentUser.providerData.map { $0.providerID })")
+                    } else {
+                        // セッションがない場合のみ匿名ログイン
+                        print("📱 No existing session, creating anonymous user")
+                        do {
+                            try await authManager.signInAnonymously()
+                        } catch {
+                            print("❌ Failed to sign in anonymously: \(error)")
+                        }
                     }
                 }
         }
