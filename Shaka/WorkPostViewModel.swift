@@ -19,10 +19,14 @@ class WorkPostViewModel: ObservableObject {
 //    }
     
     func addPost(title: String, description: String?, detail: String? = nil, imageURL: URL?) {
+        let userID = AuthManager.shared.getCurrentUserID() ?? "anonymous"
+        print("📝 Creating post with userID: \(userID)")
+        
         var data: [String: Any] = [
             "title": title,
             "imageURL": imageURL?.absoluteString ?? "",
-            "createdAt": Timestamp(date: Date())
+            "createdAt": Timestamp(date: Date()),
+            "userID": userID
         ]
         
         if let description = description, !description.isEmpty {
@@ -119,6 +123,7 @@ class WorkPostViewModel: ObservableObject {
             data["detail"] = FieldValue.delete()
         }
         
+        // 更新時もuserIDを保持（変更しない）
         db.collection("works").document(post.id).updateData(data) { error in
             if let error = error {
                 print("❌ Failed to update post: \(error.localizedDescription)")

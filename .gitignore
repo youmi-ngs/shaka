@@ -1,0 +1,13 @@
+# Firebaseの秘密ファイル
+firebase/secrets/*
+!firebase/secrets/.gitkeep
+*.p8
+GoogleService-Info.plist
+
+# Xcodeのビルド関連
+DerivedData/
+build/
+xcuserdata/
+
+# macOSのゴミ
+.DS_Store

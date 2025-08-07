@@ -16,11 +16,15 @@ class QuestionPostViewModel: ObservableObject {
     
     func addPost(title: String, body: String) {
         let docRef = db.collection("questions").document()
+        let userID = AuthManager.shared.getCurrentUserID() ?? "anonymous"
+        print("📝 Creating question with userID: \(userID)")
+        
         let data: [String: Any] = [
             "id": docRef.documentID,
             "title": title,
             "body": body,
-            "createdAt": Timestamp(date: Date())
+            "createdAt": Timestamp(date: Date()),
+            "userID": userID
         ]
         
         docRef.setData(data) { error in

@@ -9,7 +9,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>io.ngs.youmi.Shaka</string>
+	<string>computer.ngs.youmi.Shaka</string>
 	<key>PROJECT_ID</key>
 	<string>shaka-shakatsu</string>
 	<key>STORAGE_BUCKET</key>
@@ -25,6 +25,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:555424910037:ios:6718585767784bcdabf05c</string>
+	<string>1:555424910037:ios:f1f0c169b3dfa2b1abf05c</string>
 </dict>
 </plist>
