@@ -100,4 +100,44 @@ class WorkPostViewModel: ObservableObject {
             }
         }
     }
+    
+    func updatePost(_ post: WorkPost, title: String, description: String?, detail: String?, imageURL: URL?) {
+        var data: [String: Any] = [
+            "title": title,
+            "imageURL": imageURL?.absoluteString ?? ""
+        ]
+        
+        if let description = description, !description.isEmpty {
+            data["description"] = description
+        } else {
+            data["description"] = FieldValue.delete()
+        }
+        
+        if let detail = detail, !detail.isEmpty {
+            data["detail"] = detail
+        } else {
+            data["detail"] = FieldValue.delete()
+        }
+        
+        db.collection("works").document(post.id).updateData(data) { error in
+            if let error = error {
+                print("❌ Failed to update post: \(error.localizedDescription)")
+            } else {
+                print("✅ Post updated successfully")
+                // Update local array
+                DispatchQueue.main.async {
+                    if let index = self.posts.firstIndex(where: { $0.id == post.id }) {
+                        self.posts[index] = WorkPost(
+                            id: post.id,
+                            title: title,
+                            description: description,
+                            detail: detail,
+                            imageURL: imageURL,
+                            createdAt: post.createdAt
+                        )
+                    }
+                }
+            }
+        }
+    }
 }

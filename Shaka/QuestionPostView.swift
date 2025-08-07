@@ -80,4 +80,30 @@ class QuestionPostViewModel: ObservableObject {
             }
         }
     }
+    
+    func updatePost(_ post: QuestionPost, title: String, body: String) {
+        let data: [String: Any] = [
+            "title": title,
+            "body": body
+        ]
+        
+        db.collection("questions").document(post.id).updateData(data) { error in
+            if let error = error {
+                print("❌ Failed to update question: \(error.localizedDescription)")
+            } else {
+                print("✅ Question updated successfully")
+                // Update local array
+                DispatchQueue.main.async {
+                    if let index = self.posts.firstIndex(where: { $0.id == post.id }) {
+                        self.posts[index] = QuestionPost(
+                            id: post.id,
+                            title: title,
+                            body: body,
+                            createdAt: post.createdAt
+                        )
+                    }
+                }
+            }
+        }
+    }
 }

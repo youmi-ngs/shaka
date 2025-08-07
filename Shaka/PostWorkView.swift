@@ -13,6 +13,8 @@ struct PostWorkView: View {
     @ObservedObject var viewModel: WorkPostViewModel
     @Environment(\.dismiss) var dismiss
     
+    let editingPost: WorkPost?
+    
     @State private var title = ""
     @State private var description = ""
     @State private var photoDate: Date?
@@ -23,6 +25,11 @@ struct PostWorkView: View {
     @State private var selectedImage: UIImage?
     @State private var isUploading = false
     @State private var uploadError: String?
+    
+    init(viewModel: WorkPostViewModel, editingPost: WorkPost? = nil) {
+        self.viewModel = viewModel
+        self.editingPost = editingPost
+    }
 
     var body: some View {
         NavigationView {
@@ -33,7 +40,7 @@ struct PostWorkView: View {
                 titlePlaceholder: "Enter the work title",
                 bodyPlaceholder: "Enter the work description",
                 bodyLabel: "Description",
-                submitButtonText: "Submit Work",
+                submitButtonText: editingPost != nil ? "Save Changes" : "Submit Work",
                 submitButtonColor: .orange,
                 errorMessage: uploadError,
                 canSubmit: canSubmit,
@@ -54,6 +61,41 @@ struct PostWorkView: View {
                                 .scaledToFit()
                                 .frame(maxWidth: .infinity)
                                 .cornerRadius(8)
+                        } else if let existingImageURL = editingPost?.imageURL {
+                            AsyncImage(url: existingImageURL) { phase in
+                                switch phase {
+                                case .success(let image):
+                                    image
+                                        .resizable()
+                                        .scaledToFit()
+                                        .frame(maxWidth: .infinity)
+                                        .cornerRadius(8)
+                                        .overlay(
+                                            VStack {
+                                                Spacer()
+                                                Text("Tap to change photo")
+                                                    .font(.caption)
+                                                    .padding(8)
+                                                    .background(Color.black.opacity(0.6))
+                                                    .foregroundColor(.white)
+                                                    .cornerRadius(8)
+                                                    .padding()
+                                            }
+                                        )
+                                case .failure(_):
+                                    Rectangle()
+                                        .fill(Color.gray.opacity(0.3))
+                                        .frame(height: 200)
+                                        .overlay(Text("Failed to load image"))
+                                case .empty:
+                                    Rectangle()
+                                        .fill(Color.gray.opacity(0.1))
+                                        .frame(height: 200)
+                                        .overlay(ProgressView())
+                                @unknown default:
+                                    EmptyView()
+                                }
+                            }
                         } else {
                             ZStack {
                                 RoundedRectangle(cornerRadius: 8)
@@ -127,74 +169,99 @@ struct PostWorkView: View {
                 }
             }
             )
-            .navigationTitle("Post a Work")
+            .navigationTitle(editingPost != nil ? "Edit Work" : "Post a Work")
+            .onAppear {
+                if let post = editingPost {
+                    loadPostData(post)
+                }
+            }
         }
     }
     
     private var canSubmit: Bool {
-        !title.isEmpty && selectedImage != nil
+        !title.isEmpty && (selectedImage != nil || editingPost != nil)
     }
     
     private func submitWork() {
-        guard let image = selectedImage else { return }
-        
-        print("📸 Starting image upload to Firebase Storage...")
-        
         isUploading = true
         uploadError = nil
         
         Task {
             do {
-                // Convert image to JPEG data
-                guard let imageData = image.jpegData(compressionQuality: 0.8) else {
-                    throw UploadError.imageConversionFailed
+                var imageURL: URL?
+                
+                // Handle image upload if there's a new image
+                if let image = selectedImage {
+                    print("📸 Starting image upload to Firebase Storage...")
+                    
+                    // Convert image to JPEG data
+                    guard let imageData = image.jpegData(compressionQuality: 0.8) else {
+                        throw UploadError.imageConversionFailed
+                    }
+                    
+                    print("📸 Image data size: \(imageData.count / 1024)KB")
+                    
+                    // Create unique filename
+                    let filename = "\(UUID().uuidString).jpg"
+                    let storageRef = Storage.storage().reference().child("works/\(filename)")
+                    
+                    print("📸 Uploading to: works/\(filename)")
+                    
+                    // Upload image
+                    let metadata = StorageMetadata()
+                    metadata.contentType = "image/jpeg"
+                    
+                    _ = try await storageRef.putDataAsync(imageData, metadata: metadata)
+                    print("✅ Upload successful!")
+                    
+                    // Get download URL
+                    let downloadURL = try await storageRef.downloadURL()
+                    imageURL = URL(string: downloadURL.absoluteString)
+                    
+                    print("✅ Got download URL: \(downloadURL.absoluteString)")
+                } else if let existingPost = editingPost {
+                    // Use existing image URL if editing without changing image
+                    imageURL = existingPost.imageURL
                 }
                 
-                print("📸 Image data size: \(imageData.count / 1024)KB")
+                // Combine photo details into a single string if any are provided
+                var detailComponents: [String] = []
                 
-                // Create unique filename
-                let filename = "\(UUID().uuidString).jpg"
-                let storageRef = Storage.storage().reference().child("works/\(filename)")
+                if isPhotoDateEnabled, let date = photoDate {
+                    let formatter = DateFormatter()
+                    formatter.dateStyle = .medium
+                    detailComponents.append("Date: \(formatter.string(from: date))")
+                }
                 
-                print("📸 Uploading to: works/\(filename)")
+                if !location.isEmpty {
+                    detailComponents.append("Location: \(location)")
+                }
                 
-                // Upload image
-                let metadata = StorageMetadata()
-                metadata.contentType = "image/jpeg"
+                if !cameraSettings.isEmpty {
+                    detailComponents.append("Settings: \(cameraSettings)")
+                }
                 
-                _ = try await storageRef.putDataAsync(imageData, metadata: metadata)
-                print("✅ Upload successful!")
+                let detail = detailComponents.isEmpty ? nil : detailComponents.joined(separator: "\n")
                 
-                // Get download URL
-                let downloadURL = try await storageRef.downloadURL()
-                let urlString = downloadURL.absoluteString
-                
-                print("✅ Got download URL: \(urlString)")
-                
-                // Add post with image URL
                 await MainActor.run {
-                    let url = URL(string: urlString)
-                    
-                    // Combine photo details into a single string if any are provided
-                    var detailComponents: [String] = []
-                    
-                    if isPhotoDateEnabled, let date = photoDate {
-                        let formatter = DateFormatter()
-                        formatter.dateStyle = .medium
-                        detailComponents.append("Date: \(formatter.string(from: date))")
+                    if let existingPost = editingPost {
+                        // Update existing post
+                        viewModel.updatePost(
+                            existingPost,
+                            title: title,
+                            description: description.isEmpty ? nil : description,
+                            detail: detail,
+                            imageURL: imageURL
+                        )
+                    } else {
+                        // Add new post
+                        viewModel.addPost(
+                            title: title,
+                            description: description.isEmpty ? nil : description,
+                            detail: detail,
+                            imageURL: imageURL
+                        )
                     }
-                    
-                    if !location.isEmpty {
-                        detailComponents.append("Location: \(location)")
-                    }
-                    
-                    if !cameraSettings.isEmpty {
-                        detailComponents.append("Settings: \(cameraSettings)")
-                    }
-                    
-                    let detail = detailComponents.isEmpty ? nil : detailComponents.joined(separator: "\n")
-                    
-                    viewModel.addPost(title: title, description: description.isEmpty ? nil : description, detail: detail, imageURL: url)
                     dismiss()
                 }
                 
@@ -203,6 +270,39 @@ struct PostWorkView: View {
                     print("❌ Upload error: \(error)")
                     uploadError = "Failed to upload image: \(error.localizedDescription)"
                     isUploading = false
+                }
+            }
+        }
+    }
+    
+    private func loadPostData(_ post: WorkPost) {
+        title = post.title
+        description = post.description ?? ""
+        
+        // Parse detail field
+        if let detail = post.detail {
+            let lines = detail.split(separator: "\n")
+            for line in lines {
+                let parts = line.split(separator: ":", maxSplits: 1)
+                if parts.count == 2 {
+                    let key = parts[0].trimmingCharacters(in: .whitespaces)
+                    let value = parts[1].trimmingCharacters(in: .whitespaces)
+                    
+                    switch key {
+                    case "Date":
+                        let formatter = DateFormatter()
+                        formatter.dateStyle = .medium
+                        if let date = formatter.date(from: value) {
+                            photoDate = date
+                            isPhotoDateEnabled = true
+                        }
+                    case "Location":
+                        location = value
+                    case "Settings":
+                        cameraSettings = value
+                    default:
+                        break
+                    }
                 }
             }
         }

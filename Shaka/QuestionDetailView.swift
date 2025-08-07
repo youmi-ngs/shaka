@@ -13,6 +13,7 @@ struct QuestionDetailView: View {
     @Environment(\.dismiss) var dismiss
     @State private var showDeleteAlert = false
     @State private var isDeleting = false
+    @State private var showEditSheet = false
     
     var body: some View {
         ScrollView {
@@ -49,14 +50,25 @@ struct QuestionDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button(action: {
-                    showDeleteAlert = true
-                }) {
-                    Image(systemName: "trash")
-                        .foregroundColor(.red)
+                HStack {
+                    Button(action: {
+                        showEditSheet = true
+                    }) {
+                        Image(systemName: "pencil")
+                    }
+                    
+                    Button(action: {
+                        showDeleteAlert = true
+                    }) {
+                        Image(systemName: "trash")
+                            .foregroundColor(.red)
+                    }
+                    .disabled(isDeleting)
                 }
-                .disabled(isDeleting)
             }
+        }
+        .sheet(isPresented: $showEditSheet) {
+            PostQuestionView(viewModel: viewModel, editingPost: post)
         }
         .alert("Delete Question", isPresented: $showDeleteAlert) {
             Button("Cancel", role: .cancel) { }
