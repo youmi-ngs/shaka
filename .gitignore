@@ -11,3 +11,10 @@ xcuserdata/
 
 # macOSのゴミ
 .DS_Store
+
+# macOSのゴミ
+.DS_Store
+
+# Firebase config
+GoogleService-Info.plist
+firebase/secrets/GoogleService-Info.plist
