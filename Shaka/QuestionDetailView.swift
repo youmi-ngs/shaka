@@ -10,6 +10,7 @@ import SwiftUI
 struct QuestionDetailView: View {
     let post: QuestionPost
     @ObservedObject var viewModel: QuestionPostViewModel
+    @EnvironmentObject var authManager: AuthManager
     @Environment(\.dismiss) var dismiss
     @State private var showDeleteAlert = false
     @State private var isDeleting = false
@@ -24,13 +25,24 @@ struct QuestionDetailView: View {
                     .fontWeight(.bold)
                     .padding(.horizontal)
                 
-                // Date
-                HStack {
-                    Image(systemName: "calendar")
-                        .foregroundColor(.gray)
-                    Text(post.createdAt.formatted(date: .long, time: .shortened))
-                        .foregroundColor(.gray)
-                        .font(.subheadline)
+                // Author and Date
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Image(systemName: "person.circle.fill")
+                            .foregroundColor(.purple)
+                        Text(post.displayName)
+                            .foregroundColor(.primary)
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                    }
+                    
+                    HStack {
+                        Image(systemName: "calendar")
+                            .foregroundColor(.gray)
+                        Text(post.createdAt.formatted(date: .long, time: .shortened))
+                            .foregroundColor(.gray)
+                            .font(.subheadline)
+                    }
                 }
                 .padding(.horizontal)
                 
@@ -50,20 +62,23 @@ struct QuestionDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                HStack {
-                    Button(action: {
-                        showEditSheet = true
-                    }) {
-                        Image(systemName: "pencil")
+                // 自分の投稿の場合のみ編集・削除ボタンを表示
+                if post.canEdit(currentUserID: authManager.userID) {
+                    HStack {
+                        Button(action: {
+                            showEditSheet = true
+                        }) {
+                            Image(systemName: "pencil")
+                        }
+                        
+                        Button(action: {
+                            showDeleteAlert = true
+                        }) {
+                            Image(systemName: "trash")
+                                .foregroundColor(.red)
+                        }
+                        .disabled(isDeleting)
                     }
-                    
-                    Button(action: {
-                        showDeleteAlert = true
-                    }) {
-                        Image(systemName: "trash")
-                            .foregroundColor(.red)
-                    }
-                    .disabled(isDeleting)
                 }
             }
         }
@@ -105,5 +120,6 @@ struct QuestionDetailView: View {
             ),
             viewModel: QuestionPostViewModel()
         )
+        .environmentObject(AuthManager.shared)
     }
 }

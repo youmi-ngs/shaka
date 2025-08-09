@@ -15,16 +15,22 @@ struct SeeWorksView: View {
         NavigationView {
             ZStack {
                 ScrollView {
-                    LazyVStack(spacing: 16) {
-                        ForEach(viewModel.posts) { post in
+                    VStack(spacing: 24) {
+                        ForEach(Array(viewModel.posts.enumerated()), id: \.element.id) { index, post in
                             NavigationLink(destination: WorkDetailView(post: post, viewModel: viewModel)) {
                                 WorkPostCard(post: post)
-                                    .padding(.horizontal)
                             }
                             .buttonStyle(PlainButtonStyle())
+                            .padding(.horizontal)
+                            .id(post.id)
+                            .zIndex(Double(viewModel.posts.count - index))
                         }
                     }
                     .padding(.vertical)
+                }
+                .refreshable {
+                    // プルトゥリフレッシュ
+                    await refreshPosts()
                 }
                 
                 VStack {
@@ -56,6 +62,19 @@ struct SeeWorksView: View {
                 viewModel.fetchPosts()
             }
         }
+    }
+    
+    // リフレッシュ処理
+    private func refreshPosts() async {
+        // 少し待機してからデータを再取得（UX向上のため）
+        try? await Task.sleep(nanoseconds: 500_000_000) // 0.5秒
+        
+        // メインスレッドでfetchを実行
+        await MainActor.run {
+            viewModel.fetchPosts()
+        }
+        
+        print("✅ Posts refreshed")
     }
 }
 
@@ -99,6 +118,20 @@ struct WorkPostCard: View {
                         EmptyView()
                     }
                 }
+            } else {
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.gray.opacity(0.1))
+                    .frame(height: 200)
+                    .overlay(
+                        VStack {
+                            Image(systemName: "photo")
+                                .font(.system(size: 40))
+                                .foregroundColor(.gray)
+                            Text("No image")
+                                .font(.caption)
+                                .foregroundColor(.gray)
+                        }
+                    )
             }
             
             // Text content
@@ -151,6 +184,19 @@ struct WorkPostCard: View {
         .background(Color(UIColor.systemBackground))
         .cornerRadius(16)
         .shadow(color: Color.black.opacity(0.08), radius: 8, x: 0, y: 2)
+    }
+}
+
+// NavigationLinkを含むカードビュー
+struct WorkPostCardWithLink: View {
+    let post: WorkPost
+    let viewModel: WorkPostViewModel
+    
+    var body: some View {
+        NavigationLink(destination: WorkDetailView(post: post, viewModel: viewModel)) {
+            WorkPostCard(post: post)
+        }
+        .buttonStyle(PlainButtonStyle())
     }
 }
 

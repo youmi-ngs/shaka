@@ -28,10 +28,12 @@ struct WorkDetailView: View {
                                 .resizable()
                                 .scaledToFit()
                                 .frame(maxWidth: .infinity)
+//                                .cornerRadius(12)
                         case .failure(_):
                             Rectangle()
                                 .fill(Color.gray.opacity(0.3))
                                 .frame(height: 300)
+                                .cornerRadius(12)
                                 .overlay(
                                     VStack {
                                         Image(systemName: "photo")
@@ -45,6 +47,7 @@ struct WorkDetailView: View {
                             Rectangle()
                                 .fill(Color.gray.opacity(0.1))
                                 .frame(height: 300)
+//                                .cornerRadius(12)
                                 .overlay(
                                     ProgressView()
                                         .scaleEffect(1.5)
@@ -54,10 +57,10 @@ struct WorkDetailView: View {
                         }
                     }
                 } else {
-                    // No image placeholder
                     Rectangle()
                         .fill(Color.gray.opacity(0.1))
                         .frame(height: 200)
+                        .cornerRadius(12)
                         .overlay(
                             Text("No image")
                                 .foregroundColor(.gray)

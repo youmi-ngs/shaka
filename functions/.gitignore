@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+
+# Firebase
+.firebase/
+*.log
+
+# Environment
+.env
+.env.local
+
+# Service Account Keys
+**/service-account*.json
+**/*-key.json
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db

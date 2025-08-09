@@ -15,16 +15,17 @@ struct AskView: View {
         NavigationView {
             ZStack {
                 ScrollView {
-                    LazyVStack(spacing: 16) {
+                    LazyVStack(spacing: 20) {
                         ForEach(viewModel.posts) { post in
-                            NavigationLink(destination: QuestionDetailView(post: post, viewModel: viewModel)) {
-                                QuestionPostCard(post: post)
-                                    .padding(.horizontal)
-                            }
-                            .buttonStyle(PlainButtonStyle())
+                            QuestionPostCardWithLink(post: post, viewModel: viewModel)
+                                .padding(.horizontal)
                         }
                     }
                     .padding(.vertical)
+                }
+                .refreshable {
+                    // プルトゥリフレッシュ
+                    await refreshQuestions()
                 }
                 
                 VStack {
@@ -57,6 +58,19 @@ struct AskView: View {
             }
         }
     }
+    
+    // リフレッシュ処理
+    private func refreshQuestions() async {
+        // 少し待機してからデータを再取得（UX向上のため）
+        try? await Task.sleep(nanoseconds: 500_000_000) // 0.5秒
+        
+        // メインスレッドでfetchを実行
+        await MainActor.run {
+            viewModel.fetchPosts()
+        }
+        
+        print("✅ Questions refreshed")
+    }
 }
 
 struct QuestionPostCard: View {
@@ -76,13 +90,32 @@ struct QuestionPostCard: View {
                     .lineLimit(4)
                 
                 HStack {
-                    Image(systemName: "clock")
+                    // 作成者名
+                    HStack(spacing: 4) {
+                        Image(systemName: "person.circle.fill")
+                            .font(.caption)
+                            .foregroundColor(.purple)
+                        
+                        Text(post.displayName)
+                            .font(.caption)
+                            .foregroundColor(.primary)
+                            .fontWeight(.medium)
+                    }
+                    
+                    Text("•")
                         .font(.caption)
                         .foregroundColor(.gray)
                     
-                    Text(post.createdAt.formatted(date: .abbreviated, time: .shortened))
-                        .font(.caption)
-                        .foregroundColor(.gray)
+                    // 作成日時
+                    HStack(spacing: 4) {
+                        Image(systemName: "clock")
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                        
+                        Text(post.createdAt.formatted(date: .abbreviated, time: .shortened))
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                    }
                     
                     Spacer()
                 }
@@ -92,6 +125,19 @@ struct QuestionPostCard: View {
         .background(Color(UIColor.systemBackground))
         .cornerRadius(16)
         .shadow(color: Color.black.opacity(0.08), radius: 8, x: 0, y: 2)
+    }
+}
+
+// NavigationLinkを含むカードビュー
+struct QuestionPostCardWithLink: View {
+    let post: QuestionPost
+    let viewModel: QuestionPostViewModel
+    
+    var body: some View {
+        NavigationLink(destination: QuestionDetailView(post: post, viewModel: viewModel)) {
+            QuestionPostCard(post: post)
+        }
+        .buttonStyle(PlainButtonStyle())
     }
 }
 
