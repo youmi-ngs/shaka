@@ -12,10 +12,32 @@ struct ProfileView: View {
     @EnvironmentObject var authManager: AuthManager
     @State private var showCopiedAlert = false
     @State private var showSignInView = false
+    @State private var showEditNameSheet = false
+    @State private var newDisplayName = ""
     
     var body: some View {
         NavigationView {
             List {
+                // Display Name Section
+                Section(header: Text("Display Name")) {
+                    HStack {
+                        Text(authManager.getDisplayName())
+                            .font(.title3)
+                            .fontWeight(.medium)
+                        
+                        Spacer()
+                        
+                        Button(action: {
+                            newDisplayName = authManager.displayName ?? ""
+                            showEditNameSheet = true
+                        }) {
+                            Image(systemName: "pencil")
+                                .foregroundColor(.blue)
+                        }
+                    }
+                    .padding(.vertical, 8)
+                }
+                
                 // User ID Section
                 Section(header: Text("Your ID")) {
                     VStack(alignment: .leading, spacing: 12) {
@@ -159,6 +181,65 @@ struct ProfileView: View {
             .sheet(isPresented: $showSignInView) {
                 AppleSignInView()
                     .environmentObject(authManager)
+            }
+            .sheet(isPresented: $showEditNameSheet) {
+                EditDisplayNameView(displayName: $newDisplayName) { newName in
+                    Task {
+                        do {
+                            try await authManager.updateDisplayName(newName)
+                        } catch {
+                            print("Failed to update display name: \(error)")
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// 表示名編集ビュー
+struct EditDisplayNameView: View {
+    @Binding var displayName: String
+    let onSave: (String) -> Void
+    @Environment(\.dismiss) var dismiss
+    @FocusState private var isFocused: Bool
+    
+    var body: some View {
+        NavigationView {
+            Form {
+                Section(header: Text("Enter your display name")) {
+                    TextField("Display Name", text: $displayName)
+                        .focused($isFocused)
+                        .onAppear {
+                            isFocused = true
+                        }
+                }
+                
+                Section {
+                    Text("This name will be shown on your posts")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+            .navigationTitle("Edit Display Name")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                }
+                
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Save") {
+                        if !displayName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                            onSave(displayName.trimmingCharacters(in: .whitespacesAndNewlines))
+                            dismiss()
+                        }
+                    }
+                    .fontWeight(.semibold)
+                    .disabled(displayName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }
             }
         }
     }

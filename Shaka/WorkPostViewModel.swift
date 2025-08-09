@@ -20,13 +20,16 @@ class WorkPostViewModel: ObservableObject {
     
     func addPost(title: String, description: String?, detail: String? = nil, imageURL: URL?) {
         let userID = AuthManager.shared.getCurrentUserID() ?? "anonymous"
-        print("📝 Creating post with userID: \(userID)")
+        let displayName = AuthManager.shared.getDisplayName()
+        print("📝 Creating post with userID: \(userID), displayName: \(displayName)")
         
         var data: [String: Any] = [
             "title": title,
             "imageURL": imageURL?.absoluteString ?? "",
             "createdAt": Timestamp(date: Date()),
-            "userID": userID
+            "updatedAt": Timestamp(date: Date()),
+            "userID": userID,
+            "displayName": displayName
         ]
         
         if let description = description, !description.isEmpty {
@@ -52,7 +55,9 @@ class WorkPostViewModel: ObservableObject {
                     description: description,
                     detail: detail,
                     imageURL: imageURL,
-                    createdAt: Date()
+                    createdAt: Date(),
+                    userID: userID,
+                    displayName: displayName
                 )
                 DispatchQueue.main.async {
                     self.posts.insert(newPost, at: 0)
@@ -83,8 +88,19 @@ class WorkPostViewModel: ObservableObject {
                     let imageURLString = data["imageURL"] as? String
                     let imageURL: URL? = imageURLString != nil ? URL(string: imageURLString!) : nil
                     let createdAt = (data["createdAt"] as? Timestamp)?.dateValue() ?? Date()
+                    let userID = data["userID"] as? String ?? "unknown"
+                    let displayName = data["displayName"] as? String ?? "User_\(String(userID.prefix(6)))"
 
-                    return WorkPost(id: id, title: title, description: description, detail: detail, imageURL: imageURL, createdAt: createdAt)
+                    return WorkPost(
+                        id: id,
+                        title: title,
+                        description: description,
+                        detail: detail,
+                        imageURL: imageURL,
+                        createdAt: createdAt,
+                        userID: userID,
+                        displayName: displayName
+                    )
                 }
             }
     }
@@ -108,7 +124,8 @@ class WorkPostViewModel: ObservableObject {
     func updatePost(_ post: WorkPost, title: String, description: String?, detail: String?, imageURL: URL?) {
         var data: [String: Any] = [
             "title": title,
-            "imageURL": imageURL?.absoluteString ?? ""
+            "imageURL": imageURL?.absoluteString ?? "",
+            "updatedAt": Timestamp(date: Date())
         ]
         
         if let description = description, !description.isEmpty {
@@ -123,7 +140,7 @@ class WorkPostViewModel: ObservableObject {
             data["detail"] = FieldValue.delete()
         }
         
-        // 更新時もuserIDを保持（変更しない）
+        // 更新時もuserIDとdisplayNameを保持（変更しない）
         db.collection("works").document(post.id).updateData(data) { error in
             if let error = error {
                 print("❌ Failed to update post: \(error.localizedDescription)")
@@ -138,7 +155,9 @@ class WorkPostViewModel: ObservableObject {
                             description: description,
                             detail: detail,
                             imageURL: imageURL,
-                            createdAt: post.createdAt
+                            createdAt: post.createdAt,
+                            userID: post.userID,
+                            displayName: post.displayName
                         )
                     }
                 }

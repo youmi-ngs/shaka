@@ -7,6 +7,7 @@
 
 import Foundation
 import FirebaseAuth
+import FirebaseFirestore
 import AuthenticationServices
 import CryptoKit
 
@@ -17,9 +18,11 @@ class AuthManager: ObservableObject {
     @Published var isAuthenticated = false
     @Published var userID: String?
     @Published var isLinkedWithApple = false
+    @Published var displayName: String?
     
     // For Sign in with Apple
     private var currentNonce: String?
+    private let db = Firestore.firestore()
         
     private init() {
         // 認証状態の変化を監視
@@ -33,9 +36,11 @@ class AuthManager: ObservableObject {
                 print("   UID: \(user.uid)")
                 print("   Anonymous: \(user.isAnonymous)")
                 self?.checkLinkedProviders()
+                self?.fetchUserProfile()
             } else {
                 print("❌ Auth state changed - No user authenticated")
                 self?.isLinkedWithApple = false
+                self?.displayName = nil
             }
         }
     }
@@ -256,6 +261,74 @@ class AuthManager: ObservableObject {
             case .credentialAlreadyInUse:
                 return "This Apple ID is already linked to another account. Signed in with existing account instead."
             }
+        }
+    }
+    
+    // MARK: - User Profile Management
+    
+    /// ユーザープロフィールを取得
+    func fetchUserProfile() {
+        guard let uid = userID else { return }
+        
+        db.collection("users").document(uid).getDocument { [weak self] snapshot, error in
+            if let error = error {
+                print("❌ Failed to fetch user profile: \(error.localizedDescription)")
+                return
+            }
+            
+            if let data = snapshot?.data() {
+                self?.displayName = data["displayName"] as? String
+                print("📝 User profile loaded: \(self?.displayName ?? "No name")")
+            } else {
+                print("📝 No user profile found, creating default...")
+                self?.createDefaultProfile()
+            }
+        }
+    }
+    
+    /// デフォルトのユーザープロフィールを作成
+    private func createDefaultProfile() {
+        guard let uid = userID else { return }
+        
+        let defaultName = "User_\(String(uid.prefix(6)))"
+        let data: [String: Any] = [
+            "displayName": defaultName,
+            "createdAt": Timestamp(date: Date()),
+            "updatedAt": Timestamp(date: Date())
+        ]
+        
+        db.collection("users").document(uid).setData(data) { [weak self] error in
+            if let error = error {
+                print("❌ Failed to create user profile: \(error.localizedDescription)")
+            } else {
+                self?.displayName = defaultName
+                print("✅ Default user profile created")
+            }
+        }
+    }
+    
+    /// 表示名を更新
+    func updateDisplayName(_ newName: String) async throws {
+        guard let uid = userID else { throw AuthError.noUser }
+        
+        let data: [String: Any] = [
+            "displayName": newName,
+            "updatedAt": Timestamp(date: Date())
+        ]
+        
+        try await db.collection("users").document(uid).setData(data, merge: true)
+        self.displayName = newName
+        print("✅ Display name updated to: \(newName)")
+    }
+    
+    /// 表示名を取得（nilの場合はデフォルト値を返す）
+    func getDisplayName() -> String {
+        if let displayName = displayName, !displayName.isEmpty {
+            return displayName
+        } else if let uid = userID {
+            return "User_\(String(uid.prefix(6)))"
+        } else {
+            return "Anonymous"
         }
     }
 }

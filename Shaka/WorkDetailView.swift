@@ -10,6 +10,7 @@ import SwiftUI
 struct WorkDetailView: View {
     let post: WorkPost
     @ObservedObject var viewModel: WorkPostViewModel
+    @EnvironmentObject var authManager: AuthManager
     @Environment(\.dismiss) var dismiss
     @State private var showDeleteAlert = false
     @State private var isDeleting = false
@@ -69,13 +70,24 @@ struct WorkDetailView: View {
                     .fontWeight(.bold)
                     .padding(.horizontal)
                 
-                // Date
-                HStack {
-                    Image(systemName: "calendar")
-                        .foregroundColor(.gray)
-                    Text(post.createdAt.formatted(date: .long, time: .shortened))
-                        .foregroundColor(.gray)
-                        .font(.subheadline)
+                // Author and Date
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Image(systemName: "person.circle.fill")
+                            .foregroundColor(.blue)
+                        Text(post.displayName)
+                            .foregroundColor(.primary)
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                    }
+                    
+                    HStack {
+                        Image(systemName: "calendar")
+                            .foregroundColor(.gray)
+                        Text(post.createdAt.formatted(date: .long, time: .shortened))
+                            .foregroundColor(.gray)
+                            .font(.subheadline)
+                    }
                 }
                 .padding(.horizontal)
                 
@@ -113,20 +125,23 @@ struct WorkDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                HStack {
-                    Button(action: {
-                        showEditSheet = true
-                    }) {
-                        Image(systemName: "pencil")
+                // 自分の投稿の場合のみ編集・削除ボタンを表示
+                if post.canEdit(currentUserID: authManager.userID) {
+                    HStack {
+                        Button(action: {
+                            showEditSheet = true
+                        }) {
+                            Image(systemName: "pencil")
+                        }
+                        
+                        Button(action: {
+                            showDeleteAlert = true
+                        }) {
+                            Image(systemName: "trash")
+                                .foregroundColor(.red)
+                        }
+                        .disabled(isDeleting)
                     }
-                    
-                    Button(action: {
-                        showDeleteAlert = true
-                    }) {
-                        Image(systemName: "trash")
-                            .foregroundColor(.red)
-                    }
-                    .disabled(isDeleting)
                 }
             }
         }
@@ -164,9 +179,12 @@ struct WorkDetailView: View {
                 description: "This is a sample description for the work post. It can be quite long and contain multiple lines of text to show how the layout handles longer content.",
                 detail: "Date: Jan 5, 2025\nLocation: Tokyo, Japan\nSettings: f/2.8, 1/200s, ISO 400, 50mm",
                 imageURL: URL(string: "https://picsum.photos/400/300"),
-                createdAt: Date()
+                createdAt: Date(),
+                userID: "sample-user-id",
+                displayName: "Sample User"
             ),
             viewModel: WorkPostViewModel()
         )
+        .environmentObject(AuthManager.shared)
     }
 }

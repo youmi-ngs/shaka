@@ -14,4 +14,12 @@ struct WorkPost: Identifiable {
     let detail: String?
     let imageURL: URL?
     let createdAt: Date
+    let userID: String
+    let displayName: String
+    
+    // 編集・削除権限のチェック
+    func canEdit(currentUserID: String?) -> Bool {
+        guard let currentUserID = currentUserID else { return false }
+        return userID == currentUserID
+    }
 }

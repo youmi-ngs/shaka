@@ -115,13 +115,32 @@ struct WorkPostCard: View {
                 }
                 
                 HStack {
-                    Image(systemName: "clock")
+                    // 作成者名
+                    HStack(spacing: 4) {
+                        Image(systemName: "person.circle.fill")
+                            .font(.caption)
+                            .foregroundColor(.blue)
+                        
+                        Text(post.displayName)
+                            .font(.caption)
+                            .foregroundColor(.primary)
+                            .fontWeight(.medium)
+                    }
+                    
+                    Text("•")
                         .font(.caption)
                         .foregroundColor(.gray)
                     
-                    Text(post.createdAt.formatted(date: .abbreviated, time: .shortened))
-                        .font(.caption)
-                        .foregroundColor(.gray)
+                    // 作成日時
+                    HStack(spacing: 4) {
+                        Image(systemName: "clock")
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                        
+                        Text(post.createdAt.formatted(date: .abbreviated, time: .shortened))
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                    }
                     
                     Spacer()
                 }

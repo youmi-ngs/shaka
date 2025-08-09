@@ -99,7 +99,9 @@ struct QuestionDetailView: View {
                 id: "sample-id",
                 title: "Sample Question",
                 body: "This is a sample question body with detailed information about what the user wants to know.",
-                createdAt: Date()
+                createdAt: Date(),
+                userID: "sample-user-id",
+                displayName: "Sample User"
             ),
             viewModel: QuestionPostViewModel()
         )

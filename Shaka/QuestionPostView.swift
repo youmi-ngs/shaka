@@ -17,14 +17,17 @@ class QuestionPostViewModel: ObservableObject {
     func addPost(title: String, body: String) {
         let docRef = db.collection("questions").document()
         let userID = AuthManager.shared.getCurrentUserID() ?? "anonymous"
-        print("📝 Creating question with userID: \(userID)")
+        let displayName = AuthManager.shared.getDisplayName()
+        print("📝 Creating question with userID: \(userID), displayName: \(displayName)")
         
         let data: [String: Any] = [
             "id": docRef.documentID,
             "title": title,
             "body": body,
             "createdAt": Timestamp(date: Date()),
-            "userID": userID
+            "updatedAt": Timestamp(date: Date()),
+            "userID": userID,
+            "displayName": displayName
         ]
         
         docRef.setData(data) { error in
@@ -37,7 +40,9 @@ class QuestionPostViewModel: ObservableObject {
                     id: docRef.documentID,
                     title: title,
                     body: body,
-                    createdAt: Date()
+                    createdAt: Date(),
+                    userID: userID,
+                    displayName: displayName
                 )
                 DispatchQueue.main.async {
                     self.posts.insert(newPost, at: 0)
@@ -63,8 +68,17 @@ class QuestionPostViewModel: ObservableObject {
                     let title = data["title"] as? String ?? ""
                     let body = data["body"] as? String ?? ""
                     let createdAt = (data["createdAt"] as? Timestamp)?.dateValue() ?? Date()
+                    let userID = data["userID"] as? String ?? "unknown"
+                    let displayName = data["displayName"] as? String ?? "User_\(String(userID.prefix(6)))"
                     
-                    return QuestionPost(id: id, title: title, body: body, createdAt: createdAt)
+                    return QuestionPost(
+                        id: id,
+                        title: title,
+                        body: body,
+                        createdAt: createdAt,
+                        userID: userID,
+                        displayName: displayName
+                    )
                 }
             }
     }
@@ -88,7 +102,8 @@ class QuestionPostViewModel: ObservableObject {
     func updatePost(_ post: QuestionPost, title: String, body: String) {
         let data: [String: Any] = [
             "title": title,
-            "body": body
+            "body": body,
+            "updatedAt": Timestamp(date: Date())
         ]
         
         db.collection("questions").document(post.id).updateData(data) { error in
@@ -103,7 +118,9 @@ class QuestionPostViewModel: ObservableObject {
                             id: post.id,
                             title: title,
                             body: body,
-                            createdAt: post.createdAt
+                            createdAt: post.createdAt,
+                            userID: post.userID,
+                            displayName: post.displayName
                         )
                     }
                 }
