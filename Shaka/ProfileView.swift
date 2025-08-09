@@ -187,6 +187,8 @@ struct ProfileView: View {
                     Task {
                         do {
                             try await authManager.updateDisplayName(newName)
+                            // プロフィールを再取得して表示を更新
+                            authManager.fetchUserProfile()
                         } catch {
                             print("Failed to update display name: \(error)")
                         }

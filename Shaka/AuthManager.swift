@@ -317,7 +317,12 @@ class AuthManager: ObservableObject {
         ]
         
         try await db.collection("users").document(uid).setData(data, merge: true)
-        self.displayName = newName
+        
+        // メインスレッドで @Published プロパティを更新
+        await MainActor.run {
+            self.displayName = newName
+        }
+        
         print("✅ Display name updated to: \(newName)")
     }
     
