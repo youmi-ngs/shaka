@@ -18,7 +18,7 @@ struct SeeWorksView: View {
                     VStack(spacing: 24) {
                         ForEach(Array(viewModel.posts.enumerated()), id: \.element.id) { index, post in
                             NavigationLink(destination: WorkDetailView(post: post, viewModel: viewModel)) {
-                                WorkPostCard(post: post)
+                                WorkPostCard(post: post, viewModel: viewModel)
                             }
                             .buttonStyle(PlainButtonStyle())
                             .padding(.horizontal)
@@ -74,18 +74,22 @@ struct SeeWorksView: View {
             viewModel.fetchPosts()
         }
         
-        print("✅ Posts refreshed")
+        print("✅ Posts refreshed - Total: \(viewModel.posts.count)")
+        for post in viewModel.posts {
+            print("📷 Post: \(post.title), URL: \(post.imageURL?.absoluteString ?? "No URL")")
+        }
     }
 }
 
 struct WorkPostCard: View {
     let post: WorkPost
+    @ObservedObject var viewModel: WorkPostViewModel
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             // Image
             if let url = post.imageURL {
-                AsyncImage(url: url) { phase in
+                AsyncImage(url: url, transaction: Transaction(animation: .easeInOut)) { phase in
                     switch phase {
                     case .success(let image):
                         image
@@ -93,20 +97,29 @@ struct WorkPostCard: View {
                             .scaledToFit()
                             .frame(maxWidth: .infinity)
                             .cornerRadius(12)
-                    case .failure(_):
+                    case .failure(let error):
                         RoundedRectangle(cornerRadius: 12)
                             .fill(Color.gray.opacity(0.3))
                             .frame(height: 200)
                             .overlay(
                                 VStack {
-                                    Image(systemName: "photo")
+                                    Image(systemName: "wifi.slash")
                                         .font(.system(size: 40))
                                         .foregroundColor(.gray)
                                     Text("Failed to load image")
                                         .font(.caption)
                                         .foregroundColor(.gray)
+                                    Text("\(error.localizedDescription)")
+                                        .font(.caption2)
+                                        .foregroundColor(.gray)
+                                        .multilineTextAlignment(.center)
+                                        .padding(.horizontal)
                                 }
                             )
+                            .onTapGesture {
+                                // タップで再読み込みを試みる
+                                viewModel.fetchPosts()
+                            }
                     case .empty:
                         RoundedRectangle(cornerRadius: 12)
                             .fill(Color.gray.opacity(0.1))
@@ -194,7 +207,7 @@ struct WorkPostCardWithLink: View {
     
     var body: some View {
         NavigationLink(destination: WorkDetailView(post: post, viewModel: viewModel)) {
-            WorkPostCard(post: post)
+            WorkPostCard(post: post, viewModel: viewModel)
         }
         .buttonStyle(PlainButtonStyle())
     }
