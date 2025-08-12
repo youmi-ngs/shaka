@@ -266,9 +266,9 @@ class WorkPostViewModel: ObservableObject {
                     let locationName = data["locationName"] as? String
                     let isActive = data["isActive"] as? Bool ?? true
                     
-                    // locationがある投稿のみ、かつアクティブなもののみ返す
-                    guard location != nil && isActive else { 
-                        print("⚠️ Skipping post \(title): location=\(location != nil), isActive=\(isActive)")
+                    // locationがある投稿のみ返す（アクティブ/非アクティブ問わず地図に表示）
+                    guard location != nil else { 
+                        print("⚠️ Skipping post \(title): no location")
                         return nil 
                     }
 

@@ -40,7 +40,7 @@ struct DiscoverView: View {
                         // ピン表示
                         ForEach(workPins) { pin in
                             Annotation(pin.post.title, coordinate: pin.coordinate) {
-                                PinView(pinType: .work)
+                                PinView(pinType: .work, isActive: pin.post.isActive)
                                     .onTapGesture {
                                         selectedWork = pin.post
                                     }
@@ -58,7 +58,7 @@ struct DiscoverView: View {
                         annotationItems: workPins
                     ) { pin in
                         MapAnnotation(coordinate: pin.coordinate) {
-                            PinView(pinType: .work)
+                            PinView(pinType: .work, isActive: pin.post.isActive)
                                 .onTapGesture {
                                     selectedWork = pin.post
                                 }
@@ -163,20 +163,29 @@ struct WorkMapPin: MapPinProtocol {
 // ピンビュー
 struct PinView: View {
     let pinType: PinType
+    let isActive: Bool
     
     var body: some View {
         VStack(spacing: 0) {
-            // ピンアイコン
-            Image(systemName: "photo.circle.fill")
-                .font(.system(size: 30))
-                .foregroundColor(.orange)
-                .background(Circle().fill(Color.white).frame(width: 36, height: 36))
-                .shadow(radius: 2)
+            // ピンアイコン - アクティブ状態に応じて変更
+            Group {
+                if isActive {
+                    Image(systemName: "photo.circle.fill")
+                        .font(.system(size: 30))
+                        .foregroundColor(.orange)
+                } else {
+                    Image(systemName: "photo.circle")
+                        .font(.system(size: 30))
+                        .foregroundColor(.gray)
+                }
+            }
+            .background(Circle().fill(Color.white).frame(width: 36, height: 36))
+            .shadow(radius: 2)
             
             // ピンの先端
             Image(systemName: "triangle.fill")
                 .font(.system(size: 10))
-                .foregroundColor(.orange)
+                .foregroundColor(isActive ? .orange : .gray)
                 .rotationEffect(.degrees(180))
                 .offset(y: -5)
         }

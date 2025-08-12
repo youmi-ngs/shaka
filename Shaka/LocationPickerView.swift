@@ -38,6 +38,7 @@ struct LocationPickerView: View {
                             .font(.system(size: 30))
                             .foregroundColor(.red)
                             .background(Circle().fill(Color.white).frame(width: 36, height: 36))
+                            .shadow(radius: 2)
                         
                         Image(systemName: "triangle.fill")
                             .font(.system(size: 10))
