@@ -30,6 +30,7 @@ struct PostWorkView: View {
     // 位置情報関連
     @State private var useCurrentLocation = false
     @State private var selectedCoordinate: CLLocationCoordinate2D?
+    @State private var showLocationPicker = false
     
     init(viewModel: WorkPostViewModel, editingPost: WorkPost? = nil) {
         self.viewModel = viewModel
@@ -150,16 +151,9 @@ struct PostWorkView: View {
                     Toggle("Add Map Location", isOn: $useCurrentLocation)
                     
                     if useCurrentLocation {
-                        NavigationLink(destination: LocationPickerView(
-                            selectedCoordinate: $selectedCoordinate,
-                            locationName: $location
-                        )
-                        .onDisappear {
-                            print("🗺 PostWorkView: LocationPicker disappeared")
-                            print("🗺 PostWorkView: selectedCoordinate is now \(String(describing: selectedCoordinate))")
-                            print("🗺 PostWorkView: location is now '\(location)'")
-                        }
-                        ) {
+                        Button(action: {
+                            showLocationPicker = true
+                        }) {
                             HStack {
                                 Image(systemName: selectedCoordinate != nil ? "mappin.circle.fill" : "mappin.circle")
                                 VStack(alignment: .leading) {
@@ -204,6 +198,14 @@ struct PostWorkView: View {
             .onAppear {
                 if let post = editingPost {
                     loadPostData(post)
+                }
+            }
+            .sheet(isPresented: $showLocationPicker) {
+                NavigationView {
+                    LocationPickerView(
+                        selectedCoordinate: $selectedCoordinate,
+                        locationName: $location
+                    )
                 }
             }
         }

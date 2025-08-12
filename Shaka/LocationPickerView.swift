@@ -13,7 +13,6 @@ struct LocationPickerView: View {
     @Binding var selectedCoordinate: CLLocationCoordinate2D?
     @Binding var locationName: String
     @Environment(\.dismiss) var dismiss
-    @Environment(\.presentationMode) var presentationMode
     @StateObject private var locationManager = LocationManager()
     
     @State private var region = MKCoordinateRegion(
@@ -206,18 +205,13 @@ struct LocationPickerView: View {
         print("🗺 LocationPicker: Setting coordinate to \(finalCoordinate)")
         print("🗺 LocationPicker: Setting location name to '\(finalLocationName)'")
         
-        // Explicitly set the binding values
-        DispatchQueue.main.async {
-            self.selectedCoordinate = finalCoordinate
-            self.locationName = finalLocationName
-            
-            print("🗺 LocationPicker: selectedCoordinate is now \(String(describing: self.selectedCoordinate))")
-            print("🗺 LocationPicker: locationName is now '\(self.locationName)'")
-            
-            // Try both dismiss methods
-            self.dismiss()
-            self.presentationMode.wrappedValue.dismiss()
-        }
+        selectedCoordinate = finalCoordinate
+        locationName = finalLocationName
+        
+        print("🗺 LocationPicker: selectedCoordinate is now \(String(describing: selectedCoordinate))")
+        print("🗺 LocationPicker: locationName is now '\(locationName)'")
+        
+        dismiss()
     }
 }
 
