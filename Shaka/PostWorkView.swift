@@ -352,7 +352,7 @@ struct PostWorkView: View {
                             isPhotoDateEnabled = true
                         }
                     case "Location":
-                        // Skip - location is now handled by locationName field
+                        break // Skip - location is now handled by locationName field
                     case "Settings":
                         cameraSettings = value
                     default:
