@@ -201,23 +201,25 @@ class WorkPostViewModel: ObservableObject {
     
     // 位置情報付きの投稿を取得
     func fetchPostsWithLocation(completion: @escaping ([WorkPost]) -> Void) {
+        // まず全てのアクティブな投稿を取得し、クライアント側でフィルタリング
         db.collection("works")
-            .whereField("location", isNotEqualTo: NSNull())
-            .whereField("isActive", isEqualTo: true)
             .order(by: "createdAt", descending: true)
             .getDocuments { snapshot, error in
                 if let error = error {
-                    print("Error fetching documents with location: \(error)")
+                    print("❌ Error fetching documents with location: \(error)")
                     completion([])
                     return
                 }
 
                 guard let snapshot = snapshot else {
+                    print("❌ No snapshot returned")
                     completion([])
                     return
                 }
+                
+                print("📍 Found \(snapshot.documents.count) total works")
 
-                let posts = snapshot.documents.compactMap { doc in
+                let posts = snapshot.documents.compactMap { doc -> WorkPost? in
                     let data = doc.data()
                     let id = doc.documentID
                     let title = data["title"] as? String ?? ""
@@ -231,6 +233,12 @@ class WorkPostViewModel: ObservableObject {
                     let location = data["location"] as? GeoPoint
                     let locationName = data["locationName"] as? String
                     let isActive = data["isActive"] as? Bool ?? true
+                    
+                    // locationがある投稿のみ、かつアクティブなもののみ返す
+                    guard location != nil && isActive else { 
+                        print("⚠️ Skipping post \(title): location=\(location != nil), isActive=\(isActive)")
+                        return nil 
+                    }
 
                     return WorkPost(
                         id: id,
@@ -247,6 +255,7 @@ class WorkPostViewModel: ObservableObject {
                     )
                 }
                 
+                print("📍 Returning \(posts.count) posts with location")
                 completion(posts)
             }
     }

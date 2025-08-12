@@ -22,50 +22,80 @@ struct DiscoverView: View {
     @State private var trackingMode: MapUserTrackingMode = .follow
     @State private var workPins: [WorkMapPin] = []
     @State private var selectedWork: WorkPost?
+    @State private var mapType: MKMapType = .standard
+    @State private var cameraPosition: MapCameraPosition = .region(MKCoordinateRegion(
+        center: CLLocationCoordinate2D(latitude: 35.6762, longitude: 139.6503),
+        span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
+    ))
     
     var body: some View {
         NavigationView {
             ZStack {
-                // 地図表示
-                Map(
-                    coordinateRegion: $region,
-                    showsUserLocation: true,
-                    userTrackingMode: $trackingMode,
-                    annotationItems: workPins
-                ) { pin in
-                    MapAnnotation(coordinate: pin.coordinate) {
-                        PinView(pinType: .work)
-                            .onTapGesture {
-                                selectedWork = pin.post
+                // 地図表示（iOS 17以降の新API）
+                if #available(iOS 17.0, *) {
+                    Map(position: $cameraPosition) {
+                        // ユーザー位置は表示しない（プライバシー対応）
+                        // UserAnnotation()
+                        
+                        // ピン表示
+                        ForEach(workPins) { pin in
+                            Annotation(pin.post.title, coordinate: pin.coordinate) {
+                                PinView(pinType: .work)
+                                    .onTapGesture {
+                                        selectedWork = pin.post
+                                    }
                             }
-                    }
-                }
-                .edgesIgnoringSafeArea(.bottom)
-                
-                // UI オーバーレイ
-                VStack {
-                    Spacer()
-                    
-                    // 現在地ボタン
-                    HStack {
-                        Spacer()
-                        Button(action: {
-                            centerOnUserLocation()
-                        }) {
-                            Image(systemName: "location.fill")
-                                .padding()
-                                .background(Color.white)
-                                .clipShape(Circle())
-                                .shadow(radius: 5)
                         }
-                        .padding()
+                    }
+                    .mapStyle(.standard(elevation: .flat))
+                    .edgesIgnoringSafeArea(.bottom)
+                } else {
+                    // iOS 16以前のフォールバック
+                    Map(
+                        coordinateRegion: $region,
+                        showsUserLocation: true,
+                        userTrackingMode: $trackingMode,
+                        annotationItems: workPins
+                    ) { pin in
+                        MapAnnotation(coordinate: pin.coordinate) {
+                            PinView(pinType: .work)
+                                .onTapGesture {
+                                    selectedWork = pin.post
+                                }
+                        }
+                    }
+                    .edgesIgnoringSafeArea(.bottom)
+                }
+                
+                // UI オーバーレイ（iOS 16以前のみ現在地ボタンを表示）
+                if #unavailable(iOS 17.0) {
+                    VStack {
+                        Spacer()
+                        
+                        // 現在地ボタン
+                        HStack {
+                            Spacer()
+                            Button(action: {
+                                centerOnUserLocation()
+                            }) {
+                                Image(systemName: "location.fill")
+                                    .padding()
+                                    .background(Color.white)
+                                    .clipShape(Circle())
+                                    .shadow(radius: 5)
+                            }
+                            .padding()
+                        }
                     }
                 }
             }
             .navigationTitle("Discover")
             .navigationBarTitleDisplayMode(.inline)
             .onAppear {
-                locationManager.requestLocationPermission()
+                // locationManager.requestLocationPermission() // 位置情報許可を求めない
+                loadPosts()
+            }
+            .refreshable {
                 loadPosts()
             }
             .sheet(item: $selectedWork) { work in
@@ -89,12 +119,19 @@ struct DiscoverView: View {
     }
     
     private func loadPosts() {
+        print("🗺 DiscoverView: Loading posts with location...")
         // 作品投稿を取得
         workViewModel.fetchPostsWithLocation { posts in
+            print("🗺 DiscoverView: Received \(posts.count) posts")
             self.workPins = posts.compactMap { post in
-                guard let coordinate = post.coordinate else { return nil }
+                guard let coordinate = post.coordinate else { 
+                    print("⚠️ Post \(post.title) has no coordinate")
+                    return nil 
+                }
+                print("📍 Adding pin for: \(post.title) at \(coordinate.latitude), \(coordinate.longitude)")
                 return WorkMapPin(post: post, coordinate: coordinate)
             }
+            print("🗺 DiscoverView: Created \(self.workPins.count) pins")
         }
     }
     

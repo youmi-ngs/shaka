@@ -146,12 +146,6 @@ struct PostWorkView: View {
                         .datePickerStyle(.compact)
                     }
                     
-                    HStack {
-                        Text("Location")
-                        TextField("e.g., Tokyo, Japan", text: $location)
-                            .multilineTextAlignment(.trailing)
-                    }
-                    
                     // 位置情報の設定
                     Toggle("Add Map Location", isOn: $useCurrentLocation)
                     
@@ -162,7 +156,14 @@ struct PostWorkView: View {
                         )) {
                             HStack {
                                 Image(systemName: selectedCoordinate != nil ? "mappin.circle.fill" : "mappin.circle")
-                                Text(selectedCoordinate != nil ? "Location: \(location.isEmpty ? "Set" : location)" : "Select Location on Map")
+                                VStack(alignment: .leading) {
+                                    Text(selectedCoordinate != nil ? "Location Set" : "Select Location on Map")
+                                    if !location.isEmpty {
+                                        Text(location)
+                                            .font(.caption)
+                                            .foregroundColor(.gray)
+                                    }
+                                }
                                 Spacer()
                                 Image(systemName: "chevron.right")
                                     .foregroundColor(.gray)
@@ -257,9 +258,7 @@ struct PostWorkView: View {
                     detailComponents.append("Date: \(formatter.string(from: date))")
                 }
                 
-                if !location.isEmpty {
-                    detailComponents.append("Location: \(location)")
-                }
+                // Location は locationName フィールドで別管理するので detail には含めない
                 
                 if !cameraSettings.isEmpty {
                     detailComponents.append("Settings: \(cameraSettings)")

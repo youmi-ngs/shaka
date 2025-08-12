@@ -98,20 +98,6 @@ struct LocationPickerView: View {
                     }
                     
                     HStack(spacing: 16) {
-                        // 現在地ボタン
-                        Button(action: {
-                            if let location = locationManager.userLocation {
-                                region.center = location.coordinate
-                                setTemporaryLocation(location.coordinate)
-                            }
-                        }) {
-                            Image(systemName: "location.fill")
-                                .padding()
-                                .background(Color.white)
-                                .clipShape(Circle())
-                                .shadow(radius: 3)
-                        }
-                        
                         // 確定ボタン
                         Button(action: {
                             confirmLocation()
@@ -141,16 +127,13 @@ struct LocationPickerView: View {
             }
         }
         .onAppear {
-            locationManager.requestLocationPermission()
+            // locationManager.requestLocationPermission() // 位置情報許可を求めない
             
             // 既に選択されている場所がある場合は表示
             if let coord = selectedCoordinate {
                 region.center = coord
                 tempCoordinate = coord
                 tempLocationName = locationName
-            } else if let userLocation = locationManager.userLocation {
-                // なければ現在地を中心に
-                region.center = userLocation.coordinate
             }
         }
     }
