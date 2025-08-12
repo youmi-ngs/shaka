@@ -54,6 +54,14 @@ struct QuestionDetailView: View {
                     .font(.body)
                     .padding(.horizontal)
                 
+                // Comments section (Private for questions)
+                CommentView(
+                    postID: post.id,
+                    postType: .question,
+                    postUserID: post.userID
+                )
+                .padding()
+                
                 Spacer(minLength: 50)
             }
             .padding(.top)
@@ -116,7 +124,10 @@ struct QuestionDetailView: View {
                 body: "This is a sample question body with detailed information about what the user wants to know.",
                 createdAt: Date(),
                 userID: "sample-user-id",
-                displayName: "Sample User"
+                displayName: "Sample User",
+                location: nil,
+                locationName: nil,
+                isActive: true
             ),
             viewModel: QuestionPostViewModel()
         )

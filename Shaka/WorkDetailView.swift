@@ -120,6 +120,14 @@ struct WorkDetailView: View {
                         .padding(.horizontal)
                 }
                 
+                // Comments section
+                CommentView(
+                    postID: post.id,
+                    postType: .work,
+                    postUserID: post.userID
+                )
+                .padding()
+                
                 Spacer(minLength: 50)
             }
             .padding(.top)
@@ -184,7 +192,10 @@ struct WorkDetailView: View {
                 imageURL: URL(string: "https://picsum.photos/400/300"),
                 createdAt: Date(),
                 userID: "sample-user-id",
-                displayName: "Sample User"
+                displayName: "Sample User",
+                location: nil,
+                locationName: nil,
+                isActive: true
             ),
             viewModel: WorkPostViewModel()
         )
