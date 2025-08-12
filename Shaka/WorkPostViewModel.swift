@@ -193,33 +193,21 @@ class WorkPostViewModel: ObservableObject {
             data["detail"] = FieldValue.delete()
         }
         
-        print("🗺 WorkPostViewModel updatePost called:")
-        print("🗺   - Received location: \(String(describing: location))")
-        print("🗺   - Received locationName: \(String(describing: locationName))")
-        print("🗺   - Post has existing location: \(String(describing: post.location))")
-        print("🗺   - Post has existing locationName: \(String(describing: post.locationName))")
-        
         // 位置情報を更新
         if let location = location {
             let geoPoint = GeoPoint(latitude: location.latitude, longitude: location.longitude)
             data["location"] = geoPoint
-            print("🗺 WorkPostViewModel: Setting location to \(geoPoint)")
         } else if post.location != nil {
             // 既存の位置情報があるが新しい位置情報がnilの場合は削除
             data["location"] = FieldValue.delete()
-            print("🗺 WorkPostViewModel: Removing location field")
         }
         
         if let locationName = locationName, !locationName.isEmpty {
             data["locationName"] = locationName
-            print("🗺 WorkPostViewModel: Setting locationName to '\(locationName)'")
         } else if post.locationName != nil {
             // 既存の位置名があるが新しい位置名がnilまたは空の場合は削除
             data["locationName"] = FieldValue.delete()
-            print("🗺 WorkPostViewModel: Removing locationName field")
         }
-        
-        print("🗺 WorkPostViewModel: Final data to update: \(data)")
         
         // 更新時もuserIDとdisplayNameを保持（変更しない）
         db.collection("works").document(post.id).updateData(data) { error in
@@ -245,8 +233,7 @@ class WorkPostViewModel: ObservableObject {
                             isActive: post.isActive
                         )
                     }
-                    // Notify other views that data has been updated
-                    NotificationCenter.default.post(name: NSNotification.Name("WorkPostUpdated"), object: nil)
+                    // Data updated - DiscoverView will refresh when sheet is dismissed
                 }
             }
         }

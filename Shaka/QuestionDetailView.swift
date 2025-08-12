@@ -54,13 +54,13 @@ struct QuestionDetailView: View {
                     .font(.body)
                     .padding(.horizontal)
                 
-                // Comments section (Private for questions)
-                CommentView(
-                    postID: post.id,
-                    postType: .question,
-                    postUserID: post.userID
-                )
-                .padding()
+                // Comments section (temporarily disabled)
+                // CommentView(
+                //     postID: post.id,
+                //     postType: .question,
+                //     postUserID: post.userID
+                // )
+                // .padding()
                 
                 Spacer(minLength: 50)
             }

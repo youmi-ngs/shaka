@@ -95,10 +95,6 @@ struct DiscoverView: View {
                 // locationManager.requestLocationPermission() // 位置情報許可を求めない
                 loadPosts()
             }
-            .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("WorkPostUpdated"))) { _ in
-                // WorkPostが更新された時に地図データを再読み込み
-                loadPosts()
-            }
             .refreshable {
                 loadPosts()
             }
@@ -106,6 +102,7 @@ struct DiscoverView: View {
                 NavigationView {
                     WorkDetailView(post: work, viewModel: workViewModel)
                 }
+                .navigationViewStyle(StackNavigationViewStyle())
                 .onDisappear {
                     // WorkDetailViewから戻ってきた時にデータを再読み込み
                     loadPosts()
