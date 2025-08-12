@@ -280,12 +280,6 @@ struct PostWorkView: View {
                     let finalLocation = useCurrentLocation ? selectedCoordinate : nil
                     let finalLocationName = location.isEmpty ? nil : location
                     
-                    print("🗺 PostWorkView: useCurrentLocation=\(useCurrentLocation)")
-                    print("🗺 PostWorkView: selectedCoordinate=\(String(describing: selectedCoordinate))")
-                    print("🗺 PostWorkView: location='\(location)'")
-                    print("🗺 PostWorkView: finalLocation=\(String(describing: finalLocation))")
-                    print("🗺 PostWorkView: finalLocationName=\(String(describing: finalLocationName))")
-                    
                     if let existingPost = editingPost {
                         // Update existing post
                         viewModel.updatePost(
@@ -345,11 +339,13 @@ struct PostWorkView: View {
                     
                     switch key {
                     case "Date":
-                        let formatter = DateFormatter()
-                        formatter.dateStyle = .medium
-                        if let date = formatter.date(from: value) {
-                            photoDate = date
-                            isPhotoDateEnabled = true
+                        DispatchQueue.main.async {
+                            let formatter = DateFormatter()
+                            formatter.dateStyle = .medium
+                            if let date = formatter.date(from: value) {
+                                self.photoDate = date
+                                self.isPhotoDateEnabled = true
+                            }
                         }
                     case "Location":
                         break // Skip - location is now handled by locationName field

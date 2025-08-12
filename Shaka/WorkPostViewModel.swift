@@ -193,24 +193,30 @@ class WorkPostViewModel: ObservableObject {
             data["detail"] = FieldValue.delete()
         }
         
-        // 位置情報を更新（nilの場合は削除）
+        // 位置情報を更新（存在する場合のみ）
         if let location = location {
             let geoPoint = GeoPoint(latitude: location.latitude, longitude: location.longitude)
             data["location"] = geoPoint
             print("🗺 WorkPostViewModel: Setting location to \(geoPoint)")
         } else {
-            // 位置情報を明示的に削除
-            data["location"] = FieldValue.delete()
-            print("🗺 WorkPostViewModel: Removing location field")
+            print("🗺 WorkPostViewModel: No location provided")
         }
         
         if let locationName = locationName {
             data["locationName"] = locationName
             print("🗺 WorkPostViewModel: Setting locationName to '\(locationName)'")
         } else {
-            // 位置名を明示的に削除
+            print("🗺 WorkPostViewModel: No locationName provided")
+        }
+        
+        // 位置情報を削除する場合の処理
+        if location == nil && post.location != nil {
+            print("🗺 WorkPostViewModel: Removing location field")
+            data["location"] = FieldValue.delete()
+        }
+        if locationName == nil && post.locationName != nil {
+            print("🗺 WorkPostViewModel: Removing locationName field") 
             data["locationName"] = FieldValue.delete()
-            print("🗺 WorkPostViewModel: Removing locationName field")
         }
         
         // 更新時もuserIDとdisplayNameを保持（変更しない）
