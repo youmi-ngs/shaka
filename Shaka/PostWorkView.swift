@@ -207,8 +207,10 @@ struct PostWorkView: View {
                         locationName: $location
                     )
                 }
+                .navigationViewStyle(StackNavigationViewStyle()) // Force stack style to avoid issues
             }
         }
+        .navigationViewStyle(StackNavigationViewStyle()) // Consistent navigation style
     }
     
     private var canSubmit: Bool {
@@ -277,9 +279,6 @@ struct PostWorkView: View {
                 await MainActor.run {
                     let finalLocation = useCurrentLocation ? selectedCoordinate : nil
                     let finalLocationName = location.isEmpty ? nil : location
-                    
-                    print("🗺 PostWorkView: Submitting with location: \(String(describing: finalLocation))")
-                    print("🗺 PostWorkView: Submitting with locationName: \(String(describing: finalLocationName))")
                     
                     if let existingPost = editingPost {
                         // Update existing post

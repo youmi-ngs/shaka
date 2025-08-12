@@ -148,7 +148,6 @@ struct LocationPickerView: View {
     
     private func setTemporaryLocation(_ coordinate: CLLocationCoordinate2D) {
         tempCoordinate = coordinate
-        print("🗺 LocationPicker: setTemporaryLocation called with \(coordinate)")
         
         // 逆ジオコーディング（座標から地名を取得）
         let geocoder = CLGeocoder()
@@ -156,7 +155,6 @@ struct LocationPickerView: View {
         
         geocoder.reverseGeocodeLocation(location) { placemarks, error in
             if let error = error {
-                print("🗺 LocationPicker: Geocoding error: \(error)")
                 tempLocationName = String(format: "%.4f, %.4f", coordinate.latitude, coordinate.longitude)
                 return
             }
@@ -176,10 +174,8 @@ struct LocationPickerView: View {
                 }
                 
                 tempLocationName = components.joined(separator: ", ")
-                print("🗺 LocationPicker: Geocoded to '\(tempLocationName)'")
             } else {
                 tempLocationName = String(format: "%.4f, %.4f", coordinate.latitude, coordinate.longitude)
-                print("🗺 LocationPicker: No placemark found, using coordinates")
             }
         }
     }
@@ -202,14 +198,8 @@ struct LocationPickerView: View {
         let finalLocationName = tempLocationName.isEmpty ? 
             (searchText.isEmpty ? "Selected Location" : searchText) : tempLocationName
         
-        print("🗺 LocationPicker: Setting coordinate to \(finalCoordinate)")
-        print("🗺 LocationPicker: Setting location name to '\(finalLocationName)'")
-        
         selectedCoordinate = finalCoordinate
         locationName = finalLocationName
-        
-        print("🗺 LocationPicker: selectedCoordinate is now \(String(describing: selectedCoordinate))")
-        print("🗺 LocationPicker: locationName is now '\(locationName)'")
         
         dismiss()
     }
