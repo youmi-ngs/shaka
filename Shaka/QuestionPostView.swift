@@ -120,6 +120,36 @@ class QuestionPostViewModel: ObservableObject {
         }
     }
     
+    func togglePostStatus(_ post: QuestionPost) {
+        let newStatus = !post.isActive
+        db.collection("questions").document(post.id).updateData([
+            "isActive": newStatus,
+            "updatedAt": Timestamp(date: Date())
+        ]) { error in
+            if let error = error {
+                print("❌ Failed to toggle question status: \(error.localizedDescription)")
+            } else {
+                print("✅ Question status toggled successfully to \(newStatus ? "active" : "inactive")")
+                // Update local array
+                DispatchQueue.main.async {
+                    if let index = self.posts.firstIndex(where: { $0.id == post.id }) {
+                        self.posts[index] = QuestionPost(
+                            id: post.id,
+                            title: post.title,
+                            body: post.body,
+                            createdAt: post.createdAt,
+                            userID: post.userID,
+                            displayName: post.displayName,
+                            location: post.location,
+                            locationName: post.locationName,
+                            isActive: newStatus
+                        )
+                    }
+                }
+            }
+        }
+    }
+    
     func updatePost(_ post: QuestionPost, title: String, body: String, location: CLLocationCoordinate2D? = nil, locationName: String? = nil) {
         var data: [String: Any] = [
             "title": title,

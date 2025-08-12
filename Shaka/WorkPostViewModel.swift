@@ -142,6 +142,38 @@ class WorkPostViewModel: ObservableObject {
         }
     }
     
+    func togglePostStatus(_ post: WorkPost) {
+        let newStatus = !post.isActive
+        db.collection("works").document(post.id).updateData([
+            "isActive": newStatus,
+            "updatedAt": Timestamp(date: Date())
+        ]) { error in
+            if let error = error {
+                print("❌ Failed to toggle post status: \(error.localizedDescription)")
+            } else {
+                print("✅ Post status toggled successfully to \(newStatus ? "active" : "inactive")")
+                // Update local array
+                DispatchQueue.main.async {
+                    if let index = self.posts.firstIndex(where: { $0.id == post.id }) {
+                        self.posts[index] = WorkPost(
+                            id: post.id,
+                            title: post.title,
+                            description: post.description,
+                            detail: post.detail,
+                            imageURL: post.imageURL,
+                            createdAt: post.createdAt,
+                            userID: post.userID,
+                            displayName: post.displayName,
+                            location: post.location,
+                            locationName: post.locationName,
+                            isActive: newStatus
+                        )
+                    }
+                }
+            }
+        }
+    }
+    
     func updatePost(_ post: WorkPost, title: String, description: String?, detail: String?, imageURL: URL?, location: CLLocationCoordinate2D? = nil, locationName: String? = nil) {
         var data: [String: Any] = [
             "title": title,
