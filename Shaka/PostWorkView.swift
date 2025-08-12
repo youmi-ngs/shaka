@@ -280,6 +280,12 @@ struct PostWorkView: View {
                     let finalLocation = useCurrentLocation ? selectedCoordinate : nil
                     let finalLocationName = location.isEmpty ? nil : location
                     
+                    print("🗺 PostWorkView: useCurrentLocation=\(useCurrentLocation)")
+                    print("🗺 PostWorkView: selectedCoordinate=\(String(describing: selectedCoordinate))")
+                    print("🗺 PostWorkView: location='\(location)'")
+                    print("🗺 PostWorkView: finalLocation=\(String(describing: finalLocation))")
+                    print("🗺 PostWorkView: finalLocationName=\(String(describing: finalLocationName))")
+                    
                     if let existingPost = editingPost {
                         // Update existing post
                         viewModel.updatePost(
@@ -346,7 +352,7 @@ struct PostWorkView: View {
                             isPhotoDateEnabled = true
                         }
                     case "Location":
-                        location = value
+                        // Skip - location is now handled by locationName field
                     case "Settings":
                         cameraSettings = value
                     default:
