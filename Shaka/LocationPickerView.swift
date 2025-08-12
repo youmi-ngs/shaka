@@ -71,7 +71,7 @@ struct LocationPickerView: View {
                     Image(systemName: "magnifyingglass")
                         .foregroundColor(.gray)
                     
-                    TextField("例: 渋谷, 新宿駅, 東京タワー", text: $searchText)
+                    TextField("e.g., Shibuya, Shinjuku Station, Tokyo Tower", text: $searchText)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                         .onSubmit {
                             searchLocation()
