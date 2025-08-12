@@ -153,8 +153,7 @@ struct LocationPickerView: View {
         let geocoder = CLGeocoder()
         let location = CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
         
-        geocoder.reverseGeocodeLocation(location) { [weak self] placemarks, error in
-            guard let self = self else { return }
+        geocoder.reverseGeocodeLocation(location) { placemarks, error in
             
             DispatchQueue.main.async {
                 if let placemark = placemarks?.first {
@@ -171,11 +170,11 @@ struct LocationPickerView: View {
                         }
                     }
                     
-                    self.tempLocationName = components.isEmpty ? 
+                    tempLocationName = components.isEmpty ? 
                         String(format: "%.4f, %.4f", coordinate.latitude, coordinate.longitude) :
                         components.joined(separator: ", ")
                 } else {
-                    self.tempLocationName = String(format: "%.4f, %.4f", coordinate.latitude, coordinate.longitude)
+                    tempLocationName = String(format: "%.4f, %.4f", coordinate.latitude, coordinate.longitude)
                 }
             }
         }
@@ -187,16 +186,15 @@ struct LocationPickerView: View {
         let geocoder = CLGeocoder()
         
         // まず元のクエリで検索
-        geocoder.geocodeAddressString(searchText) { [weak self] placemarks, error in
-            guard let self = self else { return }
+        geocoder.geocodeAddressString(searchText) { placemarks, error in
             
             if let placemarks = placemarks, !placemarks.isEmpty {
                 // 最初の結果を使用（通常最も関連性が高い）
                 if let location = placemarks.first?.location {
                     DispatchQueue.main.async {
                         withAnimation {
-                            self.region.center = location.coordinate
-                            self.setTemporaryLocation(location.coordinate)
+                            region.center = location.coordinate
+                            setTemporaryLocation(location.coordinate)
                         }
                     }
                     return
@@ -204,15 +202,14 @@ struct LocationPickerView: View {
             }
             
             // 元の検索で結果がない場合、Japanを追加して再検索
-            let fallbackQuery = "\(self.searchText), Japan"
-            geocoder.geocodeAddressString(fallbackQuery) { [weak self] placemarks, error in
-                guard let self = self else { return }
+            let fallbackQuery = "\(searchText), Japan"
+            geocoder.geocodeAddressString(fallbackQuery) { placemarks, error in
                 
                 if let location = placemarks?.first?.location {
                     DispatchQueue.main.async {
                         withAnimation {
-                            self.region.center = location.coordinate
-                            self.setTemporaryLocation(location.coordinate)
+                            region.center = location.coordinate
+                            setTemporaryLocation(location.coordinate)
                         }
                     }
                 }
