@@ -184,13 +184,29 @@ struct LocationPickerView: View {
         guard !searchText.isEmpty else { return }
         
         let geocoder = CLGeocoder()
+        let trimmedQuery = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         
-        // まず元のクエリで検索
-        geocoder.geocodeAddressString(searchText) { placemarks, error in
+        // 複数の検索戦略を試す
+        let searchQueries = [
+            trimmedQuery,
+            "\(trimmedQuery), Japan",
+            "\(trimmedQuery), Tokyo, Japan"
+        ]
+        
+        searchWithQueries(geocoder: geocoder, queries: searchQueries, index: 0)
+    }
+    
+    private func searchWithQueries(geocoder: CLGeocoder, queries: [String], index: Int) {
+        guard index < queries.count else { return }
+        
+        let query = queries[index]
+        geocoder.geocodeAddressString(query) { placemarks, error in
             
             if let placemarks = placemarks, !placemarks.isEmpty {
-                // 最初の結果を使用（通常最も関連性が高い）
-                if let location = placemarks.first?.location {
+                // 複数の結果がある場合、より適切な結果を選択
+                let bestPlacemark = selectBestPlacemark(placemarks, originalQuery: searchText)
+                
+                if let location = bestPlacemark?.location {
                     DispatchQueue.main.async {
                         withAnimation {
                             region.center = location.coordinate
@@ -201,20 +217,45 @@ struct LocationPickerView: View {
                 }
             }
             
-            // 元の検索で結果がない場合、Japanを追加して再検索
-            let fallbackQuery = "\(searchText), Japan"
-            geocoder.geocodeAddressString(fallbackQuery) { placemarks, error in
-                
-                if let location = placemarks?.first?.location {
-                    DispatchQueue.main.async {
-                        withAnimation {
-                            region.center = location.coordinate
-                            setTemporaryLocation(location.coordinate)
-                        }
+            // 現在のクエリで結果がない場合、次のクエリを試す
+            searchWithQueries(geocoder: geocoder, queries: queries, index: index + 1)
+        }
+    }
+    
+    private func selectBestPlacemark(_ placemarks: [CLPlacemark], originalQuery: String) -> CLPlacemark? {
+        let lowercaseQuery = originalQuery.lowercased()
+        
+        // 元のクエリとより関連性の高い結果を選択
+        let scored = placemarks.map { placemark -> (CLPlacemark, Int) in
+            var score = 0
+            
+            // 名前が一致するか確認
+            if let name = placemark.name?.lowercased() {
+                if name.contains(lowercaseQuery) || lowercaseQuery.contains(name) {
+                    score += 10
+                }
+            }
+            
+            // 場所の種類をチェック（観光地、ランドマークなど）
+            if let areasOfInterest = placemark.areasOfInterest {
+                for area in areasOfInterest {
+                    if area.lowercased().contains(lowercaseQuery) || lowercaseQuery.contains(area.lowercased()) {
+                        score += 15  // 観光地/ランドマークは高スコア
                     }
                 }
             }
+            
+            // 日本国内を優先
+            if placemark.country == "Japan" {
+                score += 5
+            }
+            
+            return (placemark, score)
         }
+        
+        // スコアが最も高い結果を返す。同点の場合は最初の結果
+        let sortedByScore = scored.sorted { $0.1 > $1.1 }
+        return sortedByScore.first?.0 ?? placemarks.first
     }
     
     private func confirmLocation() {
