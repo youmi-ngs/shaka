@@ -67,47 +67,11 @@ struct WorkDetailView: View {
                         )
                 }
                 
-                // Title and Status
-                HStack {
-                    Text(post.title)
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
-                    
-                    Spacer()
-                    
-                    // Status indicator
-                    if post.canEdit(currentUserID: authManager.userID) {
-                        Button(action: {
-                            viewModel.togglePostStatus(post)
-                        }) {
-                            HStack(spacing: 4) {
-                                Image(systemName: post.isActive ? "eye" : "eye.slash")
-                                    .font(.system(size: 14))
-                                Text(post.isActive ? "Active" : "Inactive")
-                                    .font(.caption)
-                            }
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(post.isActive ? Color.green.opacity(0.1) : Color.gray.opacity(0.1))
-                            .foregroundColor(post.isActive ? .green : .gray)
-                            .cornerRadius(15)
-                        }
-                    } else {
-                        // Read-only status for other users
-                        HStack(spacing: 4) {
-                            Image(systemName: post.isActive ? "eye" : "eye.slash")
-                                .font(.system(size: 14))
-                            Text(post.isActive ? "Active" : "Inactive")
-                                .font(.caption)
-                        }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(post.isActive ? Color.green.opacity(0.1) : Color.gray.opacity(0.1))
-                        .foregroundColor(post.isActive ? .green : .gray)
-                        .cornerRadius(15)
-                    }
-                }
-                .padding(.horizontal)
+                // Title
+                Text(post.title)
+                    .font(.largeTitle)
+                    .fontWeight(.bold)
+                    .padding(.horizontal)
                 
                 // Author and Date
                 VStack(alignment: .leading, spacing: 8) {

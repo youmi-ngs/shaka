@@ -245,6 +245,8 @@ class WorkPostViewModel: ObservableObject {
                             isActive: post.isActive
                         )
                     }
+                    // Notify other views that data has been updated
+                    NotificationCenter.default.post(name: NSNotification.Name("WorkPostUpdated"), object: nil)
                 }
             }
         }
