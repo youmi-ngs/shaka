@@ -15,7 +15,7 @@ struct DiscoverView: View {
     @StateObject private var workViewModel = WorkPostViewModel()
     
     @State private var region = MKCoordinateRegion(
-        center: CLLocationCoordinate2D(latitude: 35.6762, longitude: 139.6503), // 東京
+        center: CLLocationCoordinate2D(latitude: 35.6814, longitude: 139.7667), // 東京駅
         span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
     )
     @State private var showUserLocation = false
@@ -24,7 +24,7 @@ struct DiscoverView: View {
     @State private var selectedWork: WorkPost?
     @State private var mapType: MKMapType = .standard
     @State private var cameraPosition: MapCameraPosition = .region(MKCoordinateRegion(
-        center: CLLocationCoordinate2D(latitude: 35.6762, longitude: 139.6503),
+        center: CLLocationCoordinate2D(latitude: 35.6814, longitude: 139.7667),
         span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
     ))
     

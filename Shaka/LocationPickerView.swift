@@ -16,7 +16,7 @@ struct LocationPickerView: View {
     @StateObject private var locationManager = LocationManager()
     
     @State private var region = MKCoordinateRegion(
-        center: CLLocationCoordinate2D(latitude: 35.6762, longitude: 139.6503), // 東京
+        center: CLLocationCoordinate2D(latitude: 35.6814, longitude: 139.7667), // 東京駅
         span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
     )
     @State private var searchText = ""
@@ -71,7 +71,7 @@ struct LocationPickerView: View {
                     Image(systemName: "magnifyingglass")
                         .foregroundColor(.gray)
                     
-                    TextField("Search location...", text: $searchText)
+                    TextField("例: 渋谷, 新宿駅, 東京タワー", text: $searchText)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                         .onSubmit {
                             searchLocation()
@@ -182,13 +182,44 @@ struct LocationPickerView: View {
     
     private func searchLocation() {
         let geocoder = CLGeocoder()
-        geocoder.geocodeAddressString(searchText) { placemarks, error in
-            if let placemark = placemarks?.first,
-               let location = placemark.location {
-                withAnimation {
-                    region.center = location.coordinate
-                    setTemporaryLocation(location.coordinate)
+        
+        // 日本での検索精度向上のため、国を指定して検索
+        let searchQuery = searchText.contains("Japan") || searchText.contains("日本") ? 
+            searchText : "\(searchText), Japan"
+        
+        geocoder.geocodeAddressString(searchQuery) { placemarks, error in
+            if let error = error {
+                print("Geocoding error: \(error)")
+                return
+            }
+            
+            if let placemarks = placemarks, !placemarks.isEmpty {
+                // 最も関連性の高い結果を選択
+                let sortedPlacemarks = placemarks.sorted { first, second in
+                    // 日本国内の結果を優先
+                    if first.country == "Japan" && second.country != "Japan" {
+                        return true
+                    } else if first.country != "Japan" && second.country == "Japan" {
+                        return false
+                    }
+                    
+                    // より詳細な住所情報があるものを優先
+                    let firstComponents = [first.name, first.locality, first.administrativeArea].compactMap { $0 }.count
+                    let secondComponents = [second.name, second.locality, second.administrativeArea].compactMap { $0 }.count
+                    return firstComponents > secondComponents
                 }
+                
+                if let bestMatch = sortedPlacemarks.first,
+                   let location = bestMatch.location {
+                    withAnimation {
+                        region.center = location.coordinate
+                        setTemporaryLocation(location.coordinate)
+                    }
+                } else {
+                    print("No valid location found in search results")
+                }
+            } else {
+                print("No placemarks found for search query: \(searchQuery)")
             }
         }
     }
