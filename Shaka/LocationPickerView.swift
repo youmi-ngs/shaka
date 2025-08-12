@@ -71,7 +71,7 @@ struct LocationPickerView: View {
                     Image(systemName: "magnifyingglass")
                         .foregroundColor(.gray)
                     
-                    TextField("e.g., Shibuya, Shinjuku Station, Tokyo Tower", text: $searchText)
+                    TextField("Search for a place...", text: $searchText)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                         .onSubmit {
                             searchLocation()
@@ -153,73 +153,69 @@ struct LocationPickerView: View {
         let geocoder = CLGeocoder()
         let location = CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
         
-        geocoder.reverseGeocodeLocation(location) { placemarks, error in
-            if let error = error {
-                tempLocationName = String(format: "%.4f, %.4f", coordinate.latitude, coordinate.longitude)
-                return
-            }
+        geocoder.reverseGeocodeLocation(location) { [weak self] placemarks, error in
+            guard let self = self else { return }
             
-            if let placemark = placemarks?.first {
-                var components: [String] = []
-                
-                if let name = placemark.name {
-                    components.append(name)
+            DispatchQueue.main.async {
+                if let placemark = placemarks?.first {
+                    var components: [String] = []
+                    
+                    if let name = placemark.name {
+                        components.append(name)
+                    } else {
+                        if let locality = placemark.locality {
+                            components.append(locality)
+                        }
+                        if let country = placemark.country {
+                            components.append(country)
+                        }
+                    }
+                    
+                    self.tempLocationName = components.isEmpty ? 
+                        String(format: "%.4f, %.4f", coordinate.latitude, coordinate.longitude) :
+                        components.joined(separator: ", ")
                 } else {
-                    if let locality = placemark.locality {
-                        components.append(locality)
-                    }
-                    if let country = placemark.country {
-                        components.append(country)
-                    }
+                    self.tempLocationName = String(format: "%.4f, %.4f", coordinate.latitude, coordinate.longitude)
                 }
-                
-                tempLocationName = components.joined(separator: ", ")
-            } else {
-                tempLocationName = String(format: "%.4f, %.4f", coordinate.latitude, coordinate.longitude)
             }
         }
     }
     
     private func searchLocation() {
+        guard !searchText.isEmpty else { return }
+        
         let geocoder = CLGeocoder()
         
-        // 日本での検索精度向上のため、国を指定して検索
-        let searchQuery = searchText.contains("Japan") || searchText.contains("日本") ? 
-            searchText : "\(searchText), Japan"
-        
-        geocoder.geocodeAddressString(searchQuery) { placemarks, error in
-            if let error = error {
-                print("Geocoding error: \(error)")
-                return
-            }
+        // まず元のクエリで検索
+        geocoder.geocodeAddressString(searchText) { [weak self] placemarks, error in
+            guard let self = self else { return }
             
             if let placemarks = placemarks, !placemarks.isEmpty {
-                // 最も関連性の高い結果を選択
-                let sortedPlacemarks = placemarks.sorted { first, second in
-                    // 日本国内の結果を優先
-                    if first.country == "Japan" && second.country != "Japan" {
-                        return true
-                    } else if first.country != "Japan" && second.country == "Japan" {
-                        return false
+                // 最初の結果を使用（通常最も関連性が高い）
+                if let location = placemarks.first?.location {
+                    DispatchQueue.main.async {
+                        withAnimation {
+                            self.region.center = location.coordinate
+                            self.setTemporaryLocation(location.coordinate)
+                        }
                     }
-                    
-                    // より詳細な住所情報があるものを優先
-                    let firstComponents = [first.name, first.locality, first.administrativeArea].compactMap { $0 }.count
-                    let secondComponents = [second.name, second.locality, second.administrativeArea].compactMap { $0 }.count
-                    return firstComponents > secondComponents
+                    return
                 }
+            }
+            
+            // 元の検索で結果がない場合、Japanを追加して再検索
+            let fallbackQuery = "\(self.searchText), Japan"
+            geocoder.geocodeAddressString(fallbackQuery) { [weak self] placemarks, error in
+                guard let self = self else { return }
                 
-                if let bestMatch = sortedPlacemarks.first,
-                   let location = bestMatch.location {
-                    withAnimation {
-                        region.center = location.coordinate
-                        setTemporaryLocation(location.coordinate)
+                if let location = placemarks?.first?.location {
+                    DispatchQueue.main.async {
+                        withAnimation {
+                            self.region.center = location.coordinate
+                            self.setTemporaryLocation(location.coordinate)
+                        }
                     }
-                } else {
-                    print("No valid location found in search results")
                 }
-            } else {
-                print("No placemarks found for search query: \(searchQuery)")
             }
         }
     }
