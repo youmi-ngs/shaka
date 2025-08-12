@@ -48,17 +48,21 @@ struct LocationPickerView: View {
                     }
                 }
             }
-            .onTapGesture { location in
-                let coordinate = convertTap(location)
-                setTemporaryLocation(coordinate)
+            .onTapGesture { _ in
+                // 地図の中央位置を使用
+                setTemporaryLocation(region.center)
             }
             
             // 中央のピン（選択用）
-            Image(systemName: "plus.circle")
-                .font(.system(size: 30))
-                .foregroundColor(.blue)
-                .background(Circle().fill(Color.white))
-                .opacity(0.8)
+            Button(action: {
+                setTemporaryLocation(region.center)
+            }) {
+                Image(systemName: "plus.circle")
+                    .font(.system(size: 30))
+                    .foregroundColor(.blue)
+                    .background(Circle().fill(Color.white))
+                    .opacity(0.8)
+            }
             
             // UI オーバーレイ
             VStack {
@@ -112,7 +116,7 @@ struct LocationPickerView: View {
                                 .cornerRadius(25)
                                 .shadow(radius: 3)
                         }
-                        .disabled(tempCoordinate == nil)
+                        .disabled(false) // Always enable button since we can use region.center
                     }
                 }
                 .padding()
@@ -135,13 +139,11 @@ struct LocationPickerView: View {
                 region.center = coord
                 tempCoordinate = coord
                 tempLocationName = locationName
+            } else {
+                // 初期状態では地図の中央位置を一時位置として設定
+                setTemporaryLocation(region.center)
             }
         }
-    }
-    
-    private func convertTap(_ location: CGPoint) -> CLLocationCoordinate2D {
-        // タップ位置を座標に変換（中央の座標を使用）
-        return region.center
     }
     
     private func setTemporaryLocation(_ coordinate: CLLocationCoordinate2D) {
@@ -188,7 +190,8 @@ struct LocationPickerView: View {
     
     private func confirmLocation() {
         selectedCoordinate = tempCoordinate ?? region.center
-        locationName = tempLocationName.isEmpty ? searchText : tempLocationName
+        locationName = tempLocationName.isEmpty ? 
+            (searchText.isEmpty ? "Selected Location" : searchText) : tempLocationName
         dismiss()
     }
 }
