@@ -153,7 +153,13 @@ struct PostWorkView: View {
                         NavigationLink(destination: LocationPickerView(
                             selectedCoordinate: $selectedCoordinate,
                             locationName: $location
-                        )) {
+                        )
+                        .onDisappear {
+                            print("🗺 PostWorkView: LocationPicker disappeared")
+                            print("🗺 PostWorkView: selectedCoordinate is now \(String(describing: selectedCoordinate))")
+                            print("🗺 PostWorkView: location is now '\(location)'")
+                        }
+                        ) {
                             HStack {
                                 Image(systemName: selectedCoordinate != nil ? "mappin.circle.fill" : "mappin.circle")
                                 VStack(alignment: .leading) {
@@ -267,6 +273,12 @@ struct PostWorkView: View {
                 let detail = detailComponents.isEmpty ? nil : detailComponents.joined(separator: "\n")
                 
                 await MainActor.run {
+                    let finalLocation = useCurrentLocation ? selectedCoordinate : nil
+                    let finalLocationName = location.isEmpty ? nil : location
+                    
+                    print("🗺 PostWorkView: Submitting with location: \(String(describing: finalLocation))")
+                    print("🗺 PostWorkView: Submitting with locationName: \(String(describing: finalLocationName))")
+                    
                     if let existingPost = editingPost {
                         // Update existing post
                         viewModel.updatePost(
@@ -275,8 +287,8 @@ struct PostWorkView: View {
                             description: description.isEmpty ? nil : description,
                             detail: detail,
                             imageURL: imageURL,
-                            location: useCurrentLocation ? selectedCoordinate : nil,
-                            locationName: location.isEmpty ? nil : location
+                            location: finalLocation,
+                            locationName: finalLocationName
                         )
                     } else {
                         // Add new post
@@ -285,8 +297,8 @@ struct PostWorkView: View {
                             description: description.isEmpty ? nil : description,
                             detail: detail,
                             imageURL: imageURL,
-                            location: useCurrentLocation ? selectedCoordinate : nil,
-                            locationName: location.isEmpty ? nil : location
+                            location: finalLocation,
+                            locationName: finalLocationName
                         )
                     }
                     dismiss()
