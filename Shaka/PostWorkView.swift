@@ -280,6 +280,13 @@ struct PostWorkView: View {
                     let finalLocation = useCurrentLocation ? selectedCoordinate : nil
                     let finalLocationName = location.isEmpty ? nil : location
                     
+                    print("🗺 PostWorkView submitWork:")
+                    print("🗺   - useCurrentLocation: \(useCurrentLocation)")
+                    print("🗺   - selectedCoordinate: \(String(describing: selectedCoordinate))")
+                    print("🗺   - location (text): '\(location)'")
+                    print("🗺   - finalLocation: \(String(describing: finalLocation))")
+                    print("🗺   - finalLocationName: \(String(describing: finalLocationName))")
+                    
                     if let existingPost = editingPost {
                         // Update existing post
                         viewModel.updatePost(
