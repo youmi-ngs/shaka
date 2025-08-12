@@ -8,6 +8,7 @@
 import SwiftUI
 import PhotosUI
 import FirebaseStorage
+import CoreLocation
 
 struct PostWorkView: View {
     @ObservedObject var viewModel: WorkPostViewModel
@@ -25,6 +26,10 @@ struct PostWorkView: View {
     @State private var selectedImage: UIImage?
     @State private var isUploading = false
     @State private var uploadError: String?
+    
+    // 位置情報関連
+    @State private var useCurrentLocation = false
+    @State private var selectedCoordinate: CLLocationCoordinate2D?
     
     init(viewModel: WorkPostViewModel, editingPost: WorkPost? = nil) {
         self.viewModel = viewModel
@@ -147,6 +152,25 @@ struct PostWorkView: View {
                             .multilineTextAlignment(.trailing)
                     }
                     
+                    // 位置情報の設定
+                    Toggle("Add Map Location", isOn: $useCurrentLocation)
+                    
+                    if useCurrentLocation {
+                        NavigationLink(destination: LocationPickerView(
+                            selectedCoordinate: $selectedCoordinate,
+                            locationName: $location
+                        )) {
+                            HStack {
+                                Image(systemName: selectedCoordinate != nil ? "mappin.circle.fill" : "mappin.circle")
+                                Text(selectedCoordinate != nil ? "Location: \(location.isEmpty ? "Set" : location)" : "Select Location on Map")
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .foregroundColor(.gray)
+                            }
+                            .foregroundColor(selectedCoordinate != nil ? .green : .blue)
+                        }
+                    }
+                    
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Camera Settings")
                             .font(.subheadline)
@@ -251,7 +275,9 @@ struct PostWorkView: View {
                             title: title,
                             description: description.isEmpty ? nil : description,
                             detail: detail,
-                            imageURL: imageURL
+                            imageURL: imageURL,
+                            location: useCurrentLocation ? selectedCoordinate : nil,
+                            locationName: location.isEmpty ? nil : location
                         )
                     } else {
                         // Add new post
@@ -259,7 +285,9 @@ struct PostWorkView: View {
                             title: title,
                             description: description.isEmpty ? nil : description,
                             detail: detail,
-                            imageURL: imageURL
+                            imageURL: imageURL,
+                            location: useCurrentLocation ? selectedCoordinate : nil,
+                            locationName: location.isEmpty ? nil : location
                         )
                     }
                     dismiss()
@@ -278,6 +306,15 @@ struct PostWorkView: View {
     private func loadPostData(_ post: WorkPost) {
         title = post.title
         description = post.description ?? ""
+        
+        // 位置情報を読み込み
+        if let coordinate = post.coordinate {
+            selectedCoordinate = coordinate
+            useCurrentLocation = true
+        }
+        if let locationName = post.locationName {
+            location = locationName
+        }
         
         // Parse detail field
         if let detail = post.detail {

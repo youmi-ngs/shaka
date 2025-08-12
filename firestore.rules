@@ -23,7 +23,7 @@ service cloud.firestore {
       // ログインユーザーのみ作成可能
       allow create: if request.auth != null
         && request.resource.data.userID == request.auth.uid
-        && request.resource.data.keys().hasAll(['title', 'userID', 'displayName', 'createdAt']);
+        && request.resource.data.keys().hasAll(['title', 'userID', 'displayName', 'createdAt', 'isActive']);
       
       // 投稿者本人のみ更新可能
       allow update: if request.auth != null
@@ -43,7 +43,7 @@ service cloud.firestore {
       // ログインユーザーのみ作成可能
       allow create: if request.auth != null
         && request.resource.data.userID == request.auth.uid
-        && request.resource.data.keys().hasAll(['title', 'body', 'userID', 'displayName', 'createdAt']);
+        && request.resource.data.keys().hasAll(['title', 'body', 'userID', 'displayName', 'createdAt', 'isActive']);
       
       // 投稿者本人のみ更新可能
       allow update: if request.auth != null
