@@ -15,6 +15,7 @@ struct WorkDetailView: View {
     @State private var showDeleteAlert = false
     @State private var isDeleting = false
     @State private var showEditSheet = false
+    @State private var showAuthorProfile = false
     
     var body: some View {
         ScrollView {
@@ -75,14 +76,19 @@ struct WorkDetailView: View {
                 
                 // Author and Date
                 VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Image(systemName: "person.circle.fill")
-                            .foregroundColor(.blue)
-                        Text(post.displayName)
-                            .foregroundColor(.primary)
-                            .font(.subheadline)
-                            .fontWeight(.medium)
+                    Button(action: {
+                        showAuthorProfile = true
+                    }) {
+                        HStack {
+                            Image(systemName: "person.circle.fill")
+                                .foregroundColor(.blue)
+                            Text(post.displayName)
+                                .foregroundColor(.primary)
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                        }
                     }
+                    .buttonStyle(PlainButtonStyle())
                     
                     HStack {
                         Image(systemName: "calendar")
@@ -158,6 +164,11 @@ struct WorkDetailView: View {
         }
         .sheet(isPresented: $showEditSheet) {
             PostWorkView(viewModel: viewModel, editingPost: post)
+        }
+        .sheet(isPresented: $showAuthorProfile) {
+            NavigationView {
+                PublicProfileView(authorUid: post.userID)
+            }
         }
         .alert("Delete Post", isPresented: $showDeleteAlert) {
             Button("Cancel", role: .cancel) { }

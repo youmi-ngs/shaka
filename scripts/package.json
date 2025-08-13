@@ -1,0 +1,18 @@
+{
+  "name": "shaka-scripts",
+  "version": "1.0.0",
+  "description": "Shaka data migration and maintenance scripts",
+  "scripts": {
+    "backfill:dry": "node backfill-users.js --dry-run",
+    "backfill:prod": "node backfill-users.js",
+    "export:users": "firebase firestore:export gs://shaka-shakatsu-backup/$(date +%Y%m%d-%H%M%S) --only users",
+    "test": "echo 'No tests yet'"
+  },
+  "dependencies": {
+    "firebase-admin": "^11.11.0"
+  },
+  "devDependencies": {},
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

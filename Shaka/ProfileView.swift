@@ -13,6 +13,7 @@ struct ProfileView: View {
     @State private var showCopiedAlert = false
     @State private var showSignInView = false
     @State private var showFullProfileEdit = false
+    @State private var showFriendsList = false
     
     var body: some View {
         NavigationView {
@@ -69,6 +70,21 @@ struct ProfileView: View {
                     }
                 }
                 
+                // Following Section
+                Section {
+                    Button(action: {
+                        showFriendsList = true
+                    }) {
+                        HStack {
+                            Image(systemName: "person.2.fill")
+                                .foregroundColor(.blue)
+                            Text("Following")
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                }
                 
                 // User ID Section
                 Section(header: Text("Your ID")) {
@@ -222,6 +238,9 @@ struct ProfileView: View {
                             authManager.fetchUserProfile()
                         }
                 }
+            }
+            .sheet(isPresented: $showFriendsList) {
+                FriendsListView()
             }
         }
     }

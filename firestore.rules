@@ -25,15 +25,9 @@ service cloud.firestore {
     
     // ========== Users Collection ==========
     match /users/{userId} {
-      // 読み取りルール（フィールドレベル制御）
-      allow read: if 
-        // public.* は誰でも読める
-        // private.* は本人のみ
-        // stats.* は誰でも読める（推奨案）
-        resource == null || // ドキュメントが存在しない場合
-        isOwner(userId) ||  // 本人なら全て読める
-        (request.auth != null && // 認証済みユーザーはpublicとstatsを読める
-         request.resource.data.keys().hasOnly(['public', 'stats']));
+      // 読み取りルール - シンプル化
+      // 誰でも読める（プライベートデータの保護は書き込み時に行う）
+      allow read: if true;
       
       // 作成ルール（初回のユーザー作成）- 簡略化
       allow create: if isOwner(userId)
@@ -53,10 +47,10 @@ service cloud.firestore {
     
     // ========== Works Collection ==========
     match /works/{workId} {
-      // 誰でも読み取り可能
+      // 誰でも読み取り可能（オープンSNS）
       allow read: if true;
       
-      // ログインユーザーのみ作成可能（簡略化）
+      // ログインユーザーのみ作成可能
       allow create: if isAuthenticated()
         && request.resource.data.userID == request.auth.uid
         && request.resource.data.title is string
@@ -92,6 +86,44 @@ service cloud.firestore {
         // コメントの更新は禁止
         allow update: if false;
       }
+    }
+    
+    // ========== Following Collection (旧Friends) ==========
+    // 全階層を一括で許可
+    match /following/{document=**} {
+      // 読み取りは全て許可（オープンSNS）
+      allow read: if true;
+      
+      // 書き込み：認証済みユーザーのみ（一時的にシンプル化）
+      allow write: if request.auth != null;
+    }
+    
+    // フォロワーリスト（逆引き用）
+    match /followers/{userId}/users/{followerId} {
+      // 誰でも読み取り可能
+      allow read: if true;
+      
+      // システムが管理（Cloud Functions経由）
+      allow write: if false;
+    }
+    
+    // ========== Friend Requests Collection (将来用) ==========
+    match /friendRequests/{toUserId}/inbox/{fromUserId} {
+      // 読み取り：受信者本人のみ
+      allow read: if isOwner(toUserId);
+      
+      // 作成：送信者本人のみ
+      allow create: if isOwner(fromUserId)
+        && request.resource.data.keys().hasAll(['createdAt'])
+        && request.resource.data.keys().hasOnly(['createdAt', 'message'])
+        && request.resource.data.createdAt is timestamp
+        && isValidStringLength(request.resource.data.get('message', ''), 200);
+      
+      // 削除：受信者または送信者
+      allow delete: if isOwner(toUserId) || isOwner(fromUserId);
+      
+      // 更新は禁止
+      allow update: if false;
     }
     
     // ========== Questions Collection ==========

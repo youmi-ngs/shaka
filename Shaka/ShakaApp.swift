@@ -13,6 +13,7 @@ import FirebaseAuth
 @main
 struct ShakaApp: App {
     @StateObject private var authManager = AuthManager.shared
+    @StateObject private var deepLinkManager = DeepLinkManager.shared
     
     init() {
         FirebaseApp.configure()
@@ -25,6 +26,11 @@ struct ShakaApp: App {
         WindowGroup {
             ContentView()
                 .environmentObject(authManager)
+                .environmentObject(deepLinkManager)
+                .onOpenURL { url in
+                    print("📱 Received URL: \(url)")
+                    _ = deepLinkManager.handleURL(url)
+                }
                 .task {
                     // アプリ起動時に認証状態をチェック
                     // Firebase Authは自動的にセッションを復元する

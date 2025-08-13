@@ -88,6 +88,7 @@ struct WorkPostCard: View {
     let post: WorkPost
     @ObservedObject var viewModel: WorkPostViewModel
     var refreshID: UUID = UUID()
+    @State private var showAuthorProfile = false
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -166,17 +167,22 @@ struct WorkPostCard: View {
                 }
                 
                 HStack {
-                    // 作成者名
-                    HStack(spacing: 4) {
-                        Image(systemName: "person.circle.fill")
-                            .font(.caption)
-                            .foregroundColor(.blue)
-                        
-                        Text(post.displayName)
-                            .font(.caption)
-                            .foregroundColor(.primary)
-                            .fontWeight(.medium)
+                    // 作成者名（タップ可能）
+                    Button(action: {
+                        showAuthorProfile = true
+                    }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "person.circle.fill")
+                                .font(.caption)
+                                .foregroundColor(.blue)
+                            
+                            Text(post.displayName)
+                                .font(.caption)
+                                .foregroundColor(.primary)
+                                .fontWeight(.medium)
+                        }
                     }
+                    .buttonStyle(PlainButtonStyle())
                     
                     Text("•")
                         .font(.caption)
@@ -202,6 +208,11 @@ struct WorkPostCard: View {
         .background(Color(UIColor.systemBackground))
         .cornerRadius(16)
         .shadow(color: Color.black.opacity(0.08), radius: 8, x: 0, y: 2)
+        .sheet(isPresented: $showAuthorProfile) {
+            NavigationView {
+                PublicProfileView(authorUid: post.userID)
+            }
+        }
     }
 }
 

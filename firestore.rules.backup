@@ -1,0 +1,94 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ユーザープロフィール
+    match /users/{userId} {
+      // 誰でも読み取り可能（表示名を表示するため）
+      allow read: if true;
+      
+      // 自分のプロフィールのみ作成・更新可能
+      allow create: if request.auth != null && request.auth.uid == userId;
+      allow update: if request.auth != null && request.auth.uid == userId;
+      
+      // 削除は禁止
+      allow delete: if false;
+    }
+    
+    // 作品投稿
+    match /works/{workId} {
+      // 誰でも読み取り可能
+      allow read: if true;
+      
+      // ログインユーザーのみ作成可能
+      allow create: if request.auth != null
+        && request.resource.data.userID == request.auth.uid
+        && request.resource.data.keys().hasAll(['title', 'userID', 'displayName', 'createdAt', 'isActive']);
+      
+      // 投稿者本人のみ更新可能
+      allow update: if request.auth != null
+        && resource.data.userID == request.auth.uid
+        && request.resource.data.userID == resource.data.userID; // userIDは変更不可
+      
+      // 投稿者本人のみ削除可能
+      allow delete: if request.auth != null
+        && resource.data.userID == request.auth.uid;
+      
+      // 作品へのコメント
+      match /comments/{commentId} {
+        // 誰でも読み取り可能（公開コメント）
+        allow read: if true;
+        
+        // ログインユーザーのみコメント作成可能
+        allow create: if request.auth != null
+          && request.resource.data.userID == request.auth.uid
+          && request.resource.data.keys().hasAll(['text', 'userID', 'displayName', 'createdAt', 'isPrivate', 'postUserID']);
+        
+        // コメント投稿者本人のみ削除可能
+        allow delete: if request.auth != null
+          && resource.data.userID == request.auth.uid;
+        
+        // コメントの更新は禁止
+        allow update: if false;
+      }
+    }
+    
+    // 質問投稿
+    match /questions/{questionId} {
+      // 誰でも読み取り可能
+      allow read: if true;
+      
+      // ログインユーザーのみ作成可能
+      allow create: if request.auth != null
+        && request.resource.data.userID == request.auth.uid
+        && request.resource.data.keys().hasAll(['title', 'body', 'userID', 'displayName', 'createdAt', 'isActive']);
+      
+      // 投稿者本人のみ更新可能
+      allow update: if request.auth != null
+        && resource.data.userID == request.auth.uid
+        && request.resource.data.userID == resource.data.userID; // userIDは変更不可
+      
+      // 投稿者本人のみ削除可能
+      allow delete: if request.auth != null
+        && resource.data.userID == request.auth.uid;
+      
+      // 質問へのコメント（公開）
+      match /comments/{commentId} {
+        // 誰でも読み取り可能（公開コメント）
+        allow read: if true;
+        
+        // ログインユーザーのみコメント作成可能
+        allow create: if request.auth != null
+          && request.resource.data.userID == request.auth.uid
+          && request.resource.data.keys().hasAll(['text', 'userID', 'displayName', 'createdAt', 'isPrivate', 'postUserID']);
+        
+        // コメント投稿者本人のみ削除可能
+        allow delete: if request.auth != null
+          && resource.data.userID == request.auth.uid;
+        
+        // コメントの更新は禁止
+        allow update: if false;
+      }
+    }
+  }
+}
