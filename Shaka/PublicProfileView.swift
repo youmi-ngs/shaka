@@ -31,8 +31,6 @@ struct PublicProfileView: View {
                 // プロフィールヘッダー
                 profileHeader
                 
-                // Stats
-                statsSection
                 // Bio
                 if let bio = viewModel.bio, !bio.isEmpty {
                     bioSection(bio: bio)
@@ -42,6 +40,9 @@ struct PublicProfileView: View {
                 if !viewModel.links.isEmpty {
                     linksSection
                 }
+                
+                // View Posts Button
+                viewPostsButton
                 
                 // フレンド追加ボタン（自分以外の場合のみ）
                 if !viewModel.isCurrentUser {
@@ -64,20 +65,22 @@ struct PublicProfileView: View {
         }
         .alert("Sign In Required", isPresented: $showSignInAlert) {
             Button("Cancel", role: .cancel) {}
-            Button("Sign In") {
-                // AuthManagerのサインイン画面を表示 
-                // 実際にはサインイン画面を表示する処理が必要
-                // ここでは仮に匿名サインインを実行
+            Button("Sign In as Guest") {
                 Task {
                     do {
                         try await AuthManager.shared.signInAnonymously()
+                        // サインイン成功後、自動的にフォローを実行
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                            handleFriendAction()
+                        }
                     } catch {
-                        print("Sign in failed: \(error)")
+                        errorMessage = "Failed to sign in: \(error.localizedDescription)"
+                        showErrorAlert = true
                     }
                 }
             }
         } message: {
-            Text("Please sign in to follow")
+            Text("Create a free account to follow users and save your data")
         }
         .alert("Error", isPresented: $showErrorAlert) {
             Button("OK") {}
@@ -145,32 +148,6 @@ struct PublicProfileView: View {
                     .foregroundColor(.secondary)
             }
         }
-    }
-    
-    // MARK: - Stats Section
-    private var statsSection: some View {
-        HStack(spacing: 40) {
-            VStack {
-                Text("\(viewModel.worksCount)")
-                    .font(.title2)
-                    .fontWeight(.bold)
-                Text("Works")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-            
-            VStack {
-                Text("\(viewModel.questionsCount)")
-                    .font(.title2)
-                    .fontWeight(.bold)
-                Text("Questions")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-        }
-        .padding()
-        .background(Color(UIColor.secondarySystemBackground))
-        .cornerRadius(12)
     }
     
     // MARK: - Bio Section
@@ -258,6 +235,29 @@ struct PublicProfileView: View {
         .sheet(isPresented: $showShareSheet) {
             ShareSheet(items: [generateShareMessage(), generateShareURL()])
         }
+    }
+    
+    // MARK: - View Posts Button
+    private var viewPostsButton: some View {
+        NavigationLink {
+            UserPostsView(userId: authorUid, displayName: viewModel.displayName)
+        } label: {
+            HStack {
+                Image(systemName: "square.grid.2x2")
+                Text("View Posts")
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .foregroundColor(.secondary)
+                    .font(.caption)
+            }
+            .font(.headline)
+            .foregroundColor(.primary)
+            .frame(maxWidth: .infinity)
+            .padding()
+            .background(Color(UIColor.secondarySystemBackground))
+            .cornerRadius(12)
+        }
+        .buttonStyle(PlainButtonStyle())
     }
     
     // MARK: - Share My Profile Button

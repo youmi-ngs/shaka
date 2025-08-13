@@ -71,6 +71,30 @@ struct ProfileView: View {
                     }
                 }
                 
+                // My Posts Section
+                Section {
+                    ZStack {
+                        NavigationLink {
+                            if let userId = authManager.userID {
+                                UserPostsView(userId: userId, displayName: authManager.getDisplayName())
+                            }
+                        } label: {
+                            EmptyView()
+                        }
+                        .opacity(0)
+                        
+                        HStack {
+                            Image(systemName: "square.grid.2x2")
+                                .foregroundColor(.blue)
+                                .frame(width: 30, alignment: .center)
+                            Text("My Posts")
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                }
+                
                 // Following/Followers Section
                 Section {
                     // Following
