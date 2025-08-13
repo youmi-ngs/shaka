@@ -301,10 +301,13 @@ class AuthManager: ObservableObject {
         guard let uid = userID else { return }
         
         let defaultName = "User_\(String(uid.prefix(6)))"
+        // 新しい構造に合わせてpublicフィールドに配置
         let data: [String: Any] = [
-            "displayName": defaultName,
-            "createdAt": Timestamp(date: Date()),
-            "updatedAt": Timestamp(date: Date())
+            "public": [
+                "displayName": defaultName,
+                "createdAt": Timestamp(date: Date()),
+                "updatedAt": Timestamp(date: Date())
+            ]
         ]
         
         db.collection("users").document(uid).setData(data) { [weak self] error in
