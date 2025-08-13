@@ -260,6 +260,17 @@ struct ProfileView: View {
                             .foregroundColor(.orange)
                     }
                     .help("Creates a fresh anonymous user for testing")
+                    
+                    Button(action: {
+                        // オンボーディングフラグをリセット
+                        UserDefaults.standard.removeObject(forKey: "hasCompletedOnboarding")
+                        authManager.signOut()
+                        // アプリを再起動する必要があることを通知
+                        print("⚠️ Please restart the app to see onboarding")
+                    }) {
+                        Text("Reset Onboarding")
+                            .foregroundColor(.red)
+                    }
                 }
                 #endif
                 

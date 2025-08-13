@@ -14,40 +14,48 @@ import FirebaseAuth
 struct ShakaApp: App {
     @StateObject private var authManager = AuthManager.shared
     @StateObject private var deepLinkManager = DeepLinkManager.shared
+    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
     
     init() {
         FirebaseApp.configure()
         let db = Firestore.firestore()
         print("🔥 Firebase configured")
         print("📚 Firestore instance:", db)
+        
+        // 既存ユーザーのマイグレーション（アップデート後の初回起動対応）
+        if Auth.auth().currentUser != nil && !UserDefaults.standard.bool(forKey: "hasCompletedOnboarding") {
+            // 既にログイン済みのユーザーは自動的にオンボーディング完了とする
+            UserDefaults.standard.set(true, forKey: "hasCompletedOnboarding")
+            print("📱 Migrated existing user - skipping onboarding")
+        }
     }
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .environmentObject(authManager)
-                .environmentObject(deepLinkManager)
-                .onOpenURL { url in
-                    print("📱 Received URL: \(url)")
-                    _ = deepLinkManager.handleURL(url)
-                }
-                .task {
-                    // アプリ起動時に認証状態をチェック
-                    // Firebase Authは自動的にセッションを復元する
-                    if let currentUser = Auth.auth().currentUser {
-                        print("✅ Session restored for user: \(currentUser.uid)")
-                        print("   Anonymous: \(currentUser.isAnonymous)")
-                        print("   Providers: \(currentUser.providerData.map { $0.providerID })")
-                    } else {
-                        // セッションがない場合のみ匿名ログイン
-                        print("📱 No existing session, creating anonymous user")
-                        do {
-                            try await authManager.signInAnonymously()
-                        } catch {
-                            print("❌ Failed to sign in anonymously: \(error)")
+            Group {
+                // オンボーディング完了済みの場合のみContentViewを表示
+                if hasCompletedOnboarding {
+                    ContentView()
+                        .environmentObject(authManager)
+                        .environmentObject(deepLinkManager)
+                        .onOpenURL { url in
+                            print("📱 Received URL: \(url)")
+                            _ = deepLinkManager.handleURL(url)
                         }
-                    }
+                } else {
+                    // 初回起動時、またはフラグがリセットされた場合はオンボーディング画面を表示
+                    OnboardingView()
+                        .environmentObject(authManager)
                 }
+            }
+            .task {
+                // セッション復元のチェックのみ行う（自動サインインはしない）
+                if let currentUser = Auth.auth().currentUser {
+                    print("✅ Session restored for user: \(currentUser.uid)")
+                    print("   Anonymous: \(currentUser.isAnonymous)")
+                    print("   Providers: \(currentUser.providerData.map { $0.providerID })")
+                }
+            }
         }
     }
 }
