@@ -41,8 +41,8 @@ service cloud.firestore {
         && request.resource.data.public.displayName.size() > 0
         && request.resource.data.public.displayName.size() <= 50;
       
-      // 削除は禁止
-      allow delete: if false;
+      // 削除は本人のみ可能（アカウント削除時）
+      allow delete: if isOwner(userId);
     }
     
     // ========== Works Collection ==========
@@ -110,10 +110,15 @@ service cloud.firestore {
         && request.resource.data.keys().hasAll(['createdAt', 'uid']);
       
       allow delete: if isAuthenticated() 
-        && request.auth.uid == followerId;
+        && (request.auth.uid == followerId || request.auth.uid == userId);
       
       // 更新は禁止
       allow update: if false;
+    }
+    
+    // フォロワーコレクションのドキュメント自体の削除（アカウント削除時）
+    match /followers/{userId} {
+      allow delete: if isOwner(userId);
     }
     
     // ========== Friend Requests Collection (将来用) ==========

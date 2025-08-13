@@ -374,43 +374,106 @@ class AuthManager: ObservableObject {
         }
         
         let uid = user.uid
+        print("🗑️ Starting account deletion for user: \(uid)")
         
-        // 1. Firestoreからユーザーデータを削除
-        // ユーザープロフィール
+        // 1. ユーザーの投稿を削除
+        print("📝 Deleting user's posts...")
+        
+        // Works削除（コメントも含む）
+        let worksSnapshot = try await db.collection("works").whereField("userID", isEqualTo: uid).getDocuments()
+        print("  Found \(worksSnapshot.documents.count) works to delete")
+        for doc in worksSnapshot.documents {
+            // まず投稿のコメントを削除
+            let commentsSnapshot = try await doc.reference.collection("comments").getDocuments()
+            for comment in commentsSnapshot.documents {
+                try await comment.reference.delete()
+            }
+            // 投稿自体を削除
+            try await doc.reference.delete()
+        }
+        
+        // Questions削除（コメントも含む）
+        let questionsSnapshot = try await db.collection("questions").whereField("userID", isEqualTo: uid).getDocuments()
+        print("  Found \(questionsSnapshot.documents.count) questions to delete")
+        for doc in questionsSnapshot.documents {
+            // まず質問のコメントを削除
+            let commentsSnapshot = try await doc.reference.collection("comments").getDocuments()
+            for comment in commentsSnapshot.documents {
+                try await comment.reference.delete()
+            }
+            // 質問自体を削除
+            try await doc.reference.delete()
+        }
+        
+        // 2. 他のユーザーの投稿に対するコメントを削除
+        print("💬 Deleting user's comments on other posts...")
+        
+        // 全てのWorksから自分のコメントを探して削除
+        let allWorksSnapshot = try await db.collection("works").getDocuments()
+        for work in allWorksSnapshot.documents {
+            let userCommentsSnapshot = try await work.reference.collection("comments")
+                .whereField("userID", isEqualTo: uid)
+                .getDocuments()
+            for comment in userCommentsSnapshot.documents {
+                try await comment.reference.delete()
+            }
+        }
+        
+        // 全てのQuestionsから自分のコメントを探して削除
+        let allQuestionsSnapshot = try await db.collection("questions").getDocuments()
+        for question in allQuestionsSnapshot.documents {
+            let userCommentsSnapshot = try await question.reference.collection("comments")
+                .whereField("userID", isEqualTo: uid)
+                .getDocuments()
+            for comment in userCommentsSnapshot.documents {
+                try await comment.reference.delete()
+            }
+        }
+        
+        // 3. フォロー関係を削除
+        print("👥 Removing follow relationships...")
+        
+        // フォロー中のユーザーから自分を削除
+        let followingSnapshot = try await db.collection("following").document(uid).collection("users").getDocuments()
+        print("  Unfollowing \(followingSnapshot.documents.count) users")
+        for doc in followingSnapshot.documents {
+            let followedUserId = doc.documentID
+            // 相手のフォロワーリストから自分を削除
+            try await db.collection("followers").document(followedUserId).collection("users").document(uid).delete()
+            // 自分のフォローリストから削除
+            try await doc.reference.delete()
+        }
+        
+        // フォロワーから自分へのフォローを削除
+        let followersSnapshot = try await db.collection("followers").document(uid).collection("users").getDocuments()
+        print("  Removing \(followersSnapshot.documents.count) followers")
+        for doc in followersSnapshot.documents {
+            let followerUserId = doc.documentID
+            // フォロワーのフォローリストから自分を削除
+            try await db.collection("following").document(followerUserId).collection("users").document(uid).delete()
+            // 自分のフォロワーリストから削除
+            try await doc.reference.delete()
+        }
+        
+        // フォロー関係のルートドキュメントを削除
+        try? await db.collection("following").document(uid).delete()
+        try? await db.collection("followers").document(uid).delete()
+        
+        // 4. ユーザープロフィールを削除
+        print("👤 Deleting user profile...")
         try await db.collection("users").document(uid).delete()
         
-        // フォロー関係
-        let followingSnapshot = try await db.collection("following").document(uid).collection("users").getDocuments()
-        for doc in followingSnapshot.documents {
-            try await doc.reference.delete()
-        }
-        try await db.collection("following").document(uid).delete()
-        
-        // フォロワー関係
-        let followersSnapshot = try await db.collection("followers").document(uid).collection("users").getDocuments()
-        for doc in followersSnapshot.documents {
-            try await doc.reference.delete()
-        }
-        try await db.collection("followers").document(uid).delete()
-        
-        // 2. ユーザーの投稿を削除または匿名化（ポリシーに応じて選択）
-        // ここでは削除する実装
-        let worksSnapshot = try await db.collection("works").whereField("userID", isEqualTo: uid).getDocuments()
-        for doc in worksSnapshot.documents {
-            try await doc.reference.delete()
-        }
-        
-        let questionsSnapshot = try await db.collection("questions").whereField("userID", isEqualTo: uid).getDocuments()
-        for doc in questionsSnapshot.documents {
-            try await doc.reference.delete()
-        }
-        
-        // 3. Firebase Authenticationからアカウントを削除
+        // 5. Firebase Authenticationからアカウントを削除
+        print("🔐 Deleting authentication account...")
         try await user.delete()
         
-        // 4. ローカルデータをクリア
-        UserDefaults.standard.removeObject(forKey: "hasCompletedOnboarding")
+        // 6. ローカルデータをクリア
+        print("📱 Clearing local data...")
+        await MainActor.run {
+            UserDefaults.standard.set(false, forKey: "hasCompletedOnboarding")
+            UserDefaults.standard.synchronize()
+        }
         
-        print("✅ Account deleted successfully")
+        print("✅ Account and all associated data deleted successfully")
     }
 }

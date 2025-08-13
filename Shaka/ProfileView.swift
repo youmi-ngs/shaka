@@ -256,7 +256,9 @@ struct ProfileView: View {
                             showUnlinkAppleAlert = true
                         }) {
                             HStack {
-                                Image(systemName: "link.badge.minus")
+                                Image(systemName: "link.circle.fill")
+                                    .symbolRenderingMode(.hierarchical)
+                                    .foregroundColor(.orange)
                                 Text("Unlink Apple ID")
                                     .foregroundColor(.orange)
                             }
@@ -268,7 +270,8 @@ struct ProfileView: View {
                         showDeleteAccountAlert = true
                     }) {
                         HStack {
-                            Image(systemName: "trash")
+                            Image(systemName: "trash.fill")
+                                .foregroundColor(.red)
                             Text("Delete Account")
                                 .foregroundColor(.red)
                         }
@@ -300,6 +303,17 @@ struct ProfileView: View {
                     }) {
                         Text("Reset Onboarding")
                             .foregroundColor(.red)
+                    }
+                    
+                    // テスト専用：安全な削除テスト
+                    if let uid = authManager.userID, uid.starts(with: "TEST_") {
+                        Button(action: {
+                            showDeleteAccountAlert = true
+                        }) {
+                            Text("⚠️ Delete TEST Account")
+                                .foregroundColor(.red)
+                                .bold()
+                        }
                     }
                 }
                 #endif
