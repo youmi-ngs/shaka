@@ -11,12 +11,12 @@ import FirebaseAuth
 struct PublicProfileView: View {
     let authorUid: String
     @StateObject private var viewModel: PublicProfileViewModel
-    @State private var showSignInAlert = false
     @State private var showErrorAlert = false
     @State private var errorMessage = ""
     @State private var isAddingFriend = false
     @State private var showShareSheet = false
     @State private var showUnfollowAlert = false
+    @State private var showAnonymousWarning = false
     @Environment(\.dismiss) private var dismiss
     
     init(authorUid: String) {
@@ -63,25 +63,6 @@ struct PublicProfileView: View {
             print("  Is loading: \(viewModel.isLoading)")
             viewModel.fetchProfile()
         }
-        .alert("Sign In Required", isPresented: $showSignInAlert) {
-            Button("Cancel", role: .cancel) {}
-            Button("Sign In as Guest") {
-                Task {
-                    do {
-                        try await AuthManager.shared.signInAnonymously()
-                        // サインイン成功後、自動的にフォローを実行
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                            handleFriendAction()
-                        }
-                    } catch {
-                        errorMessage = "Failed to sign in: \(error.localizedDescription)"
-                        showErrorAlert = true
-                    }
-                }
-            }
-        } message: {
-            Text("Create a free account to follow users and save your data")
-        }
         .alert("Error", isPresented: $showErrorAlert) {
             Button("OK") {}
         } message: {
@@ -94,6 +75,18 @@ struct PublicProfileView: View {
             }
         } message: {
             Text("Are you sure you want to unfollow \(viewModel.displayName)?")
+        }
+        .alert("Guest Account Warning", isPresented: $showAnonymousWarning) {
+            Button("Cancel", role: .cancel) {}
+            Button("Continue Anyway") {
+                performFollow()
+            }
+            Button("Protect My Account") {
+                // ProfileViewに遷移してApple ID連携を促す
+                dismiss()
+            }
+        } message: {
+            Text("You're using a guest account. Your data might be lost if the app is deleted. Link Apple ID to save your account.")
         }
         .overlay {
             if viewModel.isLoading {
@@ -298,28 +291,32 @@ struct PublicProfileView: View {
     }
     
     private func handleFriendAction() {
-        // 未ログインチェック
-        guard Auth.auth().currentUser != nil else {
-            showSignInAlert = true
-            return
-        }
+        let currentUser = Auth.auth().currentUser
         
         // フォロー中の場合はアンフォロー確認
         if viewModel.isFriend {
             showUnfollowAlert = true
         } else {
-            // フォローする
-            isAddingFriend = true
-            viewModel.addFriend { result in
-                isAddingFriend = false
-                switch result {
-                case .success:
-                    // 成功時は特に何もしない（UIは自動更新される）
-                    break
-                case .failure(let error):
-                    errorMessage = error.localizedDescription
-                    showErrorAlert = true
-                }
+            // 匿名ユーザーの場合は警告を表示
+            if currentUser?.isAnonymous == true && !viewModel.isFriend {
+                showAnonymousWarning = true
+            } else {
+                performFollow()
+            }
+        }
+    }
+    
+    private func performFollow() {
+        isAddingFriend = true
+        viewModel.addFriend { result in
+            isAddingFriend = false
+            switch result {
+            case .success:
+                // 成功時は特に何もしない（UIは自動更新される）
+                break
+            case .failure(let error):
+                errorMessage = error.localizedDescription
+                showErrorAlert = true
             }
         }
     }
