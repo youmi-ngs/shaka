@@ -365,8 +365,6 @@ struct ProfileView: View {
                 try await authManager.unlinkAppleID()
                 await MainActor.run {
                     isProcessing = false
-                    // オプション: 成功アラートを表示
-                    showCopiedAlert = true
                 }
             } catch {
                 await MainActor.run {

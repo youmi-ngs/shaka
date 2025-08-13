@@ -360,12 +360,11 @@ class AuthManager: ObservableObject {
         // Apple IDプロバイダーを解除
         try await user.unlink(fromProvider: "apple.com")
         
-        // 連携状態を更新
-        await MainActor.run {
-            self.isLinkedWithApple = false
-        }
+        // 連携状態を再チェック
+        checkLinkedProviders()
         
         print("✅ Apple ID unlinked successfully")
+        print("🔗 Remaining providers: \(user.providerData.map { $0.providerID })")
     }
     
     /// アカウントを完全に削除
