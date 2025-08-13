@@ -93,6 +93,12 @@ struct OnboardingView: View {
                         case .success(let authResult):
                             handleAppleSignIn(authResult)
                         case .failure(let error):
+                            // キャンセルの場合はエラーを表示しない
+                            if let authError = error as NSError?,
+                               authError.code == 1001 { // ASAuthorizationError.canceled
+                                print("User cancelled Apple Sign In")
+                                return
+                            }
                             errorMessage = error.localizedDescription
                             showError = true
                         }

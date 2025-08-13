@@ -23,10 +23,15 @@ struct ShakaApp: App {
         print("📚 Firestore instance:", db)
         
         // 既存ユーザーのマイグレーション（アップデート後の初回起動対応）
-        if Auth.auth().currentUser != nil && !UserDefaults.standard.bool(forKey: "hasCompletedOnboarding") {
-            // 既にログイン済みのユーザーは自動的にオンボーディング完了とする
-            UserDefaults.standard.set(true, forKey: "hasCompletedOnboarding")
-            print("📱 Migrated existing user - skipping onboarding")
+        // 一度だけ実行するためのフラグ
+        if !UserDefaults.standard.bool(forKey: "hasPerformedOnboardingMigration") {
+            if Auth.auth().currentUser != nil {
+                // 既にログイン済みのユーザーは自動的にオンボーディング完了とする
+                UserDefaults.standard.set(true, forKey: "hasCompletedOnboarding")
+                print("📱 Migrated existing user - skipping onboarding")
+            }
+            // マイグレーション完了フラグを設定
+            UserDefaults.standard.set(true, forKey: "hasPerformedOnboardingMigration")
         }
     }
 
