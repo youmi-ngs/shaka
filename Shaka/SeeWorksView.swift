@@ -10,6 +10,7 @@ import SwiftUI
 struct SeeWorksView: View {
     @StateObject private var viewModel = WorkPostViewModel()
     @State private var showPostWork = false
+    @State private var refreshID = UUID()
     
     var body: some View {
         NavigationView {
@@ -18,7 +19,7 @@ struct SeeWorksView: View {
                     VStack(spacing: 24) {
                         ForEach(Array(viewModel.posts.enumerated()), id: \.element.id) { index, post in
                             NavigationLink(destination: WorkDetailView(post: post, viewModel: viewModel)) {
-                                WorkPostCard(post: post, viewModel: viewModel)
+                                WorkPostCard(post: post, viewModel: viewModel, refreshID: refreshID)
                             }
                             .buttonStyle(PlainButtonStyle())
                             .padding(.horizontal)
@@ -72,6 +73,8 @@ struct SeeWorksView: View {
         // メインスレッドでfetchを実行
         await MainActor.run {
             viewModel.fetchPosts()
+            // 画像の再読み込みを強制
+            refreshID = UUID()
         }
         
         print("✅ Posts refreshed - Total: \(viewModel.posts.count)")
@@ -84,6 +87,7 @@ struct SeeWorksView: View {
 struct WorkPostCard: View {
     let post: WorkPost
     @ObservedObject var viewModel: WorkPostViewModel
+    var refreshID: UUID = UUID()
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -131,6 +135,7 @@ struct WorkPostCard: View {
                         EmptyView()
                     }
                 }
+                .id("\(post.id)_\(refreshID)")
             } else {
                 RoundedRectangle(cornerRadius: 12)
                     .fill(Color.gray.opacity(0.1))
@@ -207,7 +212,7 @@ struct WorkPostCardWithLink: View {
     
     var body: some View {
         NavigationLink(destination: WorkDetailView(post: post, viewModel: viewModel)) {
-            WorkPostCard(post: post, viewModel: viewModel)
+            WorkPostCard(post: post, viewModel: viewModel, refreshID: UUID())
         }
         .buttonStyle(PlainButtonStyle())
     }
