@@ -14,6 +14,7 @@ struct ProfileView: View {
     @State private var showSignInView = false
     @State private var showFullProfileEdit = false
     @State private var showFriendsList = false
+    @State private var selectedTab = 0
     
     var body: some View {
         NavigationView {
@@ -70,15 +71,34 @@ struct ProfileView: View {
                     }
                 }
                 
-                // Following Section
+                // Following/Followers Section
                 Section {
+                    // Following
                     Button(action: {
+                        selectedTab = 0
                         showFriendsList = true
                     }) {
                         HStack {
                             Image(systemName: "person.2.fill")
                                 .foregroundColor(.blue)
+                                .frame(width: 30, alignment: .center)
                             Text("Following")
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    
+                    // Followers
+                    Button(action: {
+                        selectedTab = 1
+                        showFriendsList = true
+                    }) {
+                        HStack {
+                            Image(systemName: "person.3.fill")
+                                .foregroundColor(.blue)
+                                .frame(width: 30, alignment: .center)
+                            Text("Followers")
                             Spacer()
                             Image(systemName: "chevron.right")
                                 .foregroundColor(.secondary)
@@ -240,7 +260,7 @@ struct ProfileView: View {
                 }
             }
             .sheet(isPresented: $showFriendsList) {
-                FriendsListView()
+                FollowTabView(initialTab: selectedTab)
             }
         }
     }

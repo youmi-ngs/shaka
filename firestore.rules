@@ -103,8 +103,17 @@ service cloud.firestore {
       // 誰でも読み取り可能
       allow read: if true;
       
-      // システムが管理（Cloud Functions経由）
-      allow write: if false;
+      // フォロワー本人のみ追加・削除可能
+      allow create: if isAuthenticated() 
+        && request.auth.uid == followerId
+        && request.resource.data.uid == followerId
+        && request.resource.data.keys().hasAll(['createdAt', 'uid']);
+      
+      allow delete: if isAuthenticated() 
+        && request.auth.uid == followerId;
+      
+      // 更新は禁止
+      allow update: if false;
     }
     
     // ========== Friend Requests Collection (将来用) ==========

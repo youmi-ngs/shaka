@@ -118,11 +118,6 @@ struct FriendsListView: View {
                         .foregroundColor(.secondary)
                         .lineLimit(2)
                 }
-                
-                // 追加日
-                Text("Since: \(friend.createdAt.formatted(date: .abbreviated, time: .omitted))")
-                    .font(.caption2)
-                    .foregroundColor(Color.secondary.opacity(0.6))
             }
             
             Spacer()

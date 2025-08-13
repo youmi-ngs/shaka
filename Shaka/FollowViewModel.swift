@@ -26,38 +26,24 @@ class FollowViewModel: ObservableObject {
     
     // MARK: - フォロー
     func followUser(targetUid: String, completion: @escaping (Result<Void, Error>) -> Void) {
-        // 認証状態の詳細ログ
-        if let user = Auth.auth().currentUser {
-            print("🔐 Auth Status:")
-            print("  UID: \(user.uid)")
-            print("  Is Anonymous: \(user.isAnonymous)")
-            print("  Provider IDs: \(user.providerData.map { $0.providerID })")
-        } else {
-            print("❌ No authenticated user")
-        }
-        
         guard let currentUid = Auth.auth().currentUser?.uid else {
-            completion(.failure(NSError(domain: "FollowViewModel", code: 401, userInfo: [NSLocalizedDescriptionKey: "ログインが必要です"])))
+            completion(.failure(NSError(domain: "FollowViewModel", code: 401, userInfo: [NSLocalizedDescriptionKey: "Please sign in to follow"])))
             return
         }
         
         // 自分自身はフォローできない
         guard currentUid != targetUid else {
-            completion(.failure(NSError(domain: "FollowViewModel", code: 400, userInfo: [NSLocalizedDescriptionKey: "自分自身をフォローすることはできません"])))
+            completion(.failure(NSError(domain: "FollowViewModel", code: 400, userInfo: [NSLocalizedDescriptionKey: "Cannot follow yourself"])))
             return
         }
         
         let followingRef = db.collection("following").document(currentUid).collection("users").document(targetUid)
-        
-        print("🔍 Checking follow status at path: following/\(currentUid)/users/\(targetUid)")
+        let followersRef = db.collection("followers").document(targetUid).collection("users").document(currentUid)
         
         // 既にフォローしているかチェック
         followingRef.getDocument { [weak self] snapshot, error in
             if let error = error {
                 print("❌ Error checking follow status: \(error.localizedDescription)")
-                print("  Error code: \((error as NSError).code)")
-                print("  Current UID: \(currentUid)")
-                print("  Target UID: \(targetUid)")
                 completion(.failure(error))
                 return
             }
@@ -68,21 +54,30 @@ class FollowViewModel: ObservableObject {
                 return
             }
             
-            // フォロー実行（シンプル版：まずfollowingのみ）
-            print("🔍 Writing to path: following/\(currentUid)/users/\(targetUid)")
-            print("  Current user: \(Auth.auth().currentUser?.uid ?? "nil")")
+            // バッチ書き込みで両方同時に更新
+            let batch = self?.db.batch()
             
-            followingRef.setData([
+            // 1. following コレクションに追加
+            batch?.setData([
                 "createdAt": FieldValue.serverTimestamp(),
                 "uid": targetUid
-            ]) { error in
+            ], forDocument: followingRef)
+            
+            // 2. followers コレクションに追加
+            batch?.setData([
+                "createdAt": FieldValue.serverTimestamp(),
+                "uid": currentUid
+            ], forDocument: followersRef)
+            
+            // バッチコミット
+            batch?.commit { error in
                 if let error = error {
                     print("❌ Error following user: \(error.localizedDescription)")
-                    print("  Error code: \((error as NSError).code)")
-                    print("  Error domain: \((error as NSError).domain)")
                     completion(.failure(error))
                 } else {
-                    print("✅ Followed user: \(targetUid)")
+                    print("✅ Successfully followed user: \(targetUid)")
+                    print("  - Added to following/\(currentUid)/users/\(targetUid)")
+                    print("  - Added to followers/\(targetUid)/users/\(currentUid)")
                     completion(.success(()))
                 }
             }
@@ -96,13 +91,27 @@ class FollowViewModel: ObservableObject {
             return
         }
         
-        // フォローリストから削除（シンプル版）
         let followingRef = db.collection("following").document(currentUid).collection("users").document(targetUid)
-        followingRef.delete { error in
+        let followersRef = db.collection("followers").document(targetUid).collection("users").document(currentUid)
+        
+        // バッチ削除で両方同時に削除
+        let batch = db.batch()
+        
+        // 1. following コレクションから削除
+        batch.deleteDocument(followingRef)
+        
+        // 2. followers コレクションから削除
+        batch.deleteDocument(followersRef)
+        
+        // バッチコミット
+        batch.commit { error in
             if let error = error {
+                print("❌ Error unfollowing user: \(error.localizedDescription)")
                 completion(.failure(error))
             } else {
-                print("✅ Unfollowed user: \(targetUid)")
+                print("✅ Successfully unfollowed user: \(targetUid)")
+                print("  - Removed from following/\(currentUid)/users/\(targetUid)")
+                print("  - Removed from followers/\(targetUid)/users/\(currentUid)")
                 completion(.success(()))
             }
         }
