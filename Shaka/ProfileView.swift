@@ -15,6 +15,9 @@ struct ProfileView: View {
     @State private var showFullProfileEdit = false
     @State private var showFriendsList = false
     @State private var selectedTab = 0
+    @State private var showUnlinkAppleAlert = false
+    @State private var showDeleteAccountAlert = false
+    @State private var isProcessing = false
     
     var body: some View {
         NavigationView {
@@ -245,6 +248,33 @@ struct ProfileView: View {
                     }
                 }
                 
+                // Account Management Section
+                Section(header: Text("Account Management")) {
+                    // Apple ID連携解除（Apple IDでサインインしている場合のみ）
+                    if authManager.isLinkedWithApple {
+                        Button(action: {
+                            showUnlinkAppleAlert = true
+                        }) {
+                            HStack {
+                                Image(systemName: "link.badge.minus")
+                                Text("Unlink Apple ID")
+                                    .foregroundColor(.orange)
+                            }
+                        }
+                    }
+                    
+                    // アカウント削除
+                    Button(action: {
+                        showDeleteAccountAlert = true
+                    }) {
+                        HStack {
+                            Image(systemName: "trash")
+                            Text("Delete Account")
+                                .foregroundColor(.red)
+                        }
+                    }
+                }
+                
                 // Debug Section (開発時のみ)
                 #if DEBUG
                 Section(header: Text("Debug - Testing Only")) {
@@ -296,6 +326,71 @@ struct ProfileView: View {
             }
             .sheet(isPresented: $showFriendsList) {
                 FollowTabView(initialTab: selectedTab)
+            }
+            .alert("Unlink Apple ID", isPresented: $showUnlinkAppleAlert) {
+                Button("Cancel", role: .cancel) {}
+                Button("Unlink", role: .destructive) {
+                    handleUnlinkApple()
+                }
+            } message: {
+                Text("Are you sure you want to unlink your Apple ID? Your account will become a guest account.")
+            }
+            .alert("Delete Account", isPresented: $showDeleteAccountAlert) {
+                Button("Cancel", role: .cancel) {}
+                Button("Delete", role: .destructive) {
+                    handleDeleteAccount()
+                }
+            } message: {
+                Text("Are you sure you want to delete your account? This action cannot be undone. All your data will be permanently deleted.")
+            }
+            .disabled(isProcessing)
+            .overlay {
+                if isProcessing {
+                    Color.black.opacity(0.5)
+                        .ignoresSafeArea()
+                    ProgressView("Processing...")
+                        .padding()
+                        .background(Color(UIColor.systemBackground))
+                        .cornerRadius(12)
+                }
+            }
+        }
+    }
+    
+    // MARK: - Account Management Actions
+    private func handleUnlinkApple() {
+        isProcessing = true
+        Task {
+            do {
+                try await authManager.unlinkAppleID()
+                await MainActor.run {
+                    isProcessing = false
+                    // オプション: 成功アラートを表示
+                    showCopiedAlert = true
+                }
+            } catch {
+                await MainActor.run {
+                    isProcessing = false
+                    // エラー処理（必要に応じて別のアラートを表示）
+                    print("❌ Failed to unlink Apple ID: \(error)")
+                }
+            }
+        }
+    }
+    
+    private func handleDeleteAccount() {
+        isProcessing = true
+        Task {
+            do {
+                try await authManager.deleteAccount()
+                // アカウント削除成功後、アプリはAuthManagerによって自動的にサインアウト状態になる
+                // OnboardingViewが表示される
+            } catch {
+                await MainActor.run {
+                    isProcessing = false
+                    // エラー処理（必要に応じて別のアラートを表示）
+                    print("❌ Failed to delete account: \(error)")
+                }
             }
         }
     }

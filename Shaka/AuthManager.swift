@@ -348,4 +348,70 @@ class AuthManager: ObservableObject {
             return "Anonymous"
         }
     }
+    
+    // MARK: - Account Management
+    
+    /// Apple ID連携を解除（匿名アカウントに戻す）
+    func unlinkAppleID() async throws {
+        guard let user = Auth.auth().currentUser else {
+            throw AuthError.noUser
+        }
+        
+        // Apple IDプロバイダーを解除
+        try await user.unlink(fromProvider: "apple.com")
+        
+        // 連携状態を更新
+        await MainActor.run {
+            self.isLinkedWithApple = false
+        }
+        
+        print("✅ Apple ID unlinked successfully")
+    }
+    
+    /// アカウントを完全に削除
+    func deleteAccount() async throws {
+        guard let user = Auth.auth().currentUser else {
+            throw AuthError.noUser
+        }
+        
+        let uid = user.uid
+        
+        // 1. Firestoreからユーザーデータを削除
+        // ユーザープロフィール
+        try await db.collection("users").document(uid).delete()
+        
+        // フォロー関係
+        let followingSnapshot = try await db.collection("following").document(uid).collection("users").getDocuments()
+        for doc in followingSnapshot.documents {
+            try await doc.reference.delete()
+        }
+        try await db.collection("following").document(uid).delete()
+        
+        // フォロワー関係
+        let followersSnapshot = try await db.collection("followers").document(uid).collection("users").getDocuments()
+        for doc in followersSnapshot.documents {
+            try await doc.reference.delete()
+        }
+        try await db.collection("followers").document(uid).delete()
+        
+        // 2. ユーザーの投稿を削除または匿名化（ポリシーに応じて選択）
+        // ここでは削除する実装
+        let worksSnapshot = try await db.collection("works").whereField("userID", isEqualTo: uid).getDocuments()
+        for doc in worksSnapshot.documents {
+            try await doc.reference.delete()
+        }
+        
+        let questionsSnapshot = try await db.collection("questions").whereField("userID", isEqualTo: uid).getDocuments()
+        for doc in questionsSnapshot.documents {
+            try await doc.reference.delete()
+        }
+        
+        // 3. Firebase Authenticationからアカウントを削除
+        try await user.delete()
+        
+        // 4. ローカルデータをクリア
+        UserDefaults.standard.removeObject(forKey: "hasCompletedOnboarding")
+        
+        print("✅ Account deleted successfully")
+    }
 }
