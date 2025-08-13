@@ -12,31 +12,63 @@ struct ProfileView: View {
     @EnvironmentObject var authManager: AuthManager
     @State private var showCopiedAlert = false
     @State private var showSignInView = false
-    @State private var showEditNameSheet = false
-    @State private var newDisplayName = ""
+    @State private var showFullProfileEdit = false
     
     var body: some View {
         NavigationView {
             List {
-                // Display Name Section
-                Section(header: Text("Display Name")) {
-                    HStack {
-                        Text(authManager.getDisplayName())
-                            .font(.title3)
-                            .fontWeight(.medium)
-                        
-                        Spacer()
-                        
-                        Button(action: {
-                            newDisplayName = authManager.displayName ?? ""
-                            showEditNameSheet = true
-                        }) {
-                            Image(systemName: "pencil")
-                                .foregroundColor(.blue)
+                // New Profile Section
+                Section {
+                    Button(action: {
+                        showFullProfileEdit = true
+                    }) {
+                        HStack {
+                            // プロフィール写真または既定アイコン
+                            if let photoURLString = authManager.photoURL,
+                               let photoURL = URL(string: photoURLString) {
+                                AsyncImage(url: photoURL) { phase in
+                                    switch phase {
+                                    case .success(let image):
+                                        image
+                                            .resizable()
+                                            .scaledToFill()
+                                            .frame(width: 60, height: 60)
+                                            .clipShape(Circle())
+                                    case .failure(_):
+                                        Image(systemName: "person.crop.circle.fill")
+                                            .font(.largeTitle)
+                                            .foregroundColor(.blue)
+                                    case .empty:
+                                        ProgressView()
+                                            .frame(width: 60, height: 60)
+                                    @unknown default:
+                                        EmptyView()
+                                    }
+                                }
+                            } else {
+                                Image(systemName: "person.crop.circle.fill")
+                                    .font(.largeTitle)
+                                    .foregroundColor(.blue)
+                            }
+                            
+                            VStack(alignment: .leading) {
+                                Text(authManager.getDisplayName())
+                                    .font(.headline)
+                                    .foregroundColor(.primary)
+                                Text("Edit Profile")
+                                    .font(.caption)
+                                    .foregroundColor(.blue)
+                            }
+                            
+                            Spacer()
+                            
+                            Image(systemName: "chevron.right")
+                                .foregroundColor(.secondary)
                         }
+                        .padding(.vertical, 8)
                     }
-                    .padding(.vertical, 8)
                 }
+                
                 
                 // User ID Section
                 Section(header: Text("Your ID")) {
@@ -182,17 +214,13 @@ struct ProfileView: View {
                 AppleSignInView()
                     .environmentObject(authManager)
             }
-            .sheet(isPresented: $showEditNameSheet) {
-                EditDisplayNameView(displayName: $newDisplayName) { newName in
-                    Task {
-                        do {
-                            try await authManager.updateDisplayName(newName)
-                            // プロフィールを再取得して表示を更新
+            .sheet(isPresented: $showFullProfileEdit) {
+                if let uid = authManager.userID {
+                    UserProfileEditView(uid: uid)
+                        .onDisappear {
+                            // プロフィール編集画面が閉じた時に最新データを取得
                             authManager.fetchUserProfile()
-                        } catch {
-                            print("Failed to update display name: \(error)")
                         }
-                    }
                 }
             }
         }

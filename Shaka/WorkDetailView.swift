@@ -120,13 +120,13 @@ struct WorkDetailView: View {
                         .padding(.horizontal)
                 }
                 
-                // Comments section (temporarily disabled)
-                // CommentView(
-                //     postID: post.id,
-                //     postType: .work,
-                //     postUserID: post.userID
-                // )
-                // .padding()
+                // Comments section
+                CommentView(
+                    postID: post.id,
+                    postType: .work,
+                    postUserID: post.userID
+                )
+                .padding()
                 
                 Spacer(minLength: 50)
             }

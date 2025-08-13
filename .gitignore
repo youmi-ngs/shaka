@@ -14,4 +14,4 @@ xcuserdata/
 
 # Firebase config
 GoogleService-Info.plist
-firebase/secrets/GoogleService-Info.plist
+firebase/secrets/GoogleService-Info.plistservice-account-key.json

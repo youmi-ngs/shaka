@@ -1,9 +1,71 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-    // Allow read/write access to all users temporarily for testing
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // 画像ファイルのチェック（拡張子と Content-Type）
+    function isImageFile() {
+      return request.resource.contentType.matches('image/.*') 
+        && request.resource.size <= 5 * 1024 * 1024; // 5MB以下
+    }
+    
+    // ========== アバター画像 ==========
+    // 推奨案：認証済みユーザーのみ読み取り可能（プライバシー保護）
+    match /avatars/{userId}/{allPaths=**} {
+      // 読み取り：認証済みユーザーのみ（推奨）
+      allow read: if isAuthenticated();
+      
+      // 書き込み：本人のみ、画像ファイルのみ、5MB以下
+      allow write: if isOwner(userId) && isImageFile();
+      
+      // 削除：本人のみ
+      allow delete: if isOwner(userId);
+    }
+    
+    // 代替案：全公開（Shakaの全公開方針に沿う場合）
+    // match /avatars/{userId}/{allPaths=**} {
+    //   allow read: if true; // 誰でも読み取り可能
+    //   allow write: if isOwner(userId) && isImageFile();
+    //   allow delete: if isOwner(userId);
+    // }
+    
+    // ========== 作品画像 ==========
+    match /works/{workId}/{allPaths=**} {
+      // 読み取り：誰でも可能（作品は公開コンテンツ）
+      allow read: if true;
+      
+      // 書き込み：認証済みユーザーのみ、画像ファイルのみ、5MB以下
+      allow write: if isAuthenticated() && isImageFile();
+      
+      // 削除：認証済みユーザーのみ（本来は投稿者のみにすべきだが、workIdとuserIdの紐付けが必要）
+      allow delete: if isAuthenticated();
+    }
+    
+    // その他のパスは全て拒否
     match /{allPaths=**} {
-      allow read, write: if true;
+      allow read, write: if false;
     }
   }
 }
+
+// ========== テストケース ==========
+// 【許可されるケース】
+// 1. 認証済みユーザーが /avatars/{uid}/avatar.jpg を読む
+// 2. 本人が /avatars/{自分のuid}/avatar.jpg に3MBの画像をアップロード
+// 3. 誰でも /works/{workId}/image.jpg を読む
+// 4. 認証済みユーザーが /works/{workId}/image.jpg に画像をアップロード
+
+// 【拒否されるケース】
+// 1. 未認証ユーザーが /avatars/{uid}/avatar.jpg を読む（推奨案の場合）
+// 2. 他人が /avatars/{uid}/avatar.jpg にアップロード
+// 3. 本人が /avatars/{自分のuid}/avatar.jpg に6MBの画像をアップロード
+// 4. 本人が /avatars/{自分のuid}/document.pdf をアップロード（画像以外）
+// 5. 未認証ユーザーが /works/{workId}/image.jpg にアップロード

@@ -44,18 +44,9 @@ class CommentViewModel: ObservableObject {
                     let userID = data["userID"] as? String ?? "unknown"
                     let displayName = data["displayName"] as? String ?? "User_\(String(userID.prefix(6)))"
                     let createdAt = (data["createdAt"] as? Timestamp)?.dateValue() ?? Date()
-                    let isPrivate = data["isPrivate"] as? Bool ?? (postType == .question)
+                    let isPrivate = data["isPrivate"] as? Bool ?? false
                     
-                    // プライベートコメントの場合、投稿者または自分のコメントのみ表示
-                    if isPrivate {
-                        let currentUserID = AuthManager.shared.getCurrentUserID()
-                        // 投稿者IDを取得する必要がある
-                        if let postUserID = data["postUserID"] as? String {
-                            if userID != currentUserID && postUserID != currentUserID {
-                                return nil // 表示しない
-                            }
-                        }
-                    }
+                    // コメントは全て公開（プライベートコメントの処理を削除）
                     
                     return Comment(
                         id: id,
@@ -76,7 +67,7 @@ class CommentViewModel: ObservableObject {
         let userID = AuthManager.shared.getCurrentUserID() ?? "anonymous"
         let displayName = AuthManager.shared.getDisplayName()
         let collection = postType == .work ? "works" : "questions"
-        let isPrivate = postType == .question
+        let isPrivate = false // 両方とも公開コメントに変更
         
         let data: [String: Any] = [
             "text": text,

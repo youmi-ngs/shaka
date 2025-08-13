@@ -20,17 +20,11 @@ struct CommentView: View {
         VStack(alignment: .leading, spacing: 16) {
             // Header
             HStack {
-                Label(postType == .question ? "Private Comments" : "Comments", systemImage: "bubble.left.fill")
+                Label("Comments", systemImage: "bubble.left.fill")
                     .font(.headline)
                     .foregroundColor(postType == .question ? .purple : .orange)
                 
                 Spacer()
-                
-                if postType == .question {
-                    Text("(Visible only to you and poster)")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
             }
             
             // Comment input

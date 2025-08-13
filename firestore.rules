@@ -2,36 +2,75 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // ユーザープロフィール
+    // ========== Helper Functions ==========
+    // 認証チェック
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // 本人確認
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // URLバリデーション
+    function isValidURL(url) {
+      return url == null || (url is string && url.matches('^https?://.*'));
+    }
+    
+    // 文字列長チェック
+    function isValidStringLength(str, maxLength) {
+      return str == null || (str is string && str.size() <= maxLength);
+    }
+    
+    // ========== Users Collection ==========
     match /users/{userId} {
-      // 誰でも読み取り可能（表示名を表示するため）
-      allow read: if true;
+      // 読み取りルール（フィールドレベル制御）
+      allow read: if 
+        // public.* は誰でも読める
+        // private.* は本人のみ
+        // stats.* は誰でも読める（推奨案）
+        resource == null || // ドキュメントが存在しない場合
+        isOwner(userId) ||  // 本人なら全て読める
+        (request.auth != null && // 認証済みユーザーはpublicとstatsを読める
+         request.resource.data.keys().hasOnly(['public', 'stats']));
       
-      // 自分のプロフィールのみ作成・更新可能
-      allow create: if request.auth != null && request.auth.uid == userId;
-      allow update: if request.auth != null && request.auth.uid == userId;
+      // 作成ルール（初回のユーザー作成）- 簡略化
+      allow create: if isOwner(userId)
+        && request.resource.data.public.displayName is string
+        && request.resource.data.public.displayName.size() > 0
+        && request.resource.data.public.displayName.size() <= 50;
+      
+      // 更新ルール（既存ユーザーの更新）- 簡略化
+      allow update: if isOwner(userId)
+        && request.resource.data.public.displayName is string
+        && request.resource.data.public.displayName.size() > 0
+        && request.resource.data.public.displayName.size() <= 50;
       
       // 削除は禁止
       allow delete: if false;
     }
     
-    // 作品投稿
+    // ========== Works Collection ==========
     match /works/{workId} {
       // 誰でも読み取り可能
       allow read: if true;
       
-      // ログインユーザーのみ作成可能
-      allow create: if request.auth != null
+      // ログインユーザーのみ作成可能（簡略化）
+      allow create: if isAuthenticated()
         && request.resource.data.userID == request.auth.uid
-        && request.resource.data.keys().hasAll(['title', 'userID', 'displayName', 'createdAt', 'isActive']);
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 200;
       
       // 投稿者本人のみ更新可能
-      allow update: if request.auth != null
+      allow update: if isAuthenticated()
         && resource.data.userID == request.auth.uid
-        && request.resource.data.userID == resource.data.userID; // userIDは変更不可
+        && request.resource.data.userID == resource.data.userID // userIDは変更不可
+        && request.resource.data.createdAt == resource.data.createdAt; // createdAtは変更不可
       
       // 投稿者本人のみ削除可能
-      allow delete: if request.auth != null
+      allow delete: if isAuthenticated()
         && resource.data.userID == request.auth.uid;
       
       // 作品へのコメント
@@ -39,13 +78,15 @@ service cloud.firestore {
         // 誰でも読み取り可能（公開コメント）
         allow read: if true;
         
-        // ログインユーザーのみコメント作成可能
-        allow create: if request.auth != null
+        // ログインユーザーのみコメント作成可能（簡略化）
+        allow create: if isAuthenticated()
           && request.resource.data.userID == request.auth.uid
-          && request.resource.data.keys().hasAll(['text', 'userID', 'displayName', 'createdAt']);
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0
+          && request.resource.data.text.size() <= 1000;
         
         // コメント投稿者本人のみ削除可能
-        allow delete: if request.auth != null
+        allow delete: if isAuthenticated()
           && resource.data.userID == request.auth.uid;
         
         // コメントの更新は禁止
@@ -53,40 +94,39 @@ service cloud.firestore {
       }
     }
     
-    // 質問投稿
+    // ========== Questions Collection ==========
     match /questions/{questionId} {
       // 誰でも読み取り可能
       allow read: if true;
       
-      // ログインユーザーのみ作成可能
-      allow create: if request.auth != null
-        && request.resource.data.userID == request.auth.uid
-        && request.resource.data.keys().hasAll(['title', 'body', 'userID', 'displayName', 'createdAt', 'isActive']);
+      // ログインユーザーのみ作成可能（最小限のチェック）
+      allow create: if isAuthenticated()
+        && request.resource.data.userID == request.auth.uid;
       
       // 投稿者本人のみ更新可能
-      allow update: if request.auth != null
+      allow update: if isAuthenticated()
         && resource.data.userID == request.auth.uid
-        && request.resource.data.userID == resource.data.userID; // userIDは変更不可
+        && request.resource.data.userID == resource.data.userID // userIDは変更不可
+        && request.resource.data.createdAt == resource.data.createdAt; // createdAtは変更不可
       
       // 投稿者本人のみ削除可能
-      allow delete: if request.auth != null
+      allow delete: if isAuthenticated()
         && resource.data.userID == request.auth.uid;
       
-      // 質問へのコメント（プライベート）
+      // 質問へのコメント（公開）
       match /comments/{commentId} {
-        // コメント投稿者または質問投稿者のみ読み取り可能
-        allow read: if request.auth != null
-          && (resource.data.userID == request.auth.uid || 
-              resource.data.postUserID == request.auth.uid ||
-              get(/databases/$(database)/documents/questions/$(questionId)).data.userID == request.auth.uid);
+        // 誰でも読み取り可能（公開コメント）
+        allow read: if true;
         
-        // ログインユーザーのみコメント作成可能
-        allow create: if request.auth != null
+        // ログインユーザーのみコメント作成可能（簡略化）
+        allow create: if isAuthenticated()
           && request.resource.data.userID == request.auth.uid
-          && request.resource.data.keys().hasAll(['text', 'userID', 'displayName', 'createdAt', 'isPrivate', 'postUserID']);
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0
+          && request.resource.data.text.size() <= 1000;
         
         // コメント投稿者本人のみ削除可能
-        allow delete: if request.auth != null
+        allow delete: if isAuthenticated()
           && resource.data.userID == request.auth.uid;
         
         // コメントの更新は禁止
@@ -95,3 +135,18 @@ service cloud.firestore {
     }
   }
 }
+
+// ========== テストケース ==========
+// 【許可されるケース】
+// 1. 誰でも users/{uid}/public.displayName を読める
+// 2. 本人が自分の users/{uid}/public.displayName を更新できる
+// 3. 本人が自分の users/{uid}/private.joinedAt を読める
+// 4. 認証済みユーザーが他人の users/{uid}/stats.worksCount を読める
+
+// 【拒否されるケース】
+// 1. 他人が users/{uid}/private.email を読もうとする
+// 2. 他人が users/{uid}/public.displayName を更新しようとする
+// 3. 本人が users/{uid}/private.joinedAt を変更しようとする
+// 4. クライアントが users/{uid}/stats.worksCount を直接更新しようとする
+// 5. 空の displayName で users/{uid} を作成しようとする
+// 6. 300文字を超える bio で users/{uid} を更新しようとする

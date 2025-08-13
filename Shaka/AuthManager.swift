@@ -19,6 +19,7 @@ class AuthManager: ObservableObject {
     @Published var userID: String?
     @Published var isLinkedWithApple = false
     @Published var displayName: String?
+    @Published var photoURL: String?
     
     // For Sign in with Apple
     private var currentNonce: String?
@@ -277,8 +278,17 @@ class AuthManager: ObservableObject {
             }
             
             if let data = snapshot?.data() {
-                self?.displayName = data["displayName"] as? String
+                // 新しい構造から読み取り
+                if let publicData = data["public"] as? [String: Any] {
+                    self?.displayName = publicData["displayName"] as? String
+                    self?.photoURL = publicData["photoURL"] as? String
+                } else {
+                    // 古い構造からのフォールバック
+                    self?.displayName = data["displayName"] as? String
+                    self?.photoURL = data["photoURL"] as? String
+                }
                 print("📝 User profile loaded: \(self?.displayName ?? "No name")")
+                print("📸 Photo URL: \(self?.photoURL ?? "No photo")")
             } else {
                 print("📝 No user profile found, creating default...")
                 self?.createDefaultProfile()
@@ -311,9 +321,11 @@ class AuthManager: ObservableObject {
     func updateDisplayName(_ newName: String) async throws {
         guard let uid = userID else { throw AuthError.noUser }
         
+        // 新しい構造で更新
         let data: [String: Any] = [
-            "displayName": newName,
-            "updatedAt": Timestamp(date: Date())
+            "public": [
+                "displayName": newName
+            ]
         ]
         
         try await db.collection("users").document(uid).setData(data, merge: true)

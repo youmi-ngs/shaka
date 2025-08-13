@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0F6A8D622E4C9BFB00FF8ABD /* PhotosUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0F6A8D612E4C9BFB00FF8ABD /* PhotosUI.framework */; };
 		0F6C6AC72E41DB3900C08E94 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 0F6C6AC62E41DB3900C08E94 /* FirebaseAuth */; };
 		0FBAAEA02E41156B00902AF8 /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = 0FBAAE9F2E41156B00902AF8 /* FirebaseStorage */; };
 		0FEC4C042DC2FFFD003D7583 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 0FEC4C032DC2FFFD003D7583 /* FirebaseCore */; };
@@ -34,6 +35,7 @@
 		0F0D91682DBEA50A00B0DC5B /* Shaka.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Shaka.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		0F0D91752DBEA50C00B0DC5B /* ShakaTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ShakaTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		0F0D917F2DBEA50C00B0DC5B /* ShakaUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ShakaUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		0F6A8D612E4C9BFB00FF8ABD /* PhotosUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = PhotosUI.framework; path = System/Library/Frameworks/PhotosUI.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -60,6 +62,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				0FEC4C042DC2FFFD003D7583 /* FirebaseCore in Frameworks */,
+				0F6A8D622E4C9BFB00FF8ABD /* PhotosUI.framework in Frameworks */,
 				0FEC4C062DC2FFFD003D7583 /* FirebaseFirestore in Frameworks */,
 				0FBAAEA02E41156B00902AF8 /* FirebaseStorage in Frameworks */,
 				0F6C6AC72E41DB3900C08E94 /* FirebaseAuth in Frameworks */,
@@ -89,6 +92,7 @@
 				0F0D916A2DBEA50A00B0DC5B /* Shaka */,
 				0F0D91782DBEA50C00B0DC5B /* ShakaTests */,
 				0F0D91822DBEA50C00B0DC5B /* ShakaUITests */,
+				0F6A8D602E4C9BFA00FF8ABD /* Frameworks */,
 				0F0D91692DBEA50A00B0DC5B /* Products */,
 			);
 			sourceTree = "<group>";
@@ -101,6 +105,14 @@
 				0F0D917F2DBEA50C00B0DC5B /* ShakaUITests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		0F6A8D602E4C9BFA00FF8ABD /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				0F6A8D612E4C9BFB00FF8ABD /* PhotosUI.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
