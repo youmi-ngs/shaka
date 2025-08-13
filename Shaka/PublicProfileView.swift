@@ -16,6 +16,7 @@ struct PublicProfileView: View {
     @State private var errorMessage = ""
     @State private var isAddingFriend = false
     @State private var showShareSheet = false
+    @State private var showUnfollowAlert = false
     @Environment(\.dismiss) private var dismiss
     
     init(authorUid: String) {
@@ -82,6 +83,14 @@ struct PublicProfileView: View {
             Button("OK") {}
         } message: {
             Text(errorMessage)
+        }
+        .alert("Unfollow", isPresented: $showUnfollowAlert) {
+            Button("Cancel", role: .cancel) {}
+            Button("Unfollow", role: .destructive) {
+                handleUnfollow()
+            }
+        } message: {
+            Text("Are you sure you want to unfollow \(viewModel.displayName)?")
         }
         .overlay {
             if viewModel.isLoading {
@@ -217,13 +226,17 @@ struct PublicProfileView: View {
                 Text(viewModel.isFriend ? "Following" : "Follow")
             }
             .font(.headline)
-            .foregroundColor(.white)
+            .foregroundColor(viewModel.isFriend ? .primary : .white)
             .frame(maxWidth: .infinity)
             .padding()
-            .background(viewModel.isFriend ? Color.gray : Color.blue)
+            .background(viewModel.isFriend ? Color(UIColor.secondarySystemFill) : Color.blue)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(viewModel.isFriend ? Color.gray.opacity(0.3) : Color.clear, lineWidth: 1)
+            )
             .cornerRadius(12)
         }
-        .disabled(viewModel.isFriend || isAddingFriend)
+        .disabled(isAddingFriend)
     }
     
     // MARK: - Share Profile Button
@@ -291,11 +304,29 @@ struct PublicProfileView: View {
             return
         }
         
-        // 既に友達の場合は何もしない
-        guard !viewModel.isFriend else { return }
-        
+        // フォロー中の場合はアンフォロー確認
+        if viewModel.isFriend {
+            showUnfollowAlert = true
+        } else {
+            // フォローする
+            isAddingFriend = true
+            viewModel.addFriend { result in
+                isAddingFriend = false
+                switch result {
+                case .success:
+                    // 成功時は特に何もしない（UIは自動更新される）
+                    break
+                case .failure(let error):
+                    errorMessage = error.localizedDescription
+                    showErrorAlert = true
+                }
+            }
+        }
+    }
+    
+    private func handleUnfollow() {
         isAddingFriend = true
-        viewModel.addFriend { result in
+        viewModel.removeFriend { result in
             isAddingFriend = false
             switch result {
             case .success:
