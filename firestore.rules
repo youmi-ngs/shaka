@@ -86,6 +86,25 @@ service cloud.firestore {
         // コメントの更新は禁止
         allow update: if false;
       }
+      
+      // 作品へのいいね
+      match /likes/{uid} {
+        // 誰でも読み取り可能（公開）
+        allow read: if true;
+        
+        // 本人のみいいねを作成可能
+        allow create: if isAuthenticated()
+          && request.auth.uid == uid
+          && request.resource.data.keys().hasOnly(['createdAt'])
+          && request.resource.data.createdAt is timestamp;
+        
+        // 本人のみいいねを削除可能
+        allow delete: if isAuthenticated() 
+          && request.auth.uid == uid;
+        
+        // 更新は禁止（冪等運用）
+        allow update: if false;
+      }
     }
     
     // ========== Following Collection (旧Friends) ==========
@@ -176,6 +195,25 @@ service cloud.firestore {
           && resource.data.userID == request.auth.uid;
         
         // コメントの更新は禁止
+        allow update: if false;
+      }
+      
+      // 質問へのいいね
+      match /likes/{uid} {
+        // 誰でも読み取り可能（公開）
+        allow read: if true;
+        
+        // 本人のみいいねを作成可能
+        allow create: if isAuthenticated()
+          && request.auth.uid == uid
+          && request.resource.data.keys().hasOnly(['createdAt'])
+          && request.resource.data.createdAt is timestamp;
+        
+        // 本人のみいいねを削除可能
+        allow delete: if isAuthenticated() 
+          && request.auth.uid == uid;
+        
+        // 更新は禁止（冪等運用）
         allow update: if false;
       }
     }

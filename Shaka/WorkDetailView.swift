@@ -16,6 +16,13 @@ struct WorkDetailView: View {
     @State private var isDeleting = false
     @State private var showEditSheet = false
     @State private var showAuthorProfile = false
+    @StateObject private var likeManager: LikeManager
+    
+    init(post: WorkPost, viewModel: WorkPostViewModel) {
+        self.post = post
+        self.viewModel = viewModel
+        self._likeManager = StateObject(wrappedValue: LikeManager(postId: post.id, postType: .work))
+    }
     
     var body: some View {
         ScrollView {
@@ -75,27 +82,51 @@ struct WorkDetailView: View {
                     .padding(.horizontal)
                 
                 // Author and Date
-                VStack(alignment: .leading, spacing: 8) {
-                    Button(action: {
-                        showAuthorProfile = true
-                    }) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Button(action: {
+                            showAuthorProfile = true
+                        }) {
+                            HStack {
+                                Image(systemName: "person.circle.fill")
+                                    .foregroundColor(.blue)
+                                Text(post.displayName)
+                                    .foregroundColor(.primary)
+                                    .font(.subheadline)
+                                    .fontWeight(.medium)
+                            }
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        
                         HStack {
-                            Image(systemName: "person.circle.fill")
-                                .foregroundColor(.blue)
-                            Text(post.displayName)
-                                .foregroundColor(.primary)
+                            Image(systemName: "calendar")
+                                .foregroundColor(.gray)
+                            Text(post.createdAt.formatted(date: .long, time: .shortened))
+                                .foregroundColor(.gray)
                                 .font(.subheadline)
-                                .fontWeight(.medium)
                         }
                     }
-                    .buttonStyle(PlainButtonStyle())
                     
-                    HStack {
-                        Image(systemName: "calendar")
-                            .foregroundColor(.gray)
-                        Text(post.createdAt.formatted(date: .long, time: .shortened))
-                            .foregroundColor(.gray)
-                            .font(.subheadline)
+                    Spacer()
+                    
+                    // Like button
+                    VStack {
+                        Button(action: {
+                            likeManager.toggleLike()
+                        }) {
+                            Image(systemName: likeManager.isLiked ? "heart.fill" : "heart")
+                                .font(.title2)
+                                .foregroundColor(likeManager.isLiked ? .red : .gray)
+                                .scaleEffect(likeManager.isProcessing ? 0.8 : 1.0)
+                                .animation(.easeInOut(duration: 0.1), value: likeManager.isProcessing)
+                        }
+                        .disabled(likeManager.isProcessing || authManager.userID == nil)
+                        
+                        if likeManager.likesCount > 0 {
+                            Text("\(likeManager.likesCount)")
+                                .font(.caption)
+                                .foregroundColor(.gray)
+                        }
                     }
                 }
                 .padding(.horizontal)
