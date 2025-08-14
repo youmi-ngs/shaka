@@ -12,8 +12,10 @@ import FirebaseAuth
 
 @main
 struct ShakaApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @StateObject private var authManager = AuthManager.shared
     @StateObject private var deepLinkManager = DeepLinkManager.shared
+    @StateObject private var notificationManager = NotificationManager.shared
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
     
     init() {
@@ -43,6 +45,7 @@ struct ShakaApp: App {
                     ContentView()
                         .environmentObject(authManager)
                         .environmentObject(deepLinkManager)
+                        .environmentObject(notificationManager)
                         .onOpenURL { url in
                             print("📱 Received URL: \(url)")
                             _ = deepLinkManager.handleURL(url)
@@ -51,6 +54,7 @@ struct ShakaApp: App {
                     // 初回起動時、またはフラグがリセットされた場合はオンボーディング画面を表示
                     OnboardingView()
                         .environmentObject(authManager)
+                        .environmentObject(notificationManager)
                 }
             }
             .task {

@@ -11,10 +11,12 @@ import FirebaseAuth
 struct ContentView: View {
     @EnvironmentObject var deepLinkManager: DeepLinkManager
     @EnvironmentObject var authManager: AuthManager
+    @EnvironmentObject var notificationManager: NotificationManager
     @State private var showAddFriendConfirmation = false
     @State private var pendingFriendToAdd: (uid: String, displayName: String)?
     @State private var showProfileView = false
     @State private var profileToShow: String?
+    @State private var hasRequestedNotifications = false
     
     var body: some View {
         
@@ -77,6 +79,13 @@ struct ContentView: View {
             if let uid = notification.userInfo?["uid"] as? String {
                 profileToShow = uid
                 showProfileView = true
+            }
+        }
+        .onAppear {
+            // 通知許可をリクエスト（初回のみ）
+            if !hasRequestedNotifications && authManager.isAuthenticated {
+                hasRequestedNotifications = true
+                notificationManager.requestNotificationPermission()
             }
         }
     }

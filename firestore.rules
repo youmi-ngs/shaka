@@ -217,6 +217,21 @@ service cloud.firestore {
         allow update: if false;
       }
     }
+    
+    // ========== FCMトークン管理（プライベート） ==========
+    match /users_private/{uid}/fcmTokens/{token} {
+      // 本人のみ読み書き可能
+      allow read: if isOwner(uid);
+      
+      // 作成・更新：本人のみ、必須フィールドのみ
+      allow create, update: if isOwner(uid)
+        && request.resource.data.keys().hasOnly(['platform', 'updatedAt'])
+        && request.resource.data.platform in ['ios', 'android']
+        && request.resource.data.updatedAt is timestamp;
+      
+      // 削除：本人のみ
+      allow delete: if isOwner(uid);
+    }
   }
 }
 

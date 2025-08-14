@@ -4,6 +4,7 @@ const admin = require('firebase-admin');
 admin.initializeApp();
 
 const db = admin.firestore();
+const messaging = admin.messaging();
 
 /**
  * ユーザーのdisplayName変更時に、全投稿のdisplayNameを更新
@@ -155,3 +156,418 @@ exports.backfillDisplayNames = functions.https.onRequest(async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+// ========== プッシュ通知関連の関数 ==========
+
+/**
+ * FCMトークンを取得してプッシュ通知を送信する共通関数
+ */
+async function sendPushNotification(targetUid, title, body, data = {}) {
+  try {
+    // ユーザーのFCMトークンを取得
+    const tokensSnapshot = await db
+      .collection('users_private')
+      .doc(targetUid)
+      .collection('fcmTokens')
+      .get();
+
+    if (tokensSnapshot.empty) {
+      console.log(`No FCM tokens found for user ${targetUid}`);
+      return;
+    }
+
+    const tokens = tokensSnapshot.docs.map(doc => doc.id);
+    console.log(`Found ${tokens.length} FCM tokens for user ${targetUid}`);
+
+    // 未読通知数を取得
+    const unreadSnapshot = await db
+      .collection('notifications')
+      .doc(targetUid)
+      .collection('items')
+      .where('read', '==', false)
+      .get();
+    
+    const unreadCount = unreadSnapshot.size;
+
+    // メッセージペイロード
+    const message = {
+      tokens: tokens,
+      notification: {
+        title: title,
+        body: body
+      },
+      apns: {
+        payload: {
+          aps: {
+            alert: {
+              title: title,
+              body: body
+            },
+            sound: 'default',
+            badge: unreadCount
+          }
+        }
+      },
+      data: {
+        ...data,
+        click_action: 'FLUTTER_NOTIFICATION_CLICK' // for Flutter/iOS
+      }
+    };
+
+    // マルチキャスト送信
+    const response = await messaging.sendMulticast(message);
+    
+    // 失敗したトークンをクリーンアップ
+    if (response.failureCount > 0) {
+      const failedTokens = [];
+      response.responses.forEach((resp, idx) => {
+        if (!resp.success) {
+          failedTokens.push(tokens[idx]);
+          console.error(`Failed to send to token ${tokens[idx]}:`, resp.error);
+        }
+      });
+
+      // 無効なトークンを削除
+      const deletePromises = failedTokens.map(token =>
+        db.collection('users_private')
+          .doc(targetUid)
+          .collection('fcmTokens')
+          .doc(token)
+          .delete()
+      );
+      await Promise.all(deletePromises);
+    }
+
+    console.log(`Push notification sent: ${response.successCount} success, ${response.failureCount} failed`);
+  } catch (error) {
+    console.error('Error sending push notification:', error);
+  }
+}
+
+/**
+ * いいね通知（Works）
+ */
+exports.onWorkLiked = functions.firestore
+  .document('works/{workId}/likes/{likeUid}')
+  .onCreate(async (snap, context) => {
+    const { workId, likeUid } = context.params;
+    
+    try {
+      // 投稿情報を取得
+      const workDoc = await db.collection('works').doc(workId).get();
+      if (!workDoc.exists) {
+        console.log(`Work ${workId} not found`);
+        return null;
+      }
+
+      const work = workDoc.data();
+      const ownerUid = work.userID;
+
+      // 自分の投稿へのいいねはスキップ
+      if (ownerUid === likeUid) {
+        console.log('Self-like detected, skipping notification');
+        return null;
+      }
+
+      // いいねしたユーザーの情報を取得
+      const likerDoc = await db.collection('users').doc(likeUid).get();
+      const likerName = likerDoc.exists && likerDoc.data().public 
+        ? likerDoc.data().public.displayName 
+        : 'Someone';
+
+      // 通知ドキュメントを作成
+      await db.collection('notifications')
+        .doc(ownerUid)
+        .collection('items')
+        .add({
+          type: 'like',
+          actorUid: likeUid,
+          actorName: likerName,
+          targetType: 'work',
+          targetId: workId,
+          message: `${likerName} liked your work`,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          read: false
+        });
+
+      // プッシュ通知を送信
+      await sendPushNotification(
+        ownerUid,
+        'New Like',
+        `${likerName} liked your work: ${work.title}`,
+        {
+          type: 'like',
+          actorUid: likeUid,
+          targetType: 'work',
+          targetId: workId
+        }
+      );
+
+      return null;
+    } catch (error) {
+      console.error('Error in onWorkLiked:', error);
+      return null;
+    }
+  });
+
+/**
+ * いいね通知（Questions）
+ */
+exports.onQuestionLiked = functions.firestore
+  .document('questions/{questionId}/likes/{likeUid}')
+  .onCreate(async (snap, context) => {
+    const { questionId, likeUid } = context.params;
+    
+    try {
+      // 質問情報を取得
+      const questionDoc = await db.collection('questions').doc(questionId).get();
+      if (!questionDoc.exists) {
+        console.log(`Question ${questionId} not found`);
+        return null;
+      }
+
+      const question = questionDoc.data();
+      const ownerUid = question.userID;
+
+      // 自分の投稿へのいいねはスキップ
+      if (ownerUid === likeUid) {
+        console.log('Self-like detected, skipping notification');
+        return null;
+      }
+
+      // いいねしたユーザーの情報を取得
+      const likerDoc = await db.collection('users').doc(likeUid).get();
+      const likerName = likerDoc.exists && likerDoc.data().public 
+        ? likerDoc.data().public.displayName 
+        : 'Someone';
+
+      // 通知ドキュメントを作成
+      await db.collection('notifications')
+        .doc(ownerUid)
+        .collection('items')
+        .add({
+          type: 'like',
+          actorUid: likeUid,
+          actorName: likerName,
+          targetType: 'question',
+          targetId: questionId,
+          message: `${likerName} liked your question`,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          read: false
+        });
+
+      // プッシュ通知を送信
+      await sendPushNotification(
+        ownerUid,
+        'New Like',
+        `${likerName} liked your question: ${question.title}`,
+        {
+          type: 'like',
+          actorUid: likeUid,
+          targetType: 'question',
+          targetId: questionId
+        }
+      );
+
+      return null;
+    } catch (error) {
+      console.error('Error in onQuestionLiked:', error);
+      return null;
+    }
+  });
+
+/**
+ * フォロー通知
+ */
+exports.onUserFollowed = functions.firestore
+  .document('following/{followerUid}/users/{followedUid}')
+  .onCreate(async (snap, context) => {
+    const { followerUid, followedUid } = context.params;
+    
+    try {
+      // フォローしたユーザーの情報を取得
+      const followerDoc = await db.collection('users').doc(followerUid).get();
+      const followerName = followerDoc.exists && followerDoc.data().public 
+        ? followerDoc.data().public.displayName 
+        : 'Someone';
+
+      // 通知ドキュメントを作成
+      await db.collection('notifications')
+        .doc(followedUid)
+        .collection('items')
+        .add({
+          type: 'follow',
+          actorUid: followerUid,
+          actorName: followerName,
+          message: `${followerName} started following you`,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          read: false
+        });
+
+      // プッシュ通知を送信
+      await sendPushNotification(
+        followedUid,
+        'New Follower',
+        `${followerName} started following you`,
+        {
+          type: 'follow',
+          actorUid: followerUid
+        }
+      );
+
+      return null;
+    } catch (error) {
+      console.error('Error in onUserFollowed:', error);
+      return null;
+    }
+  });
+
+/**
+ * コメント通知（Works）
+ */
+exports.onWorkCommented = functions.firestore
+  .document('works/{workId}/comments/{commentId}')
+  .onCreate(async (snap, context) => {
+    const { workId, commentId } = context.params;
+    const comment = snap.data();
+    
+    try {
+      // 投稿情報を取得
+      const workDoc = await db.collection('works').doc(workId).get();
+      if (!workDoc.exists) {
+        console.log(`Work ${workId} not found`);
+        return null;
+      }
+
+      const work = workDoc.data();
+      const ownerUid = work.userID;
+      const commenterUid = comment.userID;
+
+      // 自分の投稿へのコメントはスキップ
+      if (ownerUid === commenterUid) {
+        console.log('Self-comment detected, skipping notification');
+        return null;
+      }
+
+      // コメントしたユーザーの情報を取得
+      const commenterDoc = await db.collection('users').doc(commenterUid).get();
+      const commenterName = commenterDoc.exists && commenterDoc.data().public 
+        ? commenterDoc.data().public.displayName 
+        : 'Someone';
+
+      // コメントの冒頭を取得（最大50文字）
+      const snippet = comment.text.length > 50 
+        ? comment.text.substring(0, 50) + '...' 
+        : comment.text;
+
+      // 通知ドキュメントを作成
+      await db.collection('notifications')
+        .doc(ownerUid)
+        .collection('items')
+        .add({
+          type: 'comment',
+          actorUid: commenterUid,
+          actorName: commenterName,
+          targetType: 'work',
+          targetId: workId,
+          message: `${commenterName} commented on your work`,
+          snippet: snippet,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          read: false
+        });
+
+      // プッシュ通知を送信
+      await sendPushNotification(
+        ownerUid,
+        'New Comment',
+        `${commenterName}: ${snippet}`,
+        {
+          type: 'comment',
+          actorUid: commenterUid,
+          targetType: 'work',
+          targetId: workId,
+          snippet: snippet
+        }
+      );
+
+      return null;
+    } catch (error) {
+      console.error('Error in onWorkCommented:', error);
+      return null;
+    }
+  });
+
+/**
+ * コメント通知（Questions）
+ */
+exports.onQuestionCommented = functions.firestore
+  .document('questions/{questionId}/comments/{commentId}')
+  .onCreate(async (snap, context) => {
+    const { questionId, commentId } = context.params;
+    const comment = snap.data();
+    
+    try {
+      // 質問情報を取得
+      const questionDoc = await db.collection('questions').doc(questionId).get();
+      if (!questionDoc.exists) {
+        console.log(`Question ${questionId} not found`);
+        return null;
+      }
+
+      const question = questionDoc.data();
+      const ownerUid = question.userID;
+      const commenterUid = comment.userID;
+
+      // 自分の投稿へのコメントはスキップ
+      if (ownerUid === commenterUid) {
+        console.log('Self-comment detected, skipping notification');
+        return null;
+      }
+
+      // コメントしたユーザーの情報を取得
+      const commenterDoc = await db.collection('users').doc(commenterUid).get();
+      const commenterName = commenterDoc.exists && commenterDoc.data().public 
+        ? commenterDoc.data().public.displayName 
+        : 'Someone';
+
+      // コメントの冒頭を取得（最大50文字）
+      const snippet = comment.text.length > 50 
+        ? comment.text.substring(0, 50) + '...' 
+        : comment.text;
+
+      // 通知ドキュメントを作成
+      await db.collection('notifications')
+        .doc(ownerUid)
+        .collection('items')
+        .add({
+          type: 'comment',
+          actorUid: commenterUid,
+          actorName: commenterName,
+          targetType: 'question',
+          targetId: questionId,
+          message: `${commenterName} commented on your question`,
+          snippet: snippet,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          read: false
+        });
+
+      // プッシュ通知を送信
+      await sendPushNotification(
+        ownerUid,
+        'New Comment',
+        `${commenterName}: ${snippet}`,
+        {
+          type: 'comment',
+          actorUid: commenterUid,
+          targetType: 'question',
+          targetId: questionId,
+          snippet: snippet
+        }
+      );
+
+      return null;
+    } catch (error) {
+      console.error('Error in onQuestionCommented:', error);
+      return null;
+    }
+  });
