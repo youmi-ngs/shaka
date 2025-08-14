@@ -7,16 +7,12 @@
 
 import UIKit
 import FirebaseCore
-import FirebaseMessaging
 import UserNotifications
 
 class AppDelegate: NSObject, UIApplicationDelegate {
     
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
-        
-        // Firebase Messagingの設定
-        Messaging.messaging().delegate = NotificationManager.shared
         
         // 通知センターのデリゲート設定
         UNUserNotificationCenter.current().delegate = NotificationManager.shared
@@ -37,8 +33,8 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         let token = tokenParts.joined()
         print("📱 APNs Device Token: \(token)")
         
-        // FCMにAPNsトークンを設定
-        Messaging.messaging().apnsToken = deviceToken
+        // NotificationManagerに通知
+        NotificationManager.shared.handleAPNsToken(deviceToken)
     }
     
     /// APNs登録に失敗した時
@@ -55,8 +51,8 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         
         print("📱 Received remote notification: \(userInfo)")
         
-        // FCMにメッセージを処理させる
-        Messaging.messaging().appDidReceiveMessage(userInfo)
+        // NotificationManagerで処理
+        NotificationManager.shared.handleNotification(userInfo)
         
         completionHandler(.newData)
     }

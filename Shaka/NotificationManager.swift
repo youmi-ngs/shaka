@@ -7,7 +7,6 @@
 
 import Foundation
 import UserNotifications
-import FirebaseMessaging
 import FirebaseFirestore
 import FirebaseAuth
 
@@ -17,7 +16,8 @@ class NotificationManager: NSObject, ObservableObject {
     
     private let db = Firestore.firestore()
     @Published var isNotificationEnabled = false
-    @Published var fcmToken: String?
+    @Published var apnsToken: String?
+    private var apnsTokenData: Data?
     
     private override init() {
         super.init()
@@ -26,9 +26,6 @@ class NotificationManager: NSObject, ObservableObject {
     
     /// 通知の初期設定
     private func setupNotifications() {
-        // FCMトークンの監視
-        Messaging.messaging().delegate = self
-        
         // 通知デリゲート設定
         UNUserNotificationCenter.current().delegate = self
         
@@ -66,10 +63,23 @@ class NotificationManager: NSObject, ObservableObject {
         }
     }
     
-    /// FCMトークンをFirestoreに保存
-    func saveFCMToken(_ token: String) {
+    /// APNsトークンを処理
+    func handleAPNsToken(_ tokenData: Data) {
+        self.apnsTokenData = tokenData
+        
+        // トークンを文字列に変換
+        let tokenParts = tokenData.map { data in String(format: "%02.2hhx", data) }
+        let token = tokenParts.joined()
+        self.apnsToken = token
+        
+        // Firestoreに保存
+        saveAPNsToken(token)
+    }
+    
+    /// APNsトークンをFirestoreに保存
+    private func saveAPNsToken(_ token: String) {
         guard let uid = Auth.auth().currentUser?.uid else {
-            print("⚠️ No user logged in, cannot save FCM token")
+            print("⚠️ No user logged in, cannot save APNs token")
             return
         }
         
@@ -84,20 +94,17 @@ class NotificationManager: NSObject, ObservableObject {
             .document(token)
             .setData(tokenData) { error in
                 if let error = error {
-                    print("❌ Failed to save FCM token: \(error)")
+                    print("❌ Failed to save APNs token: \(error)")
                 } else {
-                    print("✅ FCM token saved successfully")
+                    print("✅ APNs token saved successfully")
                 }
             }
-        
-        // ローカルに保存
-        self.fcmToken = token
     }
     
-    /// FCMトークンを削除（サインアウト時）
-    func deleteFCMToken() {
+    /// APNsトークンを削除（サインアウト時）
+    func deleteAPNsToken() {
         guard let uid = Auth.auth().currentUser?.uid,
-              let token = fcmToken else { return }
+              let token = apnsToken else { return }
         
         db.collection("users_private")
             .document(uid)
@@ -105,9 +112,9 @@ class NotificationManager: NSObject, ObservableObject {
             .document(token)
             .delete { error in
                 if let error = error {
-                    print("❌ Failed to delete FCM token: \(error)")
+                    print("❌ Failed to delete APNs token: \(error)")
                 } else {
-                    print("✅ FCM token deleted")
+                    print("✅ APNs token deleted")
                 }
             }
     }
@@ -158,20 +165,6 @@ class NotificationManager: NSObject, ObservableObject {
         // 投稿詳細画面に遷移
         print("→ Navigate to \(targetType) with id: \(targetId)")
         // DeepLinkManagerを使って遷移（実装済みの場合）
-    }
-}
-
-// MARK: - MessagingDelegate
-extension NotificationManager: MessagingDelegate {
-    /// FCMトークンが更新された時
-    func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
-        guard let fcmToken = fcmToken else {
-            print("⚠️ FCM token is nil")
-            return
-        }
-        
-        print("🔑 FCM Token received: \(fcmToken)")
-        saveFCMToken(fcmToken)
     }
 }
 
