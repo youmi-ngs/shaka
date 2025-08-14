@@ -16,8 +16,7 @@ class NotificationManager: NSObject, ObservableObject {
     
     private let db = Firestore.firestore()
     @Published var isNotificationEnabled = false
-    @Published var apnsToken: String?
-    private var apnsTokenData: Data?
+    @Published var fcmToken: String?
     
     private override init() {
         super.init()
@@ -63,23 +62,10 @@ class NotificationManager: NSObject, ObservableObject {
         }
     }
     
-    /// APNsトークンを処理
-    func handleAPNsToken(_ tokenData: Data) {
-        self.apnsTokenData = tokenData
-        
-        // トークンを文字列に変換
-        let tokenParts = tokenData.map { data in String(format: "%02.2hhx", data) }
-        let token = tokenParts.joined()
-        self.apnsToken = token
-        
-        // Firestoreに保存
-        saveAPNsToken(token)
-    }
-    
-    /// APNsトークンをFirestoreに保存
-    private func saveAPNsToken(_ token: String) {
+    /// FCMトークンをFirestoreに保存
+    func saveFCMToken(_ token: String) {
         guard let uid = Auth.auth().currentUser?.uid else {
-            print("⚠️ No user logged in, cannot save APNs token")
+            print("⚠️ No user logged in, cannot save FCM token")
             return
         }
         
@@ -94,17 +80,20 @@ class NotificationManager: NSObject, ObservableObject {
             .document(token)
             .setData(tokenData) { error in
                 if let error = error {
-                    print("❌ Failed to save APNs token: \(error)")
+                    print("❌ Failed to save FCM token: \(error)")
                 } else {
-                    print("✅ APNs token saved successfully")
+                    print("✅ FCM token saved successfully")
                 }
             }
+        
+        // ローカルに保存
+        self.fcmToken = token
     }
     
-    /// APNsトークンを削除（サインアウト時）
-    func deleteAPNsToken() {
+    /// FCMトークンを削除（サインアウト時）
+    func deleteFCMToken() {
         guard let uid = Auth.auth().currentUser?.uid,
-              let token = apnsToken else { return }
+              let token = fcmToken else { return }
         
         db.collection("users_private")
             .document(uid)
@@ -112,9 +101,9 @@ class NotificationManager: NSObject, ObservableObject {
             .document(token)
             .delete { error in
                 if let error = error {
-                    print("❌ Failed to delete APNs token: \(error)")
+                    print("❌ Failed to delete FCM token: \(error)")
                 } else {
-                    print("✅ APNs token deleted")
+                    print("✅ FCM token deleted")
                 }
             }
     }
