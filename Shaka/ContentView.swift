@@ -85,7 +85,10 @@ struct ContentView: View {
             // 通知許可をリクエスト（初回のみ）
             if !hasRequestedNotifications && authManager.isAuthenticated {
                 hasRequestedNotifications = true
-                notificationManager.requestNotificationPermission()
+                // 少し遅延させて確実に表示
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                    notificationManager.requestNotificationPermission()
+                }
             }
         }
     }

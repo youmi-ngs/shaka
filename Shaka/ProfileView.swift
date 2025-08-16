@@ -10,6 +10,7 @@ import AuthenticationServices
 
 struct ProfileView: View {
     @EnvironmentObject var authManager: AuthManager
+    @EnvironmentObject var notificationManager: NotificationManager
     @State private var showCopiedAlert = false
     @State private var showSignInView = false
     @State private var showFullProfileEdit = false
@@ -231,6 +232,33 @@ struct ProfileView: View {
                 // Account Protection Section
                 Section(header: Text("Account Protection")) {
                     AppleSignInButton()
+                }
+                
+                // Notifications Section
+                Section(header: Text("Notifications")) {
+                    HStack {
+                        Text("Push Notifications")
+                        Spacer()
+                        if notificationManager.isNotificationEnabled {
+                            Text("Enabled")
+                                .foregroundColor(.green)
+                        } else {
+                            Button("Enable") {
+                                notificationManager.requestNotificationPermission()
+                            }
+                            .foregroundColor(.blue)
+                        }
+                    }
+                    
+                    if let token = notificationManager.fcmToken {
+                        HStack {
+                            Text("FCM Token")
+                            Spacer()
+                            Text("Active")
+                                .foregroundColor(.green)
+                                .font(.caption)
+                        }
+                    }
                 }
                 
                 // Sign In Section for anonymous users
