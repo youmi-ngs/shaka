@@ -13,6 +13,7 @@ struct QuestionPost: Identifiable {
     let id: String
     let title: String
     let body: String
+    let imageURL: URL?  // 任意の画像
     let createdAt: Date
     let userID: String
     let displayName: String
@@ -40,13 +41,14 @@ struct QuestionPost: Identifiable {
     }
     
     // デフォルトイニシャライザ（既存のコード互換性のため）
-    init(id: String, title: String, body: String, createdAt: Date, 
+    init(id: String, title: String, body: String, imageURL: URL? = nil, createdAt: Date, 
          userID: String, displayName: String,
          location: GeoPoint? = nil, locationName: String? = nil, isActive: Bool = true,
          tags: [String] = []) {
         self.id = id
         self.title = title
         self.body = body
+        self.imageURL = imageURL
         self.createdAt = createdAt
         self.userID = userID
         self.displayName = displayName

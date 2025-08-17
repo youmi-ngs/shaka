@@ -19,6 +19,8 @@ struct ProfileView: View {
     @State private var showUnlinkAppleAlert = false
     @State private var showDeleteAccountAlert = false
     @State private var isProcessing = false
+    @State private var showTermsOfService = false
+    @State private var showPrivacyPolicy = false
     
     var body: some View {
         NavigationView {
@@ -200,6 +202,33 @@ struct ProfileView: View {
                             Text("Bookmarks")
                         }
                     }
+                }
+                
+                // Legal Section
+                Section(header: Text("Legal")) {
+                    Button(action: {
+                        showTermsOfService = true
+                    }) {
+                        HStack {
+                            Text("Terms of Service")
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .foregroundColor(.gray)
+                        }
+                    }
+                    .foregroundColor(.primary)
+                    
+                    Button(action: {
+                        showPrivacyPolicy = true
+                    }) {
+                        HStack {
+                            Text("Privacy Policy")
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .foregroundColor(.gray)
+                        }
+                    }
+                    .foregroundColor(.primary)
                 }
                 
                 // Debug Section
@@ -404,6 +433,12 @@ struct ProfileView: View {
             }
             .sheet(isPresented: $showFriendsList) {
                 FollowTabView(initialTab: selectedTab)
+            }
+            .sheet(isPresented: $showTermsOfService) {
+                LegalView(type: .terms)
+            }
+            .sheet(isPresented: $showPrivacyPolicy) {
+                LegalView(type: .privacy)
             }
             .alert("Unlink Apple ID", isPresented: $showUnlinkAppleAlert) {
                 Button("Cancel", role: .cancel) {}

@@ -68,8 +68,6 @@ struct AskView: View {
         await MainActor.run {
             viewModel.fetchPosts()
         }
-        
-        print("✅ Questions refreshed")
     }
 }
 
@@ -88,6 +86,17 @@ struct QuestionPostCard: View {
                     .font(.subheadline)
                     .foregroundColor(.secondary)
                     .lineLimit(4)
+                
+                // タグ表示
+                if !post.tags.isEmpty {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 6) {
+                            ForEach(post.tags, id: \.self) { tag in
+                                TagChip(tag: tag, isClickable: false)
+                            }
+                        }
+                    }
+                }
                 
                 HStack {
                     // 作成者名

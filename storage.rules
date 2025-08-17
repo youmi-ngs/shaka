@@ -49,6 +49,18 @@ service firebase.storage {
       allow delete: if isAuthenticated();
     }
     
+    // ========== 質問画像 ==========
+    match /question_images/{imageId} {
+      // 読み取り：誰でも可能（質問は公開コンテンツ）
+      allow read: if true;
+      
+      // 書き込み：認証済みユーザーのみ（一時的にisImageFile()チェックを外す）
+      allow write: if isAuthenticated();
+      
+      // 削除：認証済みユーザーのみ
+      allow delete: if isAuthenticated();
+    }
+    
     // その他のパスは全て拒否
     match /{allPaths=**} {
       allow read, write: if false;

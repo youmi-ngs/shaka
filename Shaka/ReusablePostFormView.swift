@@ -15,6 +15,7 @@ struct ReusablePostFormView<ImageContent: View, AdditionalContent: View>: View {
     let titlePlaceholder: String
     let bodyPlaceholder: String
     let bodyLabel: String
+    let bodyRequired: Bool  // 本文が必須かどうか
     let submitButtonText: String
     let submitButtonColor: Color
     let errorMessage: String?
@@ -32,6 +33,7 @@ struct ReusablePostFormView<ImageContent: View, AdditionalContent: View>: View {
         titlePlaceholder: String = "Enter title",
         bodyPlaceholder: String = "Enter description",
         bodyLabel: String = "Description",
+        bodyRequired: Bool = false,
         submitButtonText: String = "Submit",
         submitButtonColor: Color = .blue,
         errorMessage: String? = nil,
@@ -47,6 +49,7 @@ struct ReusablePostFormView<ImageContent: View, AdditionalContent: View>: View {
         self.titlePlaceholder = titlePlaceholder
         self.bodyPlaceholder = bodyPlaceholder
         self.bodyLabel = bodyLabel
+        self.bodyRequired = bodyRequired
         self.submitButtonText = submitButtonText
         self.submitButtonColor = submitButtonColor
         self.errorMessage = errorMessage
@@ -75,7 +78,7 @@ struct ReusablePostFormView<ImageContent: View, AdditionalContent: View>: View {
             // Body/Description section
             Section(header: HStack {
                 Text(bodyLabel)
-                Text("(Optional)")
+                Text(bodyRequired ? "(Required)" : "(Optional)")
                     .font(.caption)
                     .foregroundColor(.secondary)
             }) {
@@ -136,6 +139,7 @@ extension ReusablePostFormView where ImageContent == EmptyView, AdditionalConten
         titlePlaceholder: String = "Enter title",
         bodyPlaceholder: String = "Enter description",
         bodyLabel: String = "Description",
+        bodyRequired: Bool = false,
         submitButtonText: String = "Submit",
         submitButtonColor: Color = .blue,
         errorMessage: String? = nil,
@@ -150,6 +154,7 @@ extension ReusablePostFormView where ImageContent == EmptyView, AdditionalConten
             titlePlaceholder: titlePlaceholder,
             bodyPlaceholder: bodyPlaceholder,
             bodyLabel: bodyLabel,
+            bodyRequired: bodyRequired,
             submitButtonText: submitButtonText,
             submitButtonColor: submitButtonColor,
             errorMessage: errorMessage,

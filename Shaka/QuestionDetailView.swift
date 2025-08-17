@@ -37,6 +37,48 @@ struct QuestionDetailView: View {
                     .fontWeight(.bold)
                     .padding(.horizontal)
                 
+                // Image (if exists)
+                if let imageURL = post.imageURL {
+                    AsyncImage(url: imageURL) { phase in
+                        switch phase {
+                        case .success(let image):
+                            image
+                                .resizable()
+                                .scaledToFit()
+                                .frame(maxWidth: .infinity)
+                                .cornerRadius(12)
+                                .padding(.horizontal)
+                        case .failure(_):
+                            Rectangle()
+                                .fill(Color.gray.opacity(0.3))
+                                .frame(height: 200)
+                                .cornerRadius(12)
+                                .overlay(
+                                    VStack {
+                                        Image(systemName: "photo")
+                                            .font(.system(size: 50))
+                                            .foregroundColor(.gray)
+                                        Text("Failed to load image")
+                                            .foregroundColor(.gray)
+                                    }
+                                )
+                                .padding(.horizontal)
+                        case .empty:
+                            Rectangle()
+                                .fill(Color.gray.opacity(0.1))
+                                .frame(height: 200)
+                                .cornerRadius(12)
+                                .overlay(
+                                    ProgressView()
+                                        .scaleEffect(1.5)
+                                )
+                                .padding(.horizontal)
+                        @unknown default:
+                            EmptyView()
+                        }
+                    }
+                }
+                
                 // Tags
                 if !post.tags.isEmpty {
                     ScrollView(.horizontal, showsIndicators: false) {

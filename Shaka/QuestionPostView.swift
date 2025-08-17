@@ -15,11 +15,10 @@ class QuestionPostViewModel: ObservableObject {
     
     private let db = Firestore.firestore()
     
-    func addPost(title: String, body: String, location: CLLocationCoordinate2D? = nil, locationName: String? = nil) {
+    func addPost(title: String, body: String, imageURL: URL? = nil, location: CLLocationCoordinate2D? = nil, locationName: String? = nil, tags: [String] = []) {
         let docRef = db.collection("questions").document()
         let userID = AuthManager.shared.getCurrentUserID() ?? "anonymous"
         let displayName = AuthManager.shared.getDisplayName()
-        print("📝 Creating question with userID: \(userID), displayName: \(displayName)")
         
         var data: [String: Any] = [
             "id": docRef.documentID,
@@ -29,8 +28,14 @@ class QuestionPostViewModel: ObservableObject {
             "updatedAt": Timestamp(date: Date()),
             "userID": userID,
             "displayName": displayName,
-            "isActive": true
+            "isActive": true,
+            "tags": tags
         ]
+        
+        // 画像URLを追加
+        if let imageURL = imageURL {
+            data["imageURL"] = imageURL.absoluteString
+        }
         
         // 位置情報を追加
         if let location = location {
@@ -43,21 +48,22 @@ class QuestionPostViewModel: ObservableObject {
         
         docRef.setData(data) { error in
             if let error = error {
-                print("Error saving question to Firestore: \(error)")
+                // Handle error silently
             } else {
-                print("Question successfully saved to Firestore!")
                 // Add to local array after successful save
                 let geoPoint = location != nil ? GeoPoint(latitude: location!.latitude, longitude: location!.longitude) : nil
                 let newPost = QuestionPost(
                     id: docRef.documentID,
                     title: title,
                     body: body,
+                    imageURL: imageURL,
                     createdAt: Date(),
                     userID: userID,
                     displayName: displayName,
                     location: geoPoint,
                     locationName: locationName,
-                    isActive: true
+                    isActive: true,
+                    tags: tags
                 )
                 DispatchQueue.main.async {
                     self.posts.insert(newPost, at: 0)
@@ -71,7 +77,6 @@ class QuestionPostViewModel: ObservableObject {
             .order(by: "createdAt", descending: true)
             .getDocuments { snapshot, error in
                 if let error = error {
-                    print("Error fetching questions: \(error)")
                     return
                 }
                 
@@ -82,23 +87,28 @@ class QuestionPostViewModel: ObservableObject {
                     let id = doc.documentID
                     let title = data["title"] as? String ?? ""
                     let body = data["body"] as? String ?? ""
+                    let imageURLString = data["imageURL"] as? String
+                    let imageURL = imageURLString != nil ? URL(string: imageURLString!) : nil
                     let createdAt = (data["createdAt"] as? Timestamp)?.dateValue() ?? Date()
                     let userID = data["userID"] as? String ?? "unknown"
                     let displayName = data["displayName"] as? String ?? "User_\(String(userID.prefix(6)))"
                     let location = data["location"] as? GeoPoint
                     let locationName = data["locationName"] as? String
                     let isActive = data["isActive"] as? Bool ?? true
+                    let tags = data["tags"] as? [String] ?? []
                     
                     return QuestionPost(
                         id: id,
                         title: title,
                         body: body,
+                        imageURL: imageURL,
                         createdAt: createdAt,
                         userID: userID,
                         displayName: displayName,
                         location: location,
                         locationName: locationName,
-                        isActive: isActive
+                        isActive: isActive,
+                        tags: tags
                     )
                 }
             }
@@ -107,10 +117,8 @@ class QuestionPostViewModel: ObservableObject {
     func deletePost(_ post: QuestionPost, completion: @escaping (Bool) -> Void) {
         db.collection("questions").document(post.id).delete { error in
             if let error = error {
-                print("❌ Failed to delete question: \(error.localizedDescription)")
                 completion(false)
             } else {
-                print("✅ Question deleted successfully")
                 // Remove from local array
                 DispatchQueue.main.async {
                     self.posts.removeAll { $0.id == post.id }
@@ -127,9 +135,8 @@ class QuestionPostViewModel: ObservableObject {
             "updatedAt": Timestamp(date: Date())
         ]) { error in
             if let error = error {
-                print("❌ Failed to toggle question status: \(error.localizedDescription)")
+                // Handle error silently
             } else {
-                print("✅ Question status toggled successfully to \(newStatus ? "active" : "inactive")")
                 // Update local array
                 DispatchQueue.main.async {
                     if let index = self.posts.firstIndex(where: { $0.id == post.id }) {
@@ -137,12 +144,14 @@ class QuestionPostViewModel: ObservableObject {
                             id: post.id,
                             title: post.title,
                             body: post.body,
+                            imageURL: post.imageURL,
                             createdAt: post.createdAt,
                             userID: post.userID,
                             displayName: post.displayName,
                             location: post.location,
                             locationName: post.locationName,
-                            isActive: newStatus
+                            isActive: newStatus,
+                            tags: post.tags
                         )
                     }
                 }
@@ -150,12 +159,21 @@ class QuestionPostViewModel: ObservableObject {
         }
     }
     
-    func updatePost(_ post: QuestionPost, title: String, body: String, location: CLLocationCoordinate2D? = nil, locationName: String? = nil) {
+    func updatePost(_ post: QuestionPost, title: String, body: String, imageURL: URL? = nil, location: CLLocationCoordinate2D? = nil, locationName: String? = nil, tags: [String] = []) {
         var data: [String: Any] = [
             "title": title,
             "body": body,
-            "updatedAt": Timestamp(date: Date())
+            "updatedAt": Timestamp(date: Date()),
+            "tags": tags
         ]
+        
+        // 画像URLを更新
+        if let imageURL = imageURL {
+            data["imageURL"] = imageURL.absoluteString
+        } else if post.imageURL != nil {
+            // 既存の画像URLを保持
+            data["imageURL"] = post.imageURL!.absoluteString
+        }
         
         // 位置情報を更新
         if let location = location {
@@ -168,23 +186,25 @@ class QuestionPostViewModel: ObservableObject {
         
         db.collection("questions").document(post.id).updateData(data) { error in
             if let error = error {
-                print("❌ Failed to update question: \(error.localizedDescription)")
+                // Handle error silently
             } else {
-                print("✅ Question updated successfully")
                 // Update local array
                 DispatchQueue.main.async {
                     if let index = self.posts.firstIndex(where: { $0.id == post.id }) {
                         let geoPoint = location != nil ? GeoPoint(latitude: location!.latitude, longitude: location!.longitude) : post.location
+                        let finalImageURL = imageURL ?? post.imageURL
                         self.posts[index] = QuestionPost(
                             id: post.id,
                             title: title,
                             body: body,
+                            imageURL: finalImageURL,
                             createdAt: post.createdAt,
                             userID: post.userID,
                             displayName: post.displayName,
                             location: geoPoint,
                             locationName: locationName ?? post.locationName,
-                            isActive: post.isActive
+                            isActive: post.isActive,
+                            tags: tags
                         )
                     }
                 }
@@ -200,7 +220,6 @@ class QuestionPostViewModel: ObservableObject {
             .order(by: "createdAt", descending: true)
             .getDocuments { snapshot, error in
                 if let error = error {
-                    print("Error fetching questions with location: \(error)")
                     completion([])
                     return
                 }
@@ -226,12 +245,14 @@ class QuestionPostViewModel: ObservableObject {
                         id: id,
                         title: title,
                         body: body,
+                        imageURL: nil,
                         createdAt: createdAt,
                         userID: userID,
                         displayName: displayName,
                         location: location,
                         locationName: locationName,
-                        isActive: isActive
+                        isActive: isActive,
+                        tags: []
                     )
                 }
                 
