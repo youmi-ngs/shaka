@@ -1,10 +1,27 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
+const nodemailer = require('nodemailer');
 
 admin.initializeApp();
 
 const db = admin.firestore();
 const messaging = admin.messaging();
+
+// 管理者のメールアドレス（環境変数で設定）
+const ADMIN_EMAIL = functions.config().admin?.email || 'your-email@example.com';
+
+// Gmailの設定（環境変数で設定）
+const GMAIL_EMAIL = functions.config().gmail?.email || 'your-gmail@gmail.com';
+const GMAIL_PASSWORD = functions.config().gmail?.password || 'your-app-password';
+
+// メール送信用のトランスポーター
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: GMAIL_EMAIL,
+    pass: GMAIL_PASSWORD
+  }
+});
 
 /**
  * ユーザーのdisplayName変更時に、全投稿のdisplayNameを更新
@@ -599,6 +616,162 @@ exports.onQuestionCommented = functions.firestore
       return null;
     } catch (error) {
       console.error('Error in onQuestionCommented:', error);
+      return null;
+    }
+  });
+
+/**
+ * 通報通知（管理者向け）
+ * 新しい通報が作成されたときに管理者に通知を送る
+ */
+exports.onReportCreated = functions.firestore
+  .document('reports/{reportId}')
+  .onCreate(async (snap, context) => {
+    const report = snap.data();
+    const reportId = context.params.reportId;
+    
+    try {
+      // 通報者の情報を取得
+      const reporterDoc = await db.collection('users').doc(report.reporterId).get();
+      const reporterName = reporterDoc.exists && reporterDoc.data().public
+        ? reporterDoc.data().public.displayName
+        : 'Anonymous';
+
+      // 通報対象の情報を取得
+      let targetTitle = report.targetTitle || 'Unknown';
+      let targetUrl = '';
+      
+      // Firebase Consoleの直接リンクを生成
+      const projectId = process.env.GCLOUD_PROJECT || 'shaka-shakatsu';
+      const consoleUrl = `https://console.firebase.google.com/project/${projectId}/firestore/data/~2Freports~2F${reportId}`;
+
+      // 管理者通知用のドキュメントを作成（オプション）
+      await db.collection('admin_notifications').add({
+        type: 'report',
+        reportId: reportId,
+        reporterId: report.reporterId,
+        reporterName: reporterName,
+        targetType: report.targetType,
+        targetId: report.targetId,
+        targetTitle: targetTitle,
+        reason: report.reason,
+        reasonDescription: report.reasonDescription,
+        additionalDetails: report.additionalDetails || '',
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        reviewed: false,
+        consoleUrl: consoleUrl
+      });
+
+      console.log(`New report created: ${reportId}`);
+      console.log(`Report type: ${report.targetType}`);
+      console.log(`Reason: ${report.reason}`);
+      console.log(`Reporter: ${reporterName}`);
+      console.log(`Target: ${targetTitle}`);
+      console.log(`View in Firebase Console: ${consoleUrl}`);
+      
+      // メール通知を送信
+      if (ADMIN_EMAIL !== 'your-email@example.com' && GMAIL_EMAIL !== 'your-gmail@gmail.com') {
+        const mailOptions = {
+          from: GMAIL_EMAIL,
+          to: ADMIN_EMAIL,
+          subject: '⚠️ 新しい通報がありました - Shaka App',
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <div style="background-color: #f44336; color: white; padding: 20px; border-radius: 10px 10px 0 0;">
+                <h2 style="margin: 0;">⚠️ 新しい通報を受信しました</h2>
+              </div>
+              <div style="background-color: #f5f5f5; padding: 20px; border-radius: 0 0 10px 10px;">
+                <h3 style="color: #333;">通報の詳細</h3>
+                <table style="width: 100%; border-collapse: collapse;">
+                  <tr>
+                    <td style="padding: 10px; border-bottom: 1px solid #ddd;"><strong>通報ID:</strong></td>
+                    <td style="padding: 10px; border-bottom: 1px solid #ddd;">${reportId}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 10px; border-bottom: 1px solid #ddd;"><strong>種類:</strong></td>
+                    <td style="padding: 10px; border-bottom: 1px solid #ddd;">${report.targetType}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 10px; border-bottom: 1px solid #ddd;"><strong>理由:</strong></td>
+                    <td style="padding: 10px; border-bottom: 1px solid #ddd;">${report.reason}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 10px; border-bottom: 1px solid #ddd;"><strong>理由の説明:</strong></td>
+                    <td style="padding: 10px; border-bottom: 1px solid #ddd;">${report.reasonDescription}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 10px; border-bottom: 1px solid #ddd;"><strong>通報者:</strong></td>
+                    <td style="padding: 10px; border-bottom: 1px solid #ddd;">${reporterName}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 10px; border-bottom: 1px solid #ddd;"><strong>対象:</strong></td>
+                    <td style="padding: 10px; border-bottom: 1px solid #ddd;">${targetTitle}</td>
+                  </tr>
+                  ${report.additionalDetails ? `
+                  <tr>
+                    <td style="padding: 10px; border-bottom: 1px solid #ddd;"><strong>詳細:</strong></td>
+                    <td style="padding: 10px; border-bottom: 1px solid #ddd;">${report.additionalDetails}</td>
+                  </tr>
+                  ` : ''}
+                  <tr>
+                    <td style="padding: 10px;"><strong>日時:</strong></td>
+                    <td style="padding: 10px;">${new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })}</td>
+                  </tr>
+                </table>
+                <div style="margin-top: 20px; text-align: center;">
+                  <a href="${consoleUrl}" style="display: inline-block; background-color: #4CAF50; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px;">
+                    Firebase Consoleで確認
+                  </a>
+                </div>
+              </div>
+            </div>
+          `
+        };
+
+        try {
+          await transporter.sendMail(mailOptions);
+          console.log('Email notification sent successfully');
+        } catch (error) {
+          console.error('Error sending email notification:', error);
+        }
+      }
+      
+      // Slackやメール通知を実装する場合はここに追加
+      // 例: Slack Webhook
+      /*
+      if (functions.config().slack?.webhook_url) {
+        const axios = require('axios');
+        await axios.post(functions.config().slack.webhook_url, {
+          text: `⚠️ New Report Received`,
+          blocks: [
+            {
+              type: 'section',
+              text: {
+                type: 'mrkdwn',
+                text: `*New Report in Shaka App*\n*Type:* ${report.targetType}\n*Reason:* ${report.reason}\n*Reporter:* ${reporterName}\n*Target:* ${targetTitle}`
+              }
+            },
+            {
+              type: 'actions',
+              elements: [
+                {
+                  type: 'button',
+                  text: {
+                    type: 'plain_text',
+                    text: 'View in Firebase Console'
+                  },
+                  url: consoleUrl
+                }
+              ]
+            }
+          ]
+        });
+      }
+      */
+
+      return null;
+    } catch (error) {
+      console.error('Error in onReportCreated:', error);
       return null;
     }
   });
