@@ -24,6 +24,9 @@ struct QuestionPost: Identifiable {
     // ステータス関連
     let isActive: Bool
     
+    // タグ（最大5個）
+    let tags: [String]
+    
     // 編集・削除権限のチェック
     func canEdit(currentUserID: String?) -> Bool {
         guard let currentUserID = currentUserID else { return false }
@@ -39,7 +42,8 @@ struct QuestionPost: Identifiable {
     // デフォルトイニシャライザ（既存のコード互換性のため）
     init(id: String, title: String, body: String, createdAt: Date, 
          userID: String, displayName: String,
-         location: GeoPoint? = nil, locationName: String? = nil, isActive: Bool = true) {
+         location: GeoPoint? = nil, locationName: String? = nil, isActive: Bool = true,
+         tags: [String] = []) {
         self.id = id
         self.title = title
         self.body = body
@@ -49,5 +53,6 @@ struct QuestionPost: Identifiable {
         self.location = location
         self.locationName = locationName
         self.isActive = isActive
+        self.tags = tags
     }
 }

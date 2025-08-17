@@ -26,6 +26,9 @@ struct WorkPost: Identifiable {
     // ステータス関連
     let isActive: Bool
     
+    // タグ（最大5個）
+    let tags: [String]
+    
     // 編集・削除権限のチェック
     func canEdit(currentUserID: String?) -> Bool {
         guard let currentUserID = currentUserID else { return false }
@@ -41,7 +44,8 @@ struct WorkPost: Identifiable {
     // デフォルトイニシャライザ（既存のコード互換性のため）
     init(id: String, title: String, description: String?, detail: String?, 
          imageURL: URL?, createdAt: Date, userID: String, displayName: String,
-         location: GeoPoint? = nil, locationName: String? = nil, isActive: Bool = true) {
+         location: GeoPoint? = nil, locationName: String? = nil, isActive: Bool = true,
+         tags: [String] = []) {
         self.id = id
         self.title = title
         self.description = description
@@ -53,5 +57,6 @@ struct WorkPost: Identifiable {
         self.location = location
         self.locationName = locationName
         self.isActive = isActive
+        self.tags = tags
     }
 }

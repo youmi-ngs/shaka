@@ -81,6 +81,21 @@ struct WorkDetailView: View {
                     .fontWeight(.bold)
                     .padding(.horizontal)
                 
+                // Tags
+                if !post.tags.isEmpty {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            ForEach(post.tags, id: \.self) { tag in
+                                TagChip(tag: tag, isClickable: true) {
+                                    // TODO: Navigate to tag search
+                                    print("Tag tapped: \(tag)")
+                                }
+                            }
+                        }
+                        .padding(.horizontal)
+                    }
+                }
+                
                 // Author and Date
                 HStack {
                     VStack(alignment: .leading, spacing: 8) {

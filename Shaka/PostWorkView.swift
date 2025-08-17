@@ -26,6 +26,7 @@ struct PostWorkView: View {
     @State private var selectedImage: UIImage?
     @State private var isUploading = false
     @State private var uploadError: String?
+    @State private var tags: [String] = []
     
     // 位置情報関連
     @State private var useCurrentLocation = false
@@ -130,6 +131,16 @@ struct PostWorkView: View {
                 }
             },
             additionalContent: {
+                // Tags section
+                Section(header: HStack {
+                    Text("Tags")
+                    Text("(Optional)")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }) {
+                    TagInputView(tags: $tags)
+                }
+                
                 // Photo details section (optional)
                 Section(header: HStack {
                     Text("Photo Details")
@@ -289,7 +300,8 @@ struct PostWorkView: View {
                             detail: detail,
                             imageURL: imageURL,
                             location: finalLocation,
-                            locationName: finalLocationName
+                            locationName: finalLocationName,
+                            tags: tags
                         )
                     } else {
                         // Add new post
@@ -299,7 +311,8 @@ struct PostWorkView: View {
                             detail: detail,
                             imageURL: imageURL,
                             location: finalLocation,
-                            locationName: finalLocationName
+                            locationName: finalLocationName,
+                            tags: tags
                         )
                     }
                     dismiss()
@@ -318,6 +331,7 @@ struct PostWorkView: View {
     private func loadPostData(_ post: WorkPost) {
         title = post.title
         description = post.description ?? ""
+        tags = post.tags  // タグを読み込み
         
         // 位置情報を読み込み
         if let coordinate = post.coordinate {

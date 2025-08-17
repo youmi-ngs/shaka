@@ -19,7 +19,7 @@ class WorkPostViewModel: ObservableObject {
 //        posts.insert(newPost, at: 0)
 //    }
     
-    func addPost(title: String, description: String?, detail: String? = nil, imageURL: URL?, location: CLLocationCoordinate2D? = nil, locationName: String? = nil) {
+    func addPost(title: String, description: String?, detail: String? = nil, imageURL: URL?, location: CLLocationCoordinate2D? = nil, locationName: String? = nil, tags: [String] = []) {
         let userID = AuthManager.shared.getCurrentUserID() ?? "anonymous"
         let displayName = AuthManager.shared.getDisplayName()
         print("📝 Creating post with userID: \(userID), displayName: \(displayName)")
@@ -50,6 +50,11 @@ class WorkPostViewModel: ObservableObject {
         if let locationName = locationName, !locationName.isEmpty {
             data["locationName"] = locationName
         }
+        
+        // タグを追加（最大5個）
+        if !tags.isEmpty {
+            data["tags"] = Array(tags.prefix(5))
+        }
 
         let docRef = db.collection("works").document()
         data["id"] = docRef.documentID
@@ -72,7 +77,8 @@ class WorkPostViewModel: ObservableObject {
                     displayName: displayName,
                     location: geoPoint,
                     locationName: locationName,
-                    isActive: true
+                    isActive: true,
+                    tags: tags
                 )
                 DispatchQueue.main.async {
                     self.posts.insert(newPost, at: 0)
@@ -108,6 +114,7 @@ class WorkPostViewModel: ObservableObject {
                     let location = data["location"] as? GeoPoint
                     let locationName = data["locationName"] as? String
                     let isActive = data["isActive"] as? Bool ?? true
+                    let tags = data["tags"] as? [String] ?? []
 
                     return WorkPost(
                         id: id,
@@ -120,7 +127,8 @@ class WorkPostViewModel: ObservableObject {
                         displayName: displayName,
                         location: location,
                         locationName: locationName,
-                        isActive: isActive
+                        isActive: isActive,
+                        tags: tags
                     )
                 }
             }
@@ -174,7 +182,7 @@ class WorkPostViewModel: ObservableObject {
         }
     }
     
-    func updatePost(_ post: WorkPost, title: String, description: String?, detail: String?, imageURL: URL?, location: CLLocationCoordinate2D? = nil, locationName: String? = nil) {
+    func updatePost(_ post: WorkPost, title: String, description: String?, detail: String?, imageURL: URL?, location: CLLocationCoordinate2D? = nil, locationName: String? = nil, tags: [String] = []) {
         var data: [String: Any] = [
             "title": title,
             "imageURL": imageURL?.absoluteString ?? "",
@@ -209,6 +217,13 @@ class WorkPostViewModel: ObservableObject {
             data["locationName"] = FieldValue.delete()
         }
         
+        // タグを更新
+        if !tags.isEmpty {
+            data["tags"] = Array(tags.prefix(5))
+        } else {
+            data["tags"] = []
+        }
+        
         // 更新時もuserIDとdisplayNameを保持（変更しない）
         db.collection("works").document(post.id).updateData(data) { error in
             if let error = error {
@@ -230,7 +245,8 @@ class WorkPostViewModel: ObservableObject {
                             displayName: post.displayName,
                             location: geoPoint,
                             locationName: locationName ?? post.locationName,
-                            isActive: post.isActive
+                            isActive: post.isActive,
+                            tags: tags
                         )
                     }
                     // Data updated - DiscoverView will refresh when sheet is dismissed
@@ -273,6 +289,7 @@ class WorkPostViewModel: ObservableObject {
                     let location = data["location"] as? GeoPoint
                     let locationName = data["locationName"] as? String
                     let isActive = data["isActive"] as? Bool ?? true
+                    let tags = data["tags"] as? [String] ?? []
                     
                     // locationがある投稿のみ返す（アクティブ/非アクティブ問わず地図に表示）
                     guard location != nil else { 
@@ -291,7 +308,8 @@ class WorkPostViewModel: ObservableObject {
                         displayName: displayName,
                         location: location,
                         locationName: locationName,
-                        isActive: isActive
+                        isActive: isActive,
+                        tags: tags
                     )
                 }
                 
