@@ -190,6 +190,18 @@ struct ProfileView: View {
                     .padding(.vertical, 8)
                 }
                 
+                // Your Content Section
+                Section(header: Text("Your Content")) {
+                    NavigationLink(destination: BookmarkedPostsView()) {
+                        HStack {
+                            Image(systemName: "bookmark.fill")
+                                .foregroundColor(.blue)
+                                .frame(width: 30)
+                            Text("Bookmarks")
+                        }
+                    }
+                }
+                
                 // Debug Section
                 Section(header: Text("Info")) {
                     HStack {

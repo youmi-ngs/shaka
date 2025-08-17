@@ -19,6 +19,7 @@ struct ContentView: View {
     @State private var profileToShow: String?
     @State private var hasRequestedNotifications = false
     @State private var showNotificationList = false
+    @State private var showSearchView = false
     
     var body: some View {
         NavigationView {
@@ -50,6 +51,15 @@ struct ContentView: View {
                 }
             }
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(action: {
+                        showSearchView = true
+                    }) {
+                        Image(systemName: "magnifyingglass")
+                            .font(.system(size: 20))
+                    }
+                }
+                
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: {
                         showNotificationList = true
@@ -76,6 +86,9 @@ struct ContentView: View {
         }
         .sheet(isPresented: $showNotificationList) {
             NotificationListView()
+        }
+        .sheet(isPresented: $showSearchView) {
+            SearchView()
         }
         .onChange(of: deepLinkManager.showAddFriendAlert) { newValue in
             if newValue, let friend = deepLinkManager.friendToAdd {

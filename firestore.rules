@@ -43,6 +43,20 @@ service cloud.firestore {
       
       // 削除は本人のみ可能（アカウント削除時）
       allow delete: if isOwner(userId);
+      
+      // ユーザーのブックマーク（作品）
+      match /bookmarkedWorks/{postId} {
+        // 本人のみ読み書き可能
+        allow read: if isOwner(userId);
+        allow write: if isOwner(userId);
+      }
+      
+      // ユーザーのブックマーク（質問）
+      match /bookmarkedQuestions/{postId} {
+        // 本人のみ読み書き可能
+        allow read: if isOwner(userId);
+        allow write: if isOwner(userId);
+      }
     }
     
     // ========== Works Collection ==========
@@ -103,6 +117,25 @@ service cloud.firestore {
           && request.auth.uid == uid;
         
         // 更新は禁止（冪等運用）
+        allow update: if false;
+      }
+      
+      // 作品へのブックマーク
+      match /bookmarks/{uid} {
+        // 誰でも読み取り可能（公開）
+        allow read: if true;
+        
+        // 本人のみブックマークを作成可能
+        allow create: if isAuthenticated()
+          && request.auth.uid == uid
+          && request.resource.data.keys().hasOnly(['createdAt'])
+          && request.resource.data.createdAt is timestamp;
+        
+        // 本人のみブックマークを削除可能
+        allow delete: if isAuthenticated() 
+          && request.auth.uid == uid;
+        
+        // 更新は禁止
         allow update: if false;
       }
     }
@@ -216,6 +249,25 @@ service cloud.firestore {
         // 更新は禁止（冪等運用）
         allow update: if false;
       }
+      
+      // 質問へのブックマーク
+      match /bookmarks/{uid} {
+        // 誰でも読み取り可能（公開）
+        allow read: if true;
+        
+        // 本人のみブックマークを作成可能
+        allow create: if isAuthenticated()
+          && request.auth.uid == uid
+          && request.resource.data.keys().hasOnly(['createdAt'])
+          && request.resource.data.createdAt is timestamp;
+        
+        // 本人のみブックマークを削除可能
+        allow delete: if isAuthenticated() 
+          && request.auth.uid == uid;
+        
+        // 更新は禁止
+        allow update: if false;
+      }
     }
     
     // ========== FCMトークン管理（プライベート） ==========
@@ -260,6 +312,28 @@ service cloud.firestore {
         // 本人のみ削除可能
         allow delete: if isOwner(uid);
       }
+    }
+    
+    // ========== 通報管理 ==========
+    match /reports/{reportId} {
+      // 読み取り：本人または管理者のみ
+      allow read: if isAuthenticated() && 
+        (resource.data.reporterId == request.auth.uid || 
+         request.auth.token.admin == true);
+      
+      // 作成：認証済みユーザーのみ、本人のレポートのみ
+      allow create: if isAuthenticated() &&
+        request.resource.data.reporterId == request.auth.uid &&
+        request.resource.data.keys().hasAll(['reporterId', 'targetId', 'targetType', 'targetUserId', 'reason', 'createdAt']) &&
+        request.resource.data.targetType in ['work', 'question', 'comment', 'user'] &&
+        request.resource.data.reason in ['Spam', 'Inappropriate Content', 'Harassment or Bullying', 'Violence or Dangerous Content', 'Misinformation', 'Copyright Violation', 'Other'];
+      
+      // 更新：管理者のみ
+      allow update: if isAuthenticated() && 
+        request.auth.token.admin == true;
+      
+      // 削除：禁止
+      allow delete: if false;
     }
   }
 }

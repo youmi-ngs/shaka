@@ -16,12 +16,16 @@ struct QuestionDetailView: View {
     @State private var isDeleting = false
     @State private var showEditSheet = false
     @State private var showAuthorProfile = false
+    @State private var showSearchForTag: String?
+    @State private var showReportSheet = false
     @StateObject private var likeManager: LikeManager
+    @StateObject private var bookmarkManager: BookmarkManager
     
     init(post: QuestionPost, viewModel: QuestionPostViewModel) {
         self.post = post
         self.viewModel = viewModel
         self._likeManager = StateObject(wrappedValue: LikeManager(postId: post.id, postType: .question))
+        self._bookmarkManager = StateObject(wrappedValue: BookmarkManager(postId: post.id, postType: .question))
     }
     
     var body: some View {
@@ -32,6 +36,20 @@ struct QuestionDetailView: View {
                     .font(.largeTitle)
                     .fontWeight(.bold)
                     .padding(.horizontal)
+                
+                // Tags
+                if !post.tags.isEmpty {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            ForEach(post.tags, id: \.self) { tag in
+                                TagChip(tag: tag, isClickable: true) {
+                                    showSearchForTag = tag
+                                }
+                            }
+                        }
+                        .padding(.horizontal)
+                    }
+                }
                 
                 // Author and Date
                 HStack {
@@ -61,24 +79,38 @@ struct QuestionDetailView: View {
                     
                     Spacer()
                     
-                    // Like button
-                    VStack {
-                        Button(action: {
-                            likeManager.toggleLike()
-                        }) {
-                            Image(systemName: likeManager.isLiked ? "heart.fill" : "heart")
-                                .font(.title2)
-                                .foregroundColor(likeManager.isLiked ? .red : .gray)
-                                .scaleEffect(likeManager.isProcessing ? 0.8 : 1.0)
-                                .animation(.easeInOut(duration: 0.1), value: likeManager.isProcessing)
+                    HStack(spacing: 20) {
+                        // Like button
+                        VStack {
+                            Button(action: {
+                                likeManager.toggleLike()
+                            }) {
+                                Image(systemName: likeManager.isLiked ? "heart.fill" : "heart")
+                                    .font(.title2)
+                                    .foregroundColor(likeManager.isLiked ? .red : .gray)
+                                    .scaleEffect(likeManager.isProcessing ? 0.8 : 1.0)
+                                    .animation(.easeInOut(duration: 0.1), value: likeManager.isProcessing)
+                            }
+                            .disabled(likeManager.isProcessing || authManager.userID == nil)
+                            
+                            if likeManager.likesCount > 0 {
+                                Text("\(likeManager.likesCount)")
+                                    .font(.caption)
+                                    .foregroundColor(.gray)
+                            }
                         }
-                        .disabled(likeManager.isProcessing || authManager.userID == nil)
                         
-                        if likeManager.likesCount > 0 {
-                            Text("\(likeManager.likesCount)")
-                                .font(.caption)
-                                .foregroundColor(.gray)
+                        // Bookmark button
+                        Button(action: {
+                            bookmarkManager.toggleBookmark()
+                        }) {
+                            Image(systemName: bookmarkManager.isBookmarked ? "bookmark.fill" : "bookmark")
+                                .font(.title2)
+                                .foregroundColor(bookmarkManager.isBookmarked ? .blue : .gray)
+                                .scaleEffect(bookmarkManager.isProcessing ? 0.8 : 1.0)
+                                .animation(.easeInOut(duration: 0.1), value: bookmarkManager.isProcessing)
                         }
+                        .disabled(bookmarkManager.isProcessing || authManager.userID == nil)
                     }
                 }
                 .padding(.horizontal)
@@ -107,9 +139,9 @@ struct QuestionDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                // 自分の投稿の場合のみ編集・削除ボタンを表示
-                if post.canEdit(currentUserID: authManager.userID) {
-                    HStack {
+                HStack {
+                    // 自分の投稿の場合のみ編集・削除ボタンを表示
+                    if post.canEdit(currentUserID: authManager.userID) {
                         Button(action: {
                             showEditSheet = true
                         }) {
@@ -123,6 +155,14 @@ struct QuestionDetailView: View {
                                 .foregroundColor(.red)
                         }
                         .disabled(isDeleting)
+                    } else {
+                        // 他人の投稿の場合は通報ボタンを表示
+                        Button(action: {
+                            showReportSheet = true
+                        }) {
+                            Image(systemName: "exclamationmark.triangle")
+                                .foregroundColor(.orange)
+                        }
                     }
                 }
             }
@@ -134,6 +174,20 @@ struct QuestionDetailView: View {
             NavigationView {
                 PublicProfileView(authorUid: post.userID)
             }
+        }
+        .sheet(item: Binding<IdentifiableString?>(
+            get: { showSearchForTag.map { IdentifiableString(id: $0) } },
+            set: { showSearchForTag = $0?.value }
+        )) { item in
+            SearchView(initialSearchText: item.value, initialSearchType: .tag)
+        }
+        .sheet(isPresented: $showReportSheet) {
+            ReportView(
+                targetId: post.id,
+                targetType: .question,
+                targetUserId: post.userID,
+                targetTitle: post.title
+            )
         }
         .alert("Delete Question", isPresented: $showDeleteAlert) {
             Button("Cancel", role: .cancel) { }

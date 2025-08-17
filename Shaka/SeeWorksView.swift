@@ -89,6 +89,7 @@ struct WorkPostCard: View {
     @ObservedObject var viewModel: WorkPostViewModel
     var refreshID: UUID = UUID()
     @State private var showAuthorProfile = false
+    @State private var showSearchForTag: String?
     @StateObject private var likeManager: LikeManager
     
     init(post: WorkPost, viewModel: WorkPostViewModel, refreshID: UUID = UUID()) {
@@ -179,7 +180,9 @@ struct WorkPostCard: View {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 6) {
                             ForEach(post.tags, id: \.self) { tag in
-                                TagChip(tag: tag, isClickable: false)
+                                TagChip(tag: tag, isClickable: true) {
+                                    showSearchForTag = tag
+                                }
                             }
                         }
                     }
@@ -241,6 +244,12 @@ struct WorkPostCard: View {
             NavigationView {
                 PublicProfileView(authorUid: post.userID)
             }
+        }
+        .sheet(item: Binding<IdentifiableString?>(
+            get: { showSearchForTag.map { IdentifiableString(id: $0) } },
+            set: { showSearchForTag = $0?.value }
+        )) { item in
+            SearchView(initialSearchText: item.value, initialSearchType: .tag)
         }
     }
 }
