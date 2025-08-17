@@ -89,6 +89,14 @@ struct WorkPostCard: View {
     @ObservedObject var viewModel: WorkPostViewModel
     var refreshID: UUID = UUID()
     @State private var showAuthorProfile = false
+    @StateObject private var likeManager: LikeManager
+    
+    init(post: WorkPost, viewModel: WorkPostViewModel, refreshID: UUID = UUID()) {
+        self.post = post
+        self.viewModel = viewModel
+        self.refreshID = refreshID
+        self._likeManager = StateObject(wrappedValue: LikeManager(postId: post.id, postType: .work))
+    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -211,6 +219,16 @@ struct WorkPostCard: View {
                     }
                     
                     Spacer()
+                    
+                    // いいねボタン
+                    Button(action: {
+                        likeManager.toggleLike()
+                    }) {
+                        Image(systemName: likeManager.isLiked ? "heart.fill" : "heart")
+                            .font(.system(size: 20))
+                            .foregroundColor(likeManager.isLiked ? .red : .gray)
+                    }
+                    .buttonStyle(PlainButtonStyle())
                 }
             }
             .padding(.horizontal, 4)
