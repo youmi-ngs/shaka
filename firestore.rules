@@ -232,6 +232,35 @@ service cloud.firestore {
       // 削除：本人のみ
       allow delete: if isOwner(uid);
     }
+    
+    // ========== 通知管理 ==========
+    match /notifications/{uid} {
+      // 本人のみ読み取り可能
+      allow read: if isOwner(uid);
+      
+      // Cloud Functionsのみ作成可能（サーバーサイドのみ）
+      allow create: if false;
+      
+      // 本人のみ削除可能（アカウント削除時）
+      allow delete: if isOwner(uid);
+      
+      // 通知アイテム
+      match /items/{notificationId} {
+        // 本人のみ読み取り可能
+        allow read: if isOwner(uid);
+        
+        // Cloud Functionsのみ作成可能
+        allow create: if false;
+        
+        // 本人のみ更新可能（既読フラグのみ）
+        allow update: if isOwner(uid)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read'])
+          && request.resource.data.read is bool;
+        
+        // 本人のみ削除可能
+        allow delete: if isOwner(uid);
+      }
+    }
   }
 }
 

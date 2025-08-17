@@ -259,6 +259,30 @@ struct ProfileView: View {
                                 .font(.caption)
                         }
                     }
+                    
+                    // トークンリフレッシュボタン（デバッグ用）
+                    Button(action: {
+                        notificationManager.refreshFCMToken()
+                    }) {
+                        HStack {
+                            Image(systemName: "arrow.clockwise")
+                            Text("Refresh Token")
+                        }
+                        .foregroundColor(.blue)
+                    }
+                    
+                    // プッシュ通知設定状態（デバッグ用）
+                    #if DEBUG
+                    Button(action: {
+                        print(notificationManager.checkPushNotificationSetup())
+                    }) {
+                        HStack {
+                            Image(systemName: "info.circle")
+                            Text("Check Setup Status")
+                        }
+                        .foregroundColor(.orange)
+                    }
+                    #endif
                 }
                 
                 // Sign In Section for anonymous users

@@ -214,20 +214,50 @@ async function sendPushNotification(targetUid, title, body, data = {}) {
       }
     };
 
-    // マルチキャスト送信
-    const response = await messaging.sendMulticast(message);
+    // マルチキャスト送信を個別送信に変更（新しいAPIを使用）
+    const responses = await Promise.allSettled(
+      tokens.map(token => 
+        messaging.send({
+          token: token,
+          notification: {
+            title: title,
+            body: body
+          },
+          apns: {
+            payload: {
+              aps: {
+                alert: {
+                  title: title,
+                  body: body
+                },
+                sound: 'default',
+                badge: unreadCount
+              }
+            }
+          },
+          data: data
+        })
+      )
+    );
     
-    // 失敗したトークンをクリーンアップ
-    if (response.failureCount > 0) {
-      const failedTokens = [];
-      response.responses.forEach((resp, idx) => {
-        if (!resp.success) {
-          failedTokens.push(tokens[idx]);
-          console.error(`Failed to send to token ${tokens[idx]}:`, resp.error);
-        }
-      });
+    // レスポンスを処理し、失敗したトークンをクリーンアップ
+    let successCount = 0;
+    let failureCount = 0;
+    const failedTokens = [];
+    
+    responses.forEach((result, idx) => {
+      if (result.status === 'fulfilled') {
+        successCount++;
+        console.log(`✅ Notification sent to token ${tokens[idx]}`);
+      } else {
+        failureCount++;
+        failedTokens.push(tokens[idx]);
+        console.error(`❌ Failed to send to token ${tokens[idx]}:`, result.reason);
+      }
+    });
 
-      // 無効なトークンを削除
+    // 無効なトークンを削除
+    if (failedTokens.length > 0) {
       const deletePromises = failedTokens.map(token =>
         db.collection('users_private')
           .doc(targetUid)
@@ -236,9 +266,10 @@ async function sendPushNotification(targetUid, title, body, data = {}) {
           .delete()
       );
       await Promise.all(deletePromises);
+      console.log(`Deleted ${failedTokens.length} invalid tokens`);
     }
 
-    console.log(`Push notification sent: ${response.successCount} success, ${response.failureCount} failed`);
+    console.log(`Push notification results: ${successCount} success, ${failureCount} failed`);
   } catch (error) {
     console.error('Error sending push notification:', error);
   }

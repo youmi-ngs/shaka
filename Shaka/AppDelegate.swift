@@ -17,12 +17,23 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         
         // Firebase Messagingのデリゲート設定
         Messaging.messaging().delegate = self
+        print("✅ Messaging delegate set")
         
         // 通知センターのデリゲート設定
         UNUserNotificationCenter.current().delegate = NotificationManager.shared
         
         // APNs登録
         application.registerForRemoteNotifications()
+        
+        // 現在のFCMトークンを取得してみる
+        Messaging.messaging().token { token, error in
+            if let error = error {
+                print("❌ Error fetching FCM token: \(error)")
+            } else if let token = token {
+                print("🔑 Current FCM token: \(token)")
+                NotificationManager.shared.saveFCMToken(token)
+            }
+        }
         
         print("📱 AppDelegate configured for push notifications")
         
@@ -66,12 +77,15 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 extension AppDelegate: MessagingDelegate {
     /// FCMトークンが更新された時
     func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
+        print("🔔 messaging:didReceiveRegistrationToken called")
+        
         guard let fcmToken = fcmToken else {
             print("⚠️ FCM token is nil")
             return
         }
         
         print("🔑 FCM Token received: \(fcmToken)")
+        print("📝 Token length: \(fcmToken.count)")
         NotificationManager.shared.saveFCMToken(fcmToken)
     }
 }

@@ -9,6 +9,7 @@ import Foundation
 import UserNotifications
 import FirebaseFirestore
 import FirebaseAuth
+import FirebaseMessaging
 
 /// プッシュ通知を管理するクラス
 class NotificationManager: NSObject, ObservableObject {
@@ -106,6 +107,69 @@ class NotificationManager: NSObject, ObservableObject {
                     print("✅ FCM token deleted")
                 }
             }
+    }
+    
+    /// FCMトークンを強制的にリフレッシュ
+    func refreshFCMToken() {
+        guard let uid = Auth.auth().currentUser?.uid else {
+            print("⚠️ No user logged in")
+            return
+        }
+        
+        // 古いトークンをすべて削除
+        db.collection("users_private")
+            .document(uid)
+            .collection("fcmTokens")
+            .getDocuments { [weak self] snapshot, error in
+                if let error = error {
+                    print("❌ Failed to get FCM tokens: \(error)")
+                    return
+                }
+                
+                // すべての古いトークンを削除
+                snapshot?.documents.forEach { doc in
+                    doc.reference.delete()
+                }
+                
+                print("🗑️ Deleted all old FCM tokens")
+                
+                // 新しいトークンを要求
+                Messaging.messaging().deleteToken { error in
+                    if let error = error {
+                        print("❌ Failed to delete FCM token from Firebase: \(error)")
+                    }
+                    
+                    // 新しいトークンを取得
+                    Messaging.messaging().token { token, error in
+                        if let error = error {
+                            print("❌ Error fetching new FCM token: \(error)")
+                        } else if let token = token {
+                            print("🔑 Got new FCM token: \(token)")
+                            self?.saveFCMToken(token)
+                        }
+                    }
+                }
+            }
+    }
+    
+    /// プッシュ通知の設定状態を確認
+    func checkPushNotificationSetup() -> String {
+        var status = "Push Notification Setup Status:\n"
+        
+        // 1. 通知許可状態
+        status += "1. Permission: \(isNotificationEnabled ? "✅ Granted" : "❌ Not granted")\n"
+        
+        // 2. FCMトークン
+        if let token = fcmToken {
+            status += "2. FCM Token: ✅ Active (\(token.prefix(20))...)\n"
+        } else {
+            status += "2. FCM Token: ❌ Not available\n"
+        }
+        
+        // 3. APNsトークン（今後の確認用）
+        status += "3. APNs: ⚠️ Check Xcode console for APNs token\n"
+        
+        return status
     }
     
     /// 通知タップ時の処理
