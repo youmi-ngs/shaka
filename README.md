@@ -1,10 +1,17 @@
-# Shaka - Photography Social Network
+# Shaka - Photography Social Network for Shutterbug / 写真愛好家のためのSNS
+
+[English](#english) | [日本語](#japanese)
+
+---
+
+<a name="english"></a>
+## English
 
 Shaka is a social networking app designed for photography enthusiasts to share their work and connect with other photographers.
 
-## Features
+### Features
 
-### Core Features
+#### Core Features
 - 📸 **Work Posts** - Share your photography with detailed metadata (location, camera settings, date)
 - ❓ **Question Posts** - Ask questions to the community with optional image attachments
 - 💬 **Comments** - Engage in discussions on posts
@@ -13,20 +20,26 @@ Shaka is a social networking app designed for photography enthusiasts to share t
 - 🔍 **Search** - Find posts by title, tags, or users
 - 🚨 **Report System** - Report inappropriate content with email notifications to admins
 
-### Safety & Security
+#### Safety & Security
 - 🔒 Comprehensive Firebase security rules
 - 📜 Terms of Service and Privacy Policy
-- ✉️ Email notifications for reported content
+- ✉️ Real-time email notifications for reported content (sent to admin)
 - 🛡️ Anonymous authentication with Apple ID linking
 
-## Tech Stack
+### Tech Stack
 
 - **Frontend**: SwiftUI
 - **Backend**: Firebase (Firestore, Storage, Auth, Functions)
-- **Push Notifications**: Firebase Cloud Messaging
 - **Email Service**: Nodemailer with Gmail SMTP
 
-## Setup
+### Upcoming Features
+
+- 📱 **Push Notifications** - Firebase Cloud Messaging (infrastructure ready)
+- 📍 **Real-time Location Sharing** - See active users' locations on Discover map
+- 🎨 **UI Improvements** - Enhanced user interface design
+- 🚀 **Performance Optimization** - App performance improvements
+
+### Setup
 
 1. Clone the repository
 2. Install Firebase CLI: `npm install -g firebase-tools`
@@ -35,26 +48,80 @@ Shaka is a social networking app designed for photography enthusiasts to share t
 5. Configure Firebase project settings
 6. Deploy Firebase rules and functions
 
-## Project Structure
+---
+
+<a name="japanese"></a>
+## 日本語
+
+Shakaは写真愛好家が作品を共有し、他の写真家とつながるためのソーシャルネットワーキングアプリです。
+
+### 機能
+
+#### 主要機能
+- 📸 **作品投稿** - 位置情報、カメラ設定、撮影日などの詳細メタデータと共に写真を共有
+- ❓ **質問投稿** - コミュニティに質問を投稿（画像添付可能）
+- 💬 **コメント** - 投稿にコメントして議論に参加
+- ❤️ **いいね＆ブックマーク** - 投稿への評価と後で見るための保存
+- 👥 **フォローシステム** - 気に入った写真家をフォロー
+- 🔍 **検索** - タイトル、タグ、ユーザーで投稿を検索
+- 🚨 **通報システム** - 不適切なコンテンツを通報（管理者へメール通知）
+
+#### 安全性とセキュリティ
+- 🔒 包括的なFirebaseセキュリティルール
+- 📜 利用規約とプライバシーポリシー
+- ✉️ 通報されたコンテンツのリアルタイムメール通知（管理者へ送信）
+- 🛡️ 匿名認証とApple IDリンク機能
+
+### 技術スタック
+
+- **フロントエンド**: SwiftUI
+- **バックエンド**: Firebase (Firestore, Storage, Auth, Functions)
+- **メールサービス**: Nodemailer（Gmail SMTP）
+
+### 今後実装予定の機能
+
+- 📱 **プッシュ通知** - Firebase Cloud Messaging（インフラ準備済み）
+- 📍 **リアルタイム位置情報共有** - Discoverマップ上でアクティブユーザーの位置を表示
+- 🎨 **UI改善** - ユーザーインターフェースの向上
+- 🚀 **パフォーマンス最適化** - アプリ動作の高速化
+
+### セットアップ
+
+1. リポジトリをクローン
+2. Firebase CLIをインストール: `npm install -g firebase-tools`
+3. `GoogleService-Info.plist`をShakaフォルダに追加
+4. functionsディレクトリで`npm install`を実行
+5. Firebaseプロジェクト設定を構成
+6. Firebaseルールと関数をデプロイ
+
+---
+
+## Project Structure / プロジェクト構造
 
 ```
 Shaka/
-├── Shaka/              # iOS app source code
+├── Shaka/              # iOS app source code / iOSアプリソースコード
 ├── functions/          # Firebase Cloud Functions
-├── firestore.rules     # Firestore security rules
-├── storage.rules       # Storage security rules
-└── firebase.json       # Firebase configuration
+├── firestore.rules     # Firestore security rules / Firestoreセキュリティルール
+├── storage.rules       # Storage security rules / Storageセキュリティルール
+├── docs/               # Documentation / ドキュメント
+└── firebase.json       # Firebase configuration / Firebase設定
 ```
 
-## Version
+## Version / バージョン
 
-Current Version: 1.0 (Ready for TestFlight)
+Current Version: 1.0 (Ready for TestFlight)  
+現在のバージョン: 1.0（TestFlight準備完了）
 
-## License
+## License / ライセンス
 
-Private project - All rights reserved
+Private project - All rights reserved  
+プライベートプロジェクト - All rights reserved
 
-## Author
+## Authors / 作者
 
-Youmi Nagase
-EOF < /dev/null
+- Youmi Nagase
+
+### AI Assistants / AIアシスタント
+- Claude (Anthropic)
+- ChatGPT (OpenAI)
