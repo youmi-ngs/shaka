@@ -1,17 +1,35 @@
-# Firebaseの秘密ファイル
-firebase/secrets/*
-!firebase/secrets/.gitkeep
-*.p8
-GoogleService-Info.plist
+# macOS
+.DS_Store
 
-# Xcodeのビルド関連
+# Xcode
 DerivedData/
 build/
 xcuserdata/
+*.xcuserstate
+*.xcscmblueprint
+*.xccheckout
 
-# macOSのゴミ
-.DS_Store
-
-# Firebase config
+# Firebase
 GoogleService-Info.plist
-firebase/secrets/GoogleService-Info.plistservice-account-key.json
+service-account-key.json
+*.p8
+firebase/secrets/*
+!firebase/secrets/.gitkeep
+
+# Node.js
+node_modules/
+npm-debug.log*
+
+# Backup files
+*.backup
+*.old
+*.new
+
+# Environment files
+.env
+.env.local
+
+# Scripts temporary files
+scripts/backup-*.json
+scripts/node_modules/
+scripts/package-lock.json
