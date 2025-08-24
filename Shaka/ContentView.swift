@@ -12,7 +12,6 @@ struct ContentView: View {
     @EnvironmentObject var deepLinkManager: DeepLinkManager
     @EnvironmentObject var authManager: AuthManager
     @EnvironmentObject var notificationManager: NotificationManager
-    @StateObject private var notificationViewModel = NotificationViewModel()
     @State private var showAddFriendConfirmation = false
     @State private var pendingFriendToAdd: (uid: String, displayName: String)?
     @State private var showProfileView = false
@@ -52,31 +51,6 @@ struct ContentView: View {
             .tabItem {
                 Image(systemName: "magnifyingglass")
                 Text("Search")
-            }
-            
-            NavigationView {
-                NotificationListView()
-                    .navigationBarHidden(true)
-            }
-            .tabItem {
-                Label {
-                    Text("Notifications")
-                } icon: {
-                    ZStack {
-                        Image(systemName: "bell")
-                        if notificationViewModel.unreadCount > 0 {
-                            Circle()
-                                .fill(Color.red)
-                                .frame(width: 10, height: 10)
-                                .overlay(
-                                    Text("\(min(notificationViewModel.unreadCount, 9))")
-                                        .font(.system(size: 7))
-                                        .foregroundColor(.white)
-                                )
-                                .offset(x: 8, y: -8)
-                        }
-                    }
-                }
             }
             
             NavigationView {

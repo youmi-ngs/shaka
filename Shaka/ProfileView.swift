@@ -21,10 +21,11 @@ struct ProfileView: View {
     @State private var isProcessing = false
     @State private var showTermsOfService = false
     @State private var showPrivacyPolicy = false
+    @State private var showNotificationList = false
+    @StateObject private var notificationViewModel = NotificationViewModel()
     
     var body: some View {
-        NavigationView {
-            List {
+        List {
                 // New Profile Section
                 Section {
                     Button(action: {
@@ -411,9 +412,33 @@ struct ProfileView: View {
                 }
                 #endif
                 
+        }
+        .navigationTitle("Profile")
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button(action: {
+                    showNotificationList = true
+                }) {
+                    ZStack(alignment: .topTrailing) {
+                        Image(systemName: "bell")
+                            .font(.system(size: 20))
+                        
+                        if notificationViewModel.unreadCount > 0 {
+                            Circle()
+                                .fill(Color.red)
+                                .frame(width: 10, height: 10)
+                                .overlay(
+                                    Text("\(min(notificationViewModel.unreadCount, 9))")
+                                        .font(.system(size: 7))
+                                        .foregroundColor(.white)
+                                )
+                                .offset(x: 8, y: -8)
+                        }
+                    }
+                }
             }
-            .navigationTitle("Profile")
-            .alert("Copied!", isPresented: $showCopiedAlert) {
+        }
+        .alert("Copied!", isPresented: $showCopiedAlert) {
                 Button("OK", role: .cancel) { }
             } message: {
                 Text("Saved to clipboard")
@@ -437,10 +462,22 @@ struct ProfileView: View {
             .sheet(isPresented: $showTermsOfService) {
                 LegalView(type: .terms)
             }
-            .sheet(isPresented: $showPrivacyPolicy) {
-                LegalView(type: .privacy)
+        .sheet(isPresented: $showPrivacyPolicy) {
+            LegalView(type: .privacy)
+        }
+        .sheet(isPresented: $showNotificationList) {
+            NavigationView {
+                NotificationListView()
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Button("Done") {
+                                showNotificationList = false
+                            }
+                        }
+                    }
             }
-            .alert("Unlink Apple ID", isPresented: $showUnlinkAppleAlert) {
+        }
+        .alert("Unlink Apple ID", isPresented: $showUnlinkAppleAlert) {
                 Button("Cancel", role: .cancel) {}
                 Button("Unlink", role: .destructive) {
                     handleUnlinkApple()
@@ -467,7 +504,6 @@ struct ProfileView: View {
                         .cornerRadius(12)
                 }
             }
-        }
     }
     
     // MARK: - Account Management Actions
