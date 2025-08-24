@@ -24,6 +24,7 @@ struct QuestionPost: Identifiable {
     
     // ステータス関連
     let isActive: Bool
+    let isResolved: Bool  // 解決済みフラグ
     
     // タグ（最大5個）
     let tags: [String]
@@ -44,7 +45,7 @@ struct QuestionPost: Identifiable {
     init(id: String, title: String, body: String, imageURL: URL? = nil, createdAt: Date, 
          userID: String, displayName: String,
          location: GeoPoint? = nil, locationName: String? = nil, isActive: Bool = true,
-         tags: [String] = []) {
+         isResolved: Bool = false, tags: [String] = []) {
         self.id = id
         self.title = title
         self.body = body
@@ -55,6 +56,7 @@ struct QuestionPost: Identifiable {
         self.location = location
         self.locationName = locationName
         self.isActive = isActive
+        self.isResolved = isResolved
         self.tags = tags
     }
 }

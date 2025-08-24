@@ -76,9 +76,32 @@ struct QuestionPostCard: View {
         VStack(alignment: .leading, spacing: 12) {
             // Text content
             VStack(alignment: .leading, spacing: 8) {
-                Text(post.title)
-                    .font(.headline)
-                    .fontWeight(.semibold)
+                HStack {
+                    Text(post.title)
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                    
+                    Spacer()
+                    
+                    // Resolved badge
+                    if post.isResolved {
+                        HStack(spacing: 4) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.caption)
+                                .foregroundColor(.green)
+                            Text("Resolved")
+                                .font(.caption)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.green)
+                        }
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill(Color.green.opacity(0.1))
+                        )
+                    }
+                }
                 
                 Text(post.body)
                     .font(.subheadline)

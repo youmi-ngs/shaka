@@ -165,6 +165,61 @@ struct QuestionDetailView: View {
                     .font(.body)
                     .padding(.horizontal)
                 
+                // Resolved Status (only for question author)
+                if post.userID == authManager.userID {
+                    HStack {
+                        Button(action: {
+                            viewModel.toggleResolvedStatus(post)
+                        }) {
+                            HStack(spacing: 8) {
+                                Image(systemName: post.isResolved ? "checkmark.circle.fill" : "circle")
+                                    .foregroundColor(post.isResolved ? .green : .gray)
+                                    .font(.title2)
+                                Text(post.isResolved ? "Resolved" : "Mark as Resolved")
+                                    .foregroundColor(post.isResolved ? .green : .primary)
+                                    .fontWeight(post.isResolved ? .semibold : .regular)
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .background(
+                                RoundedRectangle(cornerRadius: 20)
+                                    .fill(post.isResolved ? Color.green.opacity(0.1) : Color.gray.opacity(0.1))
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 20)
+                                    .stroke(post.isResolved ? Color.green : Color.gray.opacity(0.3), lineWidth: 1)
+                            )
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        
+                        Spacer()
+                    }
+                    .padding(.horizontal)
+                    .padding(.vertical, 8)
+                } else if post.isResolved {
+                    // Show resolved badge for other users
+                    HStack {
+                        HStack(spacing: 8) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundColor(.green)
+                                .font(.title3)
+                            Text("Resolved")
+                                .foregroundColor(.green)
+                                .fontWeight(.semibold)
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(
+                            RoundedRectangle(cornerRadius: 15)
+                                .fill(Color.green.opacity(0.1))
+                        )
+                        
+                        Spacer()
+                    }
+                    .padding(.horizontal)
+                    .padding(.vertical, 8)
+                }
+                
                 // Comments section
                 CommentView(
                     postID: post.id,

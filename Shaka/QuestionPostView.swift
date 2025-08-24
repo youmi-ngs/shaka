@@ -29,6 +29,7 @@ class QuestionPostViewModel: ObservableObject {
             "userID": userID,
             "displayName": displayName,
             "isActive": true,
+            "isResolved": false,
             "tags": tags
         ]
         
@@ -63,6 +64,7 @@ class QuestionPostViewModel: ObservableObject {
                     location: geoPoint,
                     locationName: locationName,
                     isActive: true,
+                    isResolved: false,
                     tags: tags
                 )
                 DispatchQueue.main.async {
@@ -95,6 +97,7 @@ class QuestionPostViewModel: ObservableObject {
                     let location = data["location"] as? GeoPoint
                     let locationName = data["locationName"] as? String
                     let isActive = data["isActive"] as? Bool ?? true
+                    let isResolved = data["isResolved"] as? Bool ?? false
                     let tags = data["tags"] as? [String] ?? []
                     
                     return QuestionPost(
@@ -108,6 +111,7 @@ class QuestionPostViewModel: ObservableObject {
                         location: location,
                         locationName: locationName,
                         isActive: isActive,
+                        isResolved: isResolved,
                         tags: tags
                     )
                 }
@@ -151,6 +155,7 @@ class QuestionPostViewModel: ObservableObject {
                             location: post.location,
                             locationName: post.locationName,
                             isActive: newStatus,
+                            isResolved: post.isResolved,
                             tags: post.tags
                         )
                     }
@@ -204,6 +209,7 @@ class QuestionPostViewModel: ObservableObject {
                             location: geoPoint,
                             locationName: locationName ?? post.locationName,
                             isActive: post.isActive,
+                            isResolved: post.isResolved,
                             tags: tags
                         )
                     }
@@ -240,6 +246,7 @@ class QuestionPostViewModel: ObservableObject {
                     let location = data["location"] as? GeoPoint
                     let locationName = data["locationName"] as? String
                     let isActive = data["isActive"] as? Bool ?? true
+                    let isResolved = data["isResolved"] as? Bool ?? false
 
                     return QuestionPost(
                         id: id,
@@ -252,11 +259,45 @@ class QuestionPostViewModel: ObservableObject {
                         location: location,
                         locationName: locationName,
                         isActive: isActive,
+                        isResolved: isResolved,
                         tags: []
                     )
                 }
                 
                 completion(posts)
             }
+    }
+    
+    // 解決済みステータスをトグル
+    func toggleResolvedStatus(_ post: QuestionPost) {
+        let newStatus = !post.isResolved
+        db.collection("questions").document(post.id).updateData([
+            "isResolved": newStatus,
+            "updatedAt": Timestamp(date: Date())
+        ]) { error in
+            if let error = error {
+                print("Error updating resolved status: \(error)")
+            } else {
+                // Update local array
+                DispatchQueue.main.async {
+                    if let index = self.posts.firstIndex(where: { $0.id == post.id }) {
+                        self.posts[index] = QuestionPost(
+                            id: post.id,
+                            title: post.title,
+                            body: post.body,
+                            imageURL: post.imageURL,
+                            createdAt: post.createdAt,
+                            userID: post.userID,
+                            displayName: post.displayName,
+                            location: post.location,
+                            locationName: post.locationName,
+                            isActive: post.isActive,
+                            isResolved: newStatus,
+                            tags: post.tags
+                        )
+                    }
+                }
+            }
+        }
     }
 }
