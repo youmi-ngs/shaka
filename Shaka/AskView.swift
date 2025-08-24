@@ -12,8 +12,7 @@ struct AskView: View {
     @State private var showPostQuestion = false
     
     var body: some View {
-        NavigationView {
-            ZStack {
+        ZStack {
                 ScrollView {
                     LazyVStack(spacing: 20) {
                         ForEach(viewModel.posts) { post in
@@ -56,7 +55,6 @@ struct AskView: View {
             .onAppear {
                 viewModel.fetchPosts()
             }
-        }
     }
     
     // リフレッシュ処理

@@ -18,77 +18,74 @@ struct ContentView: View {
     @State private var showProfileView = false
     @State private var profileToShow: String?
     @State private var hasRequestedNotifications = false
-    @State private var showNotificationList = false
-    @State private var showSearchView = false
     
     var body: some View {
-        NavigationView {
-            TabView {
+        TabView {
+            NavigationView {
                 DiscoverView()
-                .tabItem {
-                    Image(systemName: "globe")
-                    Text("Discover")
-                }
-            AskView()
-                .tabItem {
-                    Image(systemName: "hand.wave")
-                    Text("Ask")
-                }
-            SeeWorksView()
-                .tabItem {
-                    Image(systemName: "eyeglasses")
-                    Text("See Works")
-                }
-//            ChatView()
-//                .tabItem {
-//                    Image(systemName: "ellipsis.message")
-//                    Text("Chat")
-//                }
-            ProfileView()
-                .tabItem {
-                    Image(systemName: "person.circle")
-                    Text("Profile")
-                }
             }
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button(action: {
-                        showSearchView = true
-                    }) {
-                        Image(systemName: "magnifyingglass")
-                            .font(.system(size: 20))
-                    }
-                }
-                
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: {
-                        showNotificationList = true
-                    }) {
-                        ZStack(alignment: .topTrailing) {
-                            Image(systemName: "bell")
-                                .font(.system(size: 20))
-                            
-                            if notificationViewModel.unreadCount > 0 {
-                                Circle()
-                                    .fill(Color.red)
-                                    .frame(width: 10, height: 10)
-                                    .overlay(
-                                        Text("\(min(notificationViewModel.unreadCount, 9))")
-                                            .font(.system(size: 7))
-                                            .foregroundColor(.white)
-                                    )
-                                    .offset(x: 8, y: -8)
-                            }
+            .tabItem {
+                Image(systemName: "globe")
+                Text("Discover")
+            }
+            
+            NavigationView {
+                SeeWorksView()
+            }
+            .tabItem {
+                Image(systemName: "eyeglasses")
+                Text("Works")
+            }
+            
+            NavigationView {
+                AskView()
+            }
+            .tabItem {
+                Image(systemName: "hand.wave")
+                Text("Ask")
+            }
+            
+            NavigationView {
+                SearchView()
+                    .navigationBarHidden(true)
+            }
+            .tabItem {
+                Image(systemName: "magnifyingglass")
+                Text("Search")
+            }
+            
+            NavigationView {
+                NotificationListView()
+                    .navigationBarHidden(true)
+            }
+            .tabItem {
+                Label {
+                    Text("Notifications")
+                } icon: {
+                    ZStack {
+                        Image(systemName: "bell")
+                        if notificationViewModel.unreadCount > 0 {
+                            Circle()
+                                .fill(Color.red)
+                                .frame(width: 10, height: 10)
+                                .overlay(
+                                    Text("\(min(notificationViewModel.unreadCount, 9))")
+                                        .font(.system(size: 7))
+                                        .foregroundColor(.white)
+                                )
+                                .offset(x: 8, y: -8)
                         }
                     }
                 }
             }
-        }
-        .sheet(isPresented: $showNotificationList) {
-            NotificationListView()
-        }
-        .sheet(isPresented: $showSearchView) {
-            SearchView()
+            
+            NavigationView {
+                ProfileView()
+            }
+            .tabItem {
+                Image(systemName: "person.circle")
+                Text("Profile")
+            }
         }
         .onChange(of: deepLinkManager.showAddFriendAlert) { newValue in
             if newValue, let friend = deepLinkManager.friendToAdd {

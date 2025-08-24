@@ -13,8 +13,7 @@ struct SeeWorksView: View {
     @State private var refreshID = UUID()
     
     var body: some View {
-        NavigationView {
-            ZStack {
+        ZStack {
                 ScrollView {
                     VStack(spacing: 24) {
                         ForEach(Array(viewModel.posts.enumerated()), id: \.element.id) { index, post in
@@ -62,7 +61,6 @@ struct SeeWorksView: View {
             .onAppear {
                 viewModel.fetchPosts()
             }
-        }
     }
     
     // リフレッシュ処理

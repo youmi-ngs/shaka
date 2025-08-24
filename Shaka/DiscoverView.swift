@@ -29,10 +29,9 @@ struct DiscoverView: View {
     ))
     
     var body: some View {
-        NavigationView {
-            ZStack {
-                // 地図表示（iOS 17以降の新API）
-                if #available(iOS 17.0, *) {
+        ZStack {
+            // 地図表示（iOS 17以降の新API）
+            if #available(iOS 17.0, *) {
                     Map(position: $cameraPosition) {
                         // ユーザー位置は表示しない（プライバシー対応）
                         // UserAnnotation()
@@ -88,8 +87,8 @@ struct DiscoverView: View {
                         }
                     }
                 }
-            }
-            .navigationTitle("Discover")
+        }
+        .navigationTitle("Discover")
             .navigationBarTitleDisplayMode(.inline)
             .onAppear {
                 // locationManager.requestLocationPermission() // 位置情報許可を求めない
@@ -108,7 +107,6 @@ struct DiscoverView: View {
                     loadPosts()
                 }
             }
-        }
     }
     
     private func centerOnUserLocation() {

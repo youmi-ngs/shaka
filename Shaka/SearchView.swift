@@ -11,7 +11,6 @@ struct SearchView: View {
     @StateObject private var viewModel = SearchViewModel()
     @StateObject private var workViewModel = WorkPostViewModel()
     @StateObject private var questionViewModel = QuestionPostViewModel()
-    @Environment(\.dismiss) var dismiss
     @State private var showingUserProfile: String?
     
     let initialSearchText: String?
@@ -23,157 +22,148 @@ struct SearchView: View {
     }
     
     var body: some View {
-        NavigationView {
-            VStack(spacing: 0) {
-                // 検索バー
-                VStack(spacing: 12) {
-                    HStack {
-                        Image(systemName: "magnifyingglass")
-                            .foregroundColor(.gray)
-                        
-                        TextField("Search...", text: $viewModel.searchText)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
-                        
-                        if !viewModel.searchText.isEmpty {
-                            Button(action: {
-                                viewModel.searchText = ""
-                            }) {
-                                Image(systemName: "xmark.circle.fill")
-                                    .foregroundColor(.gray)
+        VStack(spacing: 0) {
+            // 検索バー
+            VStack(spacing: 12) {
+                HStack {
+                    Image(systemName: "magnifyingglass")
+                        .foregroundColor(.gray)
+                    
+                    TextField("Search...", text: $viewModel.searchText)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                    
+                    if !viewModel.searchText.isEmpty {
+                        Button(action: {
+                            viewModel.searchText = ""
+                        }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundColor(.gray)
+                        }
+                    }
+                }
+                .padding(.horizontal)
+                
+                // 検索タイプ選択
+                Picker("Search Type", selection: $viewModel.searchType) {
+                    ForEach(SearchType.allCases, id: \.self) { type in
+                        Label(type.rawValue, systemImage: type.icon)
+                            .tag(type)
+                    }
+                }
+                .pickerStyle(SegmentedPickerStyle())
+                .padding(.horizontal)
+                .onChange(of: viewModel.searchType) { _ in
+                    viewModel.performSearch()
+                }
+            }
+            .padding(.vertical)
+            .background(Color(UIColor.systemBackground))
+            
+            // 検索結果
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    if viewModel.isSearching {
+                        HStack {
+                            Spacer()
+                            ProgressView()
+                                .padding()
+                            Spacer()
+                        }
+                    } else if viewModel.searchText.isEmpty {
+                        EmptySearchView()
+                            .padding(.top, 50)
+                    } else {
+                        // Works結果
+                        if !viewModel.workResults.isEmpty {
+                            Section(header: Text("Works")
+                                .font(.headline)
+                                .padding(.horizontal)) {
+                                ForEach(viewModel.workResults) { post in
+                                    NavigationLink(destination: WorkDetailView(post: post, viewModel: workViewModel)) {
+                                        SearchResultCard(
+                                            title: post.title,
+                                            subtitle: post.displayName,
+                                            imageURL: post.imageURL,
+                                            tags: post.tags
+                                        )
+                                    }
+                                    .buttonStyle(PlainButtonStyle())
+                                }
                             }
                         }
-                    }
-                    .padding(.horizontal)
-                    
-                    // 検索タイプ選択
-                    Picker("Search Type", selection: $viewModel.searchType) {
-                        ForEach(SearchType.allCases, id: \.self) { type in
-                            Label(type.rawValue, systemImage: type.icon)
-                                .tag(type)
+                        
+                        // Questions結果
+                        if !viewModel.questionResults.isEmpty {
+                            Section(header: Text("Questions")
+                                .font(.headline)
+                                .padding(.horizontal)) {
+                                ForEach(viewModel.questionResults) { post in
+                                    NavigationLink(destination: QuestionDetailView(post: post, viewModel: questionViewModel)) {
+                                        SearchResultCard(
+                                            title: post.title,
+                                            subtitle: post.displayName,
+                                            imageURL: nil,
+                                            tags: post.tags
+                                        )
+                                    }
+                                    .buttonStyle(PlainButtonStyle())
+                                }
+                            }
                         }
-                    }
-                    .pickerStyle(SegmentedPickerStyle())
-                    .padding(.horizontal)
-                    .onChange(of: viewModel.searchType) { _ in
-                        viewModel.performSearch()
+                        
+                        // Users結果
+                        if !viewModel.userResults.isEmpty {
+                            Section(header: Text("Users")
+                                .font(.headline)
+                                .padding(.horizontal)) {
+                                ForEach(viewModel.userResults, id: \.uid) { user in
+                                    Button(action: {
+                                        showingUserProfile = user.uid
+                                    }) {
+                                        HStack(spacing: 12) {
+                                            // ユーザーアバター
+                                            UserAvatarView(uid: user.uid, size: 50)
+                                            
+                                            VStack(alignment: .leading, spacing: 4) {
+                                                Text(user.displayName)
+                                                    .font(.headline)
+                                                    .foregroundColor(.primary)
+                                                
+                                                Text("@\(user.uid.prefix(8))...")
+                                                    .font(.caption)
+                                                    .foregroundColor(.secondary)
+                                            }
+                                            
+                                            Spacer()
+                                            
+                                            Image(systemName: "chevron.right")
+                                                .foregroundColor(.gray)
+                                        }
+                                        .padding()
+                                        .background(Color(UIColor.secondarySystemBackground))
+                                        .cornerRadius(12)
+                                        .padding(.horizontal)
+                                    }
+                                    .buttonStyle(PlainButtonStyle())
+                                }
+                            }
+                        }
+                        
+                        // 結果なし
+                        if viewModel.workResults.isEmpty && 
+                           viewModel.questionResults.isEmpty && 
+                           viewModel.userResults.isEmpty &&
+                           !viewModel.searchText.isEmpty {
+                            NoResultsView(searchText: viewModel.searchText, searchType: viewModel.searchType)
+                                .padding(.top, 50)
+                        }
                     }
                 }
                 .padding(.vertical)
-                .background(Color(UIColor.systemBackground))
-                
-                // 検索結果
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 16) {
-                        if viewModel.isSearching {
-                            HStack {
-                                Spacer()
-                                ProgressView()
-                                    .padding()
-                                Spacer()
-                            }
-                        } else if viewModel.searchText.isEmpty {
-                            EmptySearchView()
-                                .padding(.top, 50)
-                        } else {
-                            // Works結果
-                            if !viewModel.workResults.isEmpty {
-                                Section(header: Text("Works")
-                                    .font(.headline)
-                                    .padding(.horizontal)) {
-                                    ForEach(viewModel.workResults) { post in
-                                        NavigationLink(destination: WorkDetailView(post: post, viewModel: workViewModel)) {
-                                            SearchResultCard(
-                                                title: post.title,
-                                                subtitle: post.displayName,
-                                                imageURL: post.imageURL,
-                                                tags: post.tags
-                                            )
-                                        }
-                                        .buttonStyle(PlainButtonStyle())
-                                    }
-                                }
-                            }
-                            
-                            // Questions結果
-                            if !viewModel.questionResults.isEmpty {
-                                Section(header: Text("Questions")
-                                    .font(.headline)
-                                    .padding(.horizontal)) {
-                                    ForEach(viewModel.questionResults) { post in
-                                        NavigationLink(destination: QuestionDetailView(post: post, viewModel: questionViewModel)) {
-                                            SearchResultCard(
-                                                title: post.title,
-                                                subtitle: post.displayName,
-                                                imageURL: nil,
-                                                tags: post.tags
-                                            )
-                                        }
-                                        .buttonStyle(PlainButtonStyle())
-                                    }
-                                }
-                            }
-                            
-                            // Users結果
-                            if !viewModel.userResults.isEmpty {
-                                Section(header: Text("Users")
-                                    .font(.headline)
-                                    .padding(.horizontal)) {
-                                    ForEach(viewModel.userResults, id: \.uid) { user in
-                                        Button(action: {
-                                            showingUserProfile = user.uid
-                                        }) {
-                                            HStack(spacing: 12) {
-                                                // ユーザーアバター
-                                                UserAvatarView(uid: user.uid, size: 50)
-                                                
-                                                VStack(alignment: .leading, spacing: 4) {
-                                                    Text(user.displayName)
-                                                        .font(.headline)
-                                                        .foregroundColor(.primary)
-                                                    
-                                                    Text("@\(user.uid.prefix(8))...")
-                                                        .font(.caption)
-                                                        .foregroundColor(.secondary)
-                                                }
-                                                
-                                                Spacer()
-                                                
-                                                Image(systemName: "chevron.right")
-                                                    .foregroundColor(.gray)
-                                            }
-                                            .padding()
-                                            .background(Color(UIColor.secondarySystemBackground))
-                                            .cornerRadius(12)
-                                            .padding(.horizontal)
-                                        }
-                                        .buttonStyle(PlainButtonStyle())
-                                    }
-                                }
-                            }
-                            
-                            // 結果なし
-                            if viewModel.workResults.isEmpty && 
-                               viewModel.questionResults.isEmpty && 
-                               viewModel.userResults.isEmpty &&
-                               !viewModel.searchText.isEmpty {
-                                NoResultsView(searchText: viewModel.searchText, searchType: viewModel.searchType)
-                                    .padding(.top, 50)
-                            }
-                        }
-                    }
-                    .padding(.vertical)
-                }
-            }
-            .navigationTitle("Search")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") {
-                        dismiss()
-                    }
-                }
             }
         }
+        .navigationTitle("Search")
+        .navigationBarTitleDisplayMode(.inline)
         .sheet(item: Binding<IdentifiableString?>(
             get: { showingUserProfile.map { IdentifiableString(id: $0) } },
             set: { showingUserProfile = $0?.value }

@@ -19,66 +19,60 @@ struct NotificationListView: View {
     @State private var showWorkDetail = false
     @State private var showQuestionDetail = false
     @State private var selectedPostId: String?
-    @Environment(\.dismiss) var dismiss
     
     var body: some View {
-        NavigationView {
-            ZStack {
-                if viewModel.notifications.isEmpty {
-                    VStack(spacing: 20) {
-                        Image(systemName: "bell.slash")
-                            .font(.system(size: 60))
-                            .foregroundColor(.gray)
-                        Text("No notifications yet")
-                            .font(.headline)
-                            .foregroundColor(.gray)
-                        Text("When someone likes or comments on your posts, you'll see it here")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal)
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else {
-                    List {
-                        ForEach(viewModel.notifications) { notification in
-                            NotificationRow(notification: notification)
-                                .onTapGesture {
-                                    handleNotificationTap(notification)
+        ZStack {
+            if viewModel.notifications.isEmpty {
+                VStack(spacing: 20) {
+                    Image(systemName: "bell.slash")
+                        .font(.system(size: 60))
+                        .foregroundColor(.gray)
+                    Text("No notifications yet")
+                        .font(.headline)
+                        .foregroundColor(.gray)
+                    Text("When someone likes or comments on your posts, you'll see it here")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                List {
+                    ForEach(viewModel.notifications) { notification in
+                        NotificationRow(notification: notification)
+                            .onTapGesture {
+                                handleNotificationTap(notification)
+                            }
+                            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                Button(role: .destructive) {
+                                    viewModel.deleteNotification(notification)
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
                                 }
-                                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                                    Button(role: .destructive) {
-                                        viewModel.deleteNotification(notification)
-                                    } label: {
-                                        Label("Delete", systemImage: "trash")
-                                    }
-                                }
-                                .listRowBackground(
-                                    notification.read ? Color.clear : Color.blue.opacity(0.05)
-                                )
-                        }
+                            }
+                            .listRowBackground(
+                                notification.read ? Color.clear : Color.blue.opacity(0.05)
+                            )
                     }
-                    .listStyle(PlainListStyle())
-                    .refreshable {
-                        viewModel.refresh()
-                    }
+                }
+                .listStyle(PlainListStyle())
+                .refreshable {
+                    viewModel.refresh()
                 }
             }
-            .navigationTitle("Notifications")
-            .navigationBarTitleDisplayMode(.inline)
-            .navigationBarItems(
-                leading: Button("Done") {
-                    dismiss()
-                },
-                trailing: Group {
-                    if viewModel.unreadCount > 0 {
-                        Button("Mark All Read") {
-                            viewModel.markAllAsRead()
-                        }
-                        .font(.caption)
+        }
+        .navigationTitle("Notifications")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            if viewModel.unreadCount > 0 {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Mark All Read") {
+                        viewModel.markAllAsRead()
                     }
+                    .font(.caption)
                 }
-            )
+            }
         }
         .sheet(item: $selectedProfile) { item in
             NavigationView {
