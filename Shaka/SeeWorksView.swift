@@ -194,7 +194,7 @@ struct WorkPostCard: View {
                         HStack(spacing: 4) {
                             Image(systemName: "person.circle.fill")
                                 .font(.caption)
-                                .foregroundColor(.blue)
+                                .foregroundColor(.orange)
                             
                             Text(post.displayName)
                                 .font(.caption)

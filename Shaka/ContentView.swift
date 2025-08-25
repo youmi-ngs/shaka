@@ -40,7 +40,7 @@ struct ContentView: View {
                 AskView()
             }
             .tabItem {
-                Image(systemName: "hand.wave")
+                Image(systemName: "questionmark.bubble")
                 Text("Ask")
             }
             
