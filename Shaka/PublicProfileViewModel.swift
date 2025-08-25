@@ -19,6 +19,7 @@ class PublicProfileViewModel: ObservableObject {
     @Published var isFriend: Bool = false
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
+    @Published var workPosts: [WorkPost] = []
     
     private let db = Firestore.firestore()
     private let followViewModel = FollowViewModel()
@@ -83,6 +84,8 @@ class PublicProfileViewModel: ObservableObject {
                 
                 // フレンド状態をチェック
                 self.checkFriendStatus()
+                // 投稿を取得
+                self.fetchUserPosts()
             }
         }
     }
@@ -136,5 +139,67 @@ class PublicProfileViewModel: ObservableObject {
                 completion(.failure(error))
             }
         }
+    }
+    
+    // MARK: - 投稿取得
+    func fetchUserPosts() {
+        print("🔍 Fetching posts for user: \(authorUid)")
+        // 一時的にシンプルなクエリでテスト
+        db.collection("works")
+            .whereField("userID", isEqualTo: authorUid)
+            // .order(by: "createdAt", descending: true)
+            .limit(to: 12)  // 最初は12個まで表示
+            .getDocuments { [weak self] snapshot, error in
+                guard let self = self else { return }
+                
+                if let error = error {
+                    print("❌ Error fetching user posts: \(error)")
+                    return
+                }
+                
+                guard let documents = snapshot?.documents else { 
+                    print("⚠️ No documents found")
+                    return 
+                }
+                
+                print("📚 Found \(documents.count) posts for user")
+                
+                DispatchQueue.main.async {
+                    self.workPosts = documents.compactMap { doc in
+                        let data = doc.data()
+                        let id = doc.documentID
+                        let title = data["title"] as? String ?? ""
+                        let description = data["description"] as? String
+                        let detail = data["detail"] as? String
+                        let imageURLString = data["imageURL"] as? String
+                        let imageURL = imageURLString != nil ? URL(string: imageURLString!) : nil
+                        
+                        print("📷 Post: \(title), Image URL: \(imageURLString ?? "no image")")
+                        let createdAt = (data["createdAt"] as? Timestamp)?.dateValue() ?? Date()
+                        let userID = data["userID"] as? String ?? ""
+                        let displayName = data["displayName"] as? String ?? ""
+                        let isActive = data["isActive"] as? Bool ?? true
+                        let tags = data["tags"] as? [String] ?? []
+                        let location = data["location"] as? GeoPoint
+                        let locationName = data["locationName"] as? String
+                        
+                        return WorkPost(
+                            id: id,
+                            title: title,
+                            description: description,
+                            detail: detail,
+                            imageURL: imageURL,
+                            createdAt: createdAt,
+                            userID: userID,
+                            displayName: displayName,
+                            location: location,
+                            locationName: locationName,
+                            isActive: isActive,
+                            tags: tags
+                        )
+                    }
+                    print("✅ Total posts loaded: \(self.workPosts.count)")
+                }
+            }
     }
 }

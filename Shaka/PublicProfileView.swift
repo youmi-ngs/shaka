@@ -41,9 +41,6 @@ struct PublicProfileView: View {
                     linksSection
                 }
                 
-                // View Posts Button
-                viewPostsButton
-                
                 // フレンド追加ボタン（自分以外の場合のみ）
                 if !viewModel.isCurrentUser {
                     friendActionButton
@@ -52,6 +49,9 @@ struct PublicProfileView: View {
                     // 自分のプロフィールの場合は共有ボタンを表示
                     shareMyProfileButton
                 }
+                
+                // 投稿グリッド
+                postsGrid
             }
             .padding()
         }
@@ -230,27 +230,76 @@ struct PublicProfileView: View {
         }
     }
     
-    // MARK: - View Posts Button
-    private var viewPostsButton: some View {
-        NavigationLink {
-            UserPostsView(userId: authorUid, displayName: viewModel.displayName)
-        } label: {
+    // MARK: - Posts Grid
+    private var postsGrid: some View {
+        VStack(alignment: .leading, spacing: 16) {
             HStack {
-                Image(systemName: "square.grid.2x2")
-                Text("View Posts")
+                Text("Posts")
+                    .font(.headline)
                 Spacer()
-                Image(systemName: "chevron.right")
-                    .foregroundColor(.secondary)
-                    .font(.caption)
+                if viewModel.workPosts.count > 12 {
+                    NavigationLink(destination: UserPostsView(userId: authorUid, displayName: viewModel.displayName)) {
+                        Text("See All")
+                            .font(.caption)
+                            .foregroundColor(.blue)
+                    }
+                }
             }
-            .font(.headline)
-            .foregroundColor(.primary)
-            .frame(maxWidth: .infinity)
-            .padding()
-            .background(Color(UIColor.secondarySystemBackground))
-            .cornerRadius(12)
+            
+            if viewModel.workPosts.isEmpty {
+                Text("No posts yet")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 40)
+            } else {
+                LazyVGrid(columns: [GridItem(.flexible(), spacing: 2), GridItem(.flexible(), spacing: 2), GridItem(.flexible(), spacing: 2)], spacing: 2) {
+                    ForEach(viewModel.workPosts.prefix(12)) { post in
+                        NavigationLink(destination: WorkDetailView(post: post, viewModel: WorkPostViewModel())) {
+                            if let imageURL = post.imageURL {
+                                AsyncImage(url: imageURL) { phase in
+                                    switch phase {
+                                    case .success(let image):
+                                        image
+                                            .resizable()
+                                            .scaledToFill()
+                                            .frame(width: (UIScreen.main.bounds.width - 36) / 3, height: (UIScreen.main.bounds.width - 36) / 3)
+                                            .clipped()
+                                    case .failure(_):
+                                        Rectangle()
+                                            .fill(Color(UIColor.tertiarySystemFill))
+                                            .frame(width: (UIScreen.main.bounds.width - 36) / 3, height: (UIScreen.main.bounds.width - 36) / 3)
+                                            .overlay(
+                                                Image(systemName: "photo")
+                                                    .foregroundColor(.gray)
+                                            )
+                                    case .empty:
+                                        Rectangle()
+                                            .fill(Color(UIColor.quaternarySystemFill))
+                                            .frame(width: (UIScreen.main.bounds.width - 36) / 3, height: (UIScreen.main.bounds.width - 36) / 3)
+                                            .overlay(
+                                                ProgressView()
+                                            )
+                                    @unknown default:
+                                        EmptyView()
+                                    }
+                                }
+                            } else {
+                                Rectangle()
+                                    .fill(Color(UIColor.tertiarySystemFill))
+                                    .frame(width: (UIScreen.main.bounds.width - 36) / 3, height: (UIScreen.main.bounds.width - 36) / 3)
+                                    .overlay(
+                                        Image(systemName: "photo")
+                                            .foregroundColor(.gray)
+                                    )
+                            }
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                }
+                .cornerRadius(3)
+            }
         }
-        .buttonStyle(PlainButtonStyle())
     }
     
     // MARK: - Share My Profile Button
