@@ -50,7 +50,7 @@ struct QuestionDetailView: View {
                                 .padding(.horizontal)
                         case .failure(_):
                             Rectangle()
-                                .fill(Color.gray.opacity(0.3))
+                                .fill(Color(UIColor.tertiarySystemFill))
                                 .frame(height: 200)
                                 .cornerRadius(12)
                                 .overlay(
@@ -65,7 +65,7 @@ struct QuestionDetailView: View {
                                 .padding(.horizontal)
                         case .empty:
                             Rectangle()
-                                .fill(Color.gray.opacity(0.1))
+                                .fill(Color(UIColor.quaternarySystemFill))
                                 .frame(height: 200)
                                 .cornerRadius(12)
                                 .overlay(

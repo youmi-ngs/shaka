@@ -45,7 +45,7 @@ struct SeeWorksView: View {
                                 .frame(width: 24, height: 24)
                                 .padding()
                                 .background(Color.orange)
-                                .foregroundStyle(.white)
+                                .foregroundStyle(Color.primary)
                                 .clipShape(Circle())
                                 .shadow(radius: 5)
                         }
@@ -111,7 +111,7 @@ struct WorkPostCard: View {
                             .cornerRadius(12)
                     case .failure(let error):
                         RoundedRectangle(cornerRadius: 12)
-                            .fill(Color.gray.opacity(0.3))
+                            .fill(Color(UIColor.tertiarySystemFill))
                             .frame(height: 200)
                             .overlay(
                                 VStack {
@@ -134,7 +134,7 @@ struct WorkPostCard: View {
                             }
                     case .empty:
                         RoundedRectangle(cornerRadius: 12)
-                            .fill(Color.gray.opacity(0.1))
+                            .fill(Color(UIColor.quaternarySystemFill))
                             .frame(height: 200)
                             .overlay(
                                 ProgressView()
@@ -146,7 +146,7 @@ struct WorkPostCard: View {
                 .id("\(post.id)_\(refreshID)")
             } else {
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.gray.opacity(0.1))
+                    .fill(Color(UIColor.quaternarySystemFill))
                     .frame(height: 200)
                     .overlay(
                         VStack {
@@ -235,9 +235,9 @@ struct WorkPostCard: View {
             .padding(.horizontal, 4)
         }
         .padding()
-        .background(Color(UIColor.systemBackground))
+        .background(Color(UIColor.secondarySystemBackground))
         .cornerRadius(16)
-        .shadow(color: Color.black.opacity(0.08), radius: 8, x: 0, y: 2)
+        .shadow(color: Color.primary.opacity(0.1), radius: 8, x: 0, y: 2)
         .sheet(isPresented: $showAuthorProfile) {
             NavigationView {
                 PublicProfileView(authorUid: post.userID)

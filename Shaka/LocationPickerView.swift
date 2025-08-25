@@ -37,7 +37,7 @@ struct LocationPickerView: View {
                         Image(systemName: "mappin.circle.fill")
                             .font(.system(size: 30))
                             .foregroundColor(.red)
-                            .background(Circle().fill(Color.white).frame(width: 36, height: 36))
+                            .background(Circle().fill(Color(UIColor.systemBackground)).frame(width: 36, height: 36))
                             .shadow(radius: 2)
                         
                         Image(systemName: "triangle.fill")
@@ -60,7 +60,7 @@ struct LocationPickerView: View {
                 Image(systemName: "plus.circle")
                     .font(.system(size: 30))
                     .foregroundColor(.blue)
-                    .background(Circle().fill(Color.white))
+                    .background(Circle().fill(Color(UIColor.systemBackground)))
                     .opacity(0.8)
             }
             
@@ -85,7 +85,7 @@ struct LocationPickerView: View {
                     }
                 }
                 .padding()
-                .background(Color.white.opacity(0.9))
+                .background(Color(UIColor.systemBackground).opacity(0.95))
                 .cornerRadius(10)
                 .padding()
                 
@@ -98,7 +98,7 @@ struct LocationPickerView: View {
                             .font(.subheadline)
                             .padding(.horizontal)
                             .padding(.vertical, 8)
-                            .background(Color.white.opacity(0.9))
+                            .background(Color(UIColor.systemBackground).opacity(0.95))
                             .cornerRadius(8)
                     }
                     
@@ -109,7 +109,7 @@ struct LocationPickerView: View {
                         }) {
                             Text("Set This Location")
                                 .fontWeight(.semibold)
-                                .foregroundColor(.white)
+                                .foregroundColor(Color.primary)
                                 .padding(.horizontal, 24)
                                 .padding(.vertical, 12)
                                 .background(Color.blue)

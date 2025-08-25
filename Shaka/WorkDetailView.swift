@@ -43,7 +43,7 @@ struct WorkDetailView: View {
 //                                .cornerRadius(12)
                         case .failure(_):
                             Rectangle()
-                                .fill(Color.gray.opacity(0.3))
+                                .fill(Color(UIColor.tertiarySystemFill))
                                 .frame(height: 300)
                                 .cornerRadius(12)
                                 .overlay(
@@ -57,7 +57,7 @@ struct WorkDetailView: View {
                                 )
                         case .empty:
                             Rectangle()
-                                .fill(Color.gray.opacity(0.1))
+                                .fill(Color(UIColor.quaternarySystemFill))
                                 .frame(height: 300)
 //                                .cornerRadius(12)
                                 .overlay(
@@ -70,7 +70,7 @@ struct WorkDetailView: View {
                     }
                 } else {
                     Rectangle()
-                        .fill(Color.gray.opacity(0.1))
+                        .fill(Color(UIColor.quaternarySystemFill))
                         .frame(height: 200)
                         .cornerRadius(12)
                         .overlay(
