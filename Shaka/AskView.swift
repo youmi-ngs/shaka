@@ -38,7 +38,7 @@ struct AskView: View {
                                 .resizable()
                                 .frame(width: 24, height: 24)
                                 .padding()
-                                .background(Color.purple)
+                                .background(.purple)
                                 .foregroundStyle(.white)
                                 .clipShape(Circle())
                                 .shadow(radius: 5)

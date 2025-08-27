@@ -18,74 +18,88 @@ struct UserProfileView: View {
         Auth.auth().currentUser?.uid == uid
     }
     
+    @ViewBuilder
+    private var avatarView: some View {
+        if let photoURL = viewModel.profile?.photoURL {
+            AsyncImage(url: photoURL) { phase in
+                switch phase {
+                case .success(let image):
+                    image
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 120, height: 120)
+                        .clipShape(Circle())
+                        .overlay(Circle().stroke(Color.gray.opacity(0.3), lineWidth: 2))
+                case .failure(_):
+                    Image(systemName: "person.circle.fill")
+                        .font(.system(size: 100))
+                        .foregroundColor(.gray)
+                case .empty:
+                    ProgressView()
+                        .frame(width: 120, height: 120)
+                @unknown default:
+                    EmptyView()
+                }
+            }
+        } else {
+            Image(systemName: "person.circle.fill")
+                .font(.system(size: 100))
+                .foregroundColor(.gray)
+        }
+    }
+    
+    @ViewBuilder
+    private var bioView: some View {
+        if let bio = viewModel.profile?.public.bio, !bio.isEmpty {
+            Text(bio)
+                .font(.body)
+                .multilineTextAlignment(.center)
+                .foregroundColor(.secondary)
+                .padding(.horizontal)
+        }
+    }
+    
+    @ViewBuilder
+    private var statsView: some View {
+        HStack(spacing: 30) {
+            VStack {
+                let worksCount = viewModel.profile?.stats.worksCount ?? 0
+                Text("\(worksCount)")
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                Text("Works")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            
+            VStack {
+                let questionsCount = viewModel.profile?.stats.questionsCount ?? 0
+                Text("\(questionsCount)")
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                Text("Questions")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+        }
+        .padding(.vertical, 8)
+    }
+    
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
                 // Profile Header
                 VStack(spacing: 16) {
-                    // Avatar
-                    if let photoURL = viewModel.profile?.photoURL {
-                        AsyncImage(url: photoURL) { phase in
-                            switch phase {
-                            case .success(let image):
-                                image
-                                    .resizable()
-                                    .scaledToFill()
-                                    .frame(width: 120, height: 120)
-                                    .clipShape(Circle())
-                                    .overlay(Circle().stroke(Color.gray.opacity(0.3), lineWidth: 2))
-                            case .failure(_):
-                                Image(systemName: "person.circle.fill")
-                                    .font(.system(size: 100))
-                                    .foregroundColor(.gray)
-                            case .empty:
-                                ProgressView()
-                                    .frame(width: 120, height: 120)
-                            @unknown default:
-                                EmptyView()
-                            }
-                        }
-                    } else {
-                        Image(systemName: "person.circle.fill")
-                            .font(.system(size: 100))
-                            .foregroundColor(.gray)
-                    }
+                    avatarView
                     
                     // Display Name
                     Text(viewModel.profile?.displayName ?? "Loading...")
                         .font(.title)
                         .fontWeight(.bold)
                     
-                    // Bio
-                    if let bio = viewModel.profile?.public.bio, !bio.isEmpty {
-                        Text(bio)
-                            .font(.body)
-                            .multilineTextAlignment(.center)
-                            .foregroundColor(.secondary)
-                            .padding(.horizontal)
-                    }
+                    bioView
                     
-                    // Stats
-                    HStack(spacing: 30) {
-                        VStack {
-                            Text("\(viewModel.profile?.stats.worksCount ?? 0)")
-                                .font(.title2)
-                                .fontWeight(.semibold)
-                            Text("Works")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                        
-                        VStack {
-                            Text("\(viewModel.profile?.stats.questionsCount ?? 0)")
-                                .font(.title2)
-                                .fontWeight(.semibold)
-                            Text("Questions")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                    .padding(.vertical, 8)
+                    statsView
                 }
                 .padding()
                 .background(Color.gray.opacity(0.05))
@@ -182,7 +196,7 @@ struct UserProfileView: View {
                         Label("Edit Profile", systemImage: "pencil")
                             .frame(maxWidth: .infinity)
                             .padding()
-                            .background(Color.blue)
+                            .background(.teal)
                             .foregroundColor(.white)
                             .cornerRadius(8)
                     }
@@ -235,13 +249,13 @@ struct LinkRow: View {
         Link(destination: URL(string: url) ?? URL(string: "https://")!) {
             HStack {
                 Image(systemName: icon)
-                    .foregroundColor(.blue)
+                    .foregroundColor(.teal)
                     .frame(width: 20)
                 Text(title)
                     .foregroundColor(.primary)
                 Spacer()
                 Image(systemName: "arrow.up.forward.square")
-                    .foregroundColor(.blue)
+                    .foregroundColor(.teal)
                     .font(.caption)
             }
             .padding(.vertical, 8)

@@ -220,7 +220,7 @@ struct SearchResultCard: View {
                     .frame(width: 60, height: 60)
                     .overlay(
                         Image(systemName: "questionmark.circle")
-                            .foregroundColor(.blue)
+                            .foregroundColor(.cyan)
                     )
             }
             
@@ -240,7 +240,7 @@ struct SearchResultCard: View {
                             ForEach(tags.prefix(3), id: \.self) { tag in
                                 Text("#\(tag)")
                                     .font(.caption2)
-                                    .foregroundColor(.blue)
+                                    .foregroundColor(.cyan)
                             }
                         }
                     }

@@ -61,7 +61,7 @@ struct TagInputView: View {
                 if tags.count >= maxTags {
                     Text("Maximum tags reached")
                         .font(.caption)
-                        .foregroundColor(.orange)
+                        .foregroundColor(.blue)
                 }
             }
         }

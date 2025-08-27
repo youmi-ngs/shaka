@@ -171,7 +171,7 @@ struct PinView: View {
         // 標準的な地図ピン
         Image(systemName: "mappin.circle.fill")
             .font(.system(size: 35))
-            .foregroundColor(.orange)
+            .foregroundColor(.mint)
             .background(
                 Circle()
                 .fill(Color.white)

@@ -59,7 +59,7 @@ struct UserProfileEditView: View {
                             ) {
                                 Text(viewModel.profile?.photoURL != nil ? "Change Photo" : "Add Photo")
                                     .font(.caption)
-                                    .foregroundColor(.blue)
+                                    .foregroundColor(.teal)
                             }
                             .disabled(viewModel.isUploading)
                             .onChange(of: selectedPhotoItem) { newItem in
@@ -232,9 +232,9 @@ struct UserProfileEditView: View {
                     Section {
                         HStack {
                             Image(systemName: "checkmark.circle.fill")
-                                .foregroundColor(.green)
+                                .foregroundColor(.teal)
                             Text(successMessage)
-                                .foregroundColor(.green)
+                                .foregroundColor(.teal)
                                 .font(.caption)
                         }
                     }

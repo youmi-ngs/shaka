@@ -17,50 +17,62 @@ struct ContentView: View {
     @State private var showProfileView = false
     @State private var profileToShow: String?
     @State private var hasRequestedNotifications = false
+    @State private var selectedTab = 0
+    
+    var tabAccentColor: Color {
+        switch selectedTab {
+        case 0: return .mint //DiscoverView
+        case 1: return .indigo  // SeeWorksView
+        case 2: return .purple  // AskView
+        case 3: return .cyan //SearchView
+        default: return .teal //ProfileView
+        }
+    }
     
     var body: some View {
-        TabView {
+        TabView(selection: $selectedTab) {
             NavigationView {
                 DiscoverView()
             }
             .tabItem {
-                Image(systemName: "globe")
-                Text("Discover")
+                Label("Discover", systemImage: "globe")
             }
+            .tag(0)
             
             NavigationView {
                 SeeWorksView()
             }
             .tabItem {
-                Image(systemName: "eyeglasses")
-                Text("Works")
+                Label("Works", systemImage: "eyeglasses")
             }
+            .tag(1)
             
             NavigationView {
                 AskView()
             }
             .tabItem {
-                Image(systemName: "questionmark.bubble")
-                Text("Ask")
+                Label("Ask", systemImage: "questionmark.bubble")
             }
+            .tag(2)
             
             NavigationView {
                 SearchView()
                     .navigationBarHidden(true)
             }
             .tabItem {
-                Image(systemName: "magnifyingglass")
-                Text("Search")
+                Label("Search", systemImage: "magnifyingglass")
             }
+            .tag(3)
             
             NavigationView {
                 ProfileView()
             }
             .tabItem {
-                Image(systemName: "person.circle")
-                Text("Profile")
+                Label("Profile", systemImage: "person.circle")
             }
+            .tag(4)
         }
+        .accentColor(tabAccentColor)
         .onChange(of: deepLinkManager.showAddFriendAlert) { newValue in
             if newValue, let friend = deepLinkManager.friendToAdd {
                 pendingFriendToAdd = friend

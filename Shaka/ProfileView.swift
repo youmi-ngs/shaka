@@ -46,7 +46,7 @@ struct ProfileView: View {
                                     case .failure(_):
                                         Image(systemName: "person.crop.circle.fill")
                                             .font(.largeTitle)
-                                            .foregroundColor(.blue)
+                                            .foregroundColor(.teal)
                                     case .empty:
                                         ProgressView()
                                             .frame(width: 60, height: 60)
@@ -57,7 +57,7 @@ struct ProfileView: View {
                             } else {
                                 Image(systemName: "person.crop.circle.fill")
                                     .font(.largeTitle)
-                                    .foregroundColor(.blue)
+                                    .foregroundColor(.teal)
                             }
                             
                             VStack(alignment: .leading) {
@@ -66,7 +66,7 @@ struct ProfileView: View {
                                     .foregroundColor(.primary)
                                 Text("Edit Profile")
                                     .font(.caption)
-                                    .foregroundColor(.blue)
+                                    .foregroundColor(.teal)
                             }
                             
                             Spacer()
@@ -92,7 +92,7 @@ struct ProfileView: View {
                         
                         HStack {
                             Image(systemName: "square.grid.2x2")
-                                .foregroundColor(.blue)
+                                .foregroundColor(.teal)
                                 .frame(width: 30, alignment: .center)
                             Text("My Posts")
                             Spacer()
@@ -111,9 +111,10 @@ struct ProfileView: View {
                     }) {
                         HStack {
                             Image(systemName: "person.2.fill")
-                                .foregroundColor(.blue)
+                                .foregroundColor(.teal)
                                 .frame(width: 30, alignment: .center)
                             Text("Following")
+                                .foregroundColor(.primary)
                             Spacer()
                             Image(systemName: "chevron.right")
                                 .foregroundColor(.secondary)
@@ -127,9 +128,10 @@ struct ProfileView: View {
                     }) {
                         HStack {
                             Image(systemName: "person.3.fill")
-                                .foregroundColor(.blue)
+                                .foregroundColor(.teal)
                                 .frame(width: 30, alignment: .center)
                             Text("Followers")
+                                .foregroundColor(.primary)
                             Spacer()
                             Image(systemName: "chevron.right")
                                 .foregroundColor(.secondary)
@@ -174,7 +176,7 @@ struct ProfileView: View {
                         
                         Text(authManager.getShareableUserID())
                             .font(.system(.caption, design: .monospaced))
-                            .foregroundColor(.blue)
+                            .foregroundColor(.teal)
                             .lineLimit(1)
                             .truncationMode(.middle)
                         
@@ -198,7 +200,7 @@ struct ProfileView: View {
                     NavigationLink(destination: BookmarkedPostsView()) {
                         HStack {
                             Image(systemName: "bookmark.fill")
-                                .foregroundColor(.blue)
+                                .foregroundColor(.teal)
                                 .frame(width: 30)
                             Text("Bookmarks")
                         }
@@ -240,13 +242,13 @@ struct ProfileView: View {
                         if authManager.isAuthenticated {
                             if authManager.currentUser?.isAnonymous == true {
                                 Text("Anonymous User")
-                                    .foregroundColor(.orange)
+                                    .foregroundColor(.yellow)
                             } else if authManager.isLinkedWithApple {
                                 Text("Apple ID User")
                                     .foregroundColor(.green)
                             } else {
                                 Text("Signed In")
-                                    .foregroundColor(.green)
+                                    .foregroundColor(.pink)
                             }
                         } else {
                             Text("Not Signed In")
@@ -336,7 +338,7 @@ struct ProfileView: View {
                             HStack {
                                 Image(systemName: "person.badge.key")
                                 Text("Sign In with Existing Account")
-                                    .foregroundColor(.blue)
+                                    .foregroundColor(.teal)
                             }
                         }
                     }

@@ -44,8 +44,8 @@ struct SeeWorksView: View {
                                 .resizable()
                                 .frame(width: 24, height: 24)
                                 .padding()
-                                .background(Color.orange)
-                                .foregroundStyle(Color.primary)
+                                .background(.indigo)
+                                .foregroundStyle(.white)
                                 .clipShape(Circle())
                                 .shadow(radius: 5)
                         }
@@ -194,7 +194,7 @@ struct WorkPostCard: View {
                         HStack(spacing: 4) {
                             Image(systemName: "person.circle.fill")
                                 .font(.caption)
-                                .foregroundColor(.orange)
+                                .foregroundColor(.indigo)
                             
                             Text(post.displayName)
                                 .font(.caption)

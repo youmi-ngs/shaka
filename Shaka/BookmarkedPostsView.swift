@@ -146,7 +146,7 @@ struct BookmarkedWorkCard: View {
                         ForEach(post.tags.prefix(3), id: \.self) { tag in
                             Text("#\(tag)")
                                 .font(.caption2)
-                                .foregroundColor(.blue)
+                                .foregroundColor(.teal)
                         }
                     }
                 }
@@ -180,7 +180,7 @@ struct BookmarkedQuestionCard: View {
                 .overlay(
                     Image(systemName: "questionmark.circle.fill")
                         .font(.title)
-                        .foregroundColor(.purple)
+                        .foregroundColor(.teal)
                 )
             
             VStack(alignment: .leading, spacing: 4) {
@@ -198,7 +198,7 @@ struct BookmarkedQuestionCard: View {
                         ForEach(post.tags.prefix(3), id: \.self) { tag in
                             Text("#\(tag)")
                                 .font(.caption2)
-                                .foregroundColor(.blue)
+                                .foregroundColor(.teal)
                         }
                     }
                 }

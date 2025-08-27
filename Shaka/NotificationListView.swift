@@ -52,7 +52,7 @@ struct NotificationListView: View {
                                 }
                             }
                             .listRowBackground(
-                                notification.read ? Color.clear : Color.blue.opacity(0.05)
+                                notification.read ? Color.clear : Color.teal.opacity(0.05)
                             )
                     }
                 }
@@ -151,7 +151,7 @@ struct NotificationRow: View {
             // 未読インジケーター
             if !notification.read {
                 Circle()
-                    .fill(Color.blue)
+                    .fill(Color.teal)
                     .frame(width: 8, height: 8)
             }
         }

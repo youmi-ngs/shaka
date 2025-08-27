@@ -107,7 +107,7 @@ struct WorkDetailView: View {
                         }) {
                             HStack {
                                 Image(systemName: "person.circle.fill")
-                                    .foregroundColor(.blue)
+                                    .foregroundColor(.indigo)
                                 Text(post.displayName)
                                     .foregroundColor(.primary)
                                     .font(.subheadline)
