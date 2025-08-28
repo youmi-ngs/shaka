@@ -1,0 +1,17 @@
+# Linguist overrides
+*.swift linguist-language=Swift
+*.h linguist-language=Objective-C
+*.m linguist-language=Objective-C
+
+# Mark vendored/generated files
+functions/* linguist-vendored
+scripts/* linguist-vendored
+*.pbxproj linguist-generated
+*.xcworkspace/* linguist-generated
+*.xcuserstate linguist-generated
+
+# Documentation
+*.md linguist-documentation
+
+# Ensure Swift is detected as primary language
+Shaka/*.swift linguist-language=Swift
