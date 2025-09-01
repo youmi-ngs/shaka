@@ -472,7 +472,7 @@ struct ProfileView: View {
             NavigationView {
                 NotificationListView()
                     .toolbar {
-                        ToolbarItem(placement: .navigationBarTrailing) {
+                        ToolbarItem(placement: .navigationBarLeading) {
                             Button("Done") {
                                 showNotificationList = false
                             }
