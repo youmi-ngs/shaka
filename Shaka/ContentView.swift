@@ -31,13 +31,6 @@ struct ContentView: View {
     
     var body: some View {
         TabView(selection: $selectedTab) {
-            NavigationView {
-                DiscoverView()
-            }
-            .tabItem {
-                Label("Discover", systemImage: "globe")
-            }
-            .tag(0)
             
             NavigationView {
                 SeeWorksView()
@@ -54,6 +47,14 @@ struct ContentView: View {
                 Label("Ask", systemImage: "questionmark.bubble")
             }
             .tag(2)
+            
+            NavigationView {
+                DiscoverView()
+            }
+            .tabItem {
+                Label("Discover", systemImage: "globe")
+            }
+            .tag(0)
             
             NavigationView {
                 SearchView()

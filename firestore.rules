@@ -344,6 +344,28 @@ service cloud.firestore {
       // 削除：禁止
       allow delete: if false;
     }
+    
+    // ========== User Locations Collection ==========
+    // 位置情報共有（相互フォローのみ）
+    match /user_locations/{userId} {
+      // 読み取り: 相互フォローのみ
+      allow read: if isAuthenticated() && (
+        isOwner(userId) ||
+        (exists(/databases/$(database)/documents/users/$(userId)/following/$(request.auth.uid)) &&
+         exists(/databases/$(database)/documents/users/$(request.auth.uid)/following/$(userId)))
+      );
+      
+      // 書き込み: 本人のみ
+      allow create, update: if isOwner(userId)
+        && request.resource.data.location is latlng
+        && request.resource.data.expiresAt is timestamp
+        && request.resource.data.updatedAt is timestamp
+        && request.resource.data.displayName is string
+        && request.resource.data.keys().hasAll(['location', 'expiresAt', 'updatedAt', 'displayName']);
+      
+      // 削除: 本人のみ
+      allow delete: if isOwner(userId);
+    }
   }
 }
 

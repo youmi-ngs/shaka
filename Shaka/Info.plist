@@ -6,5 +6,9 @@
 	<array>
 		<string>remote-notification</string>
 	</array>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Share your location with mutual followers to discover who's nearby</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Share your location with mutual followers to discover who's nearby</string>
 </dict>
 </plist>

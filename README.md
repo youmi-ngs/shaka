@@ -19,6 +19,7 @@ Shaka is a social networking app designed for photography enthusiasts to share t
 - 👥 **Follow System** - Follow photographers you admire
 - 🔍 **Search** - Find posts by title, tags, or users
 - 🚨 **Report System** - Report inappropriate content with email notifications to admins
+- 🔔 **Push Notifications** - Get notified about likes, comments, and follows
 
 #### Safety & Security
 - 🔒 Comprehensive Firebase security rules
@@ -34,10 +35,10 @@ Shaka is a social networking app designed for photography enthusiasts to share t
 
 ### Upcoming Features
 
-- 📱 **Push Notifications** - Firebase Cloud Messaging (infrastructure ready)
 - 📍 **Real-time Location Sharing** - See active users' locations on Discover map
 - 🎨 **UI Improvements** - Enhanced user interface design
 - 🚀 **Performance Optimization** - App performance improvements
+- 🌐 **Multi-language Support** - Support for multiple languages
 
 ### Setup
 
@@ -65,6 +66,7 @@ Shakaは写真愛好家が作品を共有し、他の写真家とつながるた
 - 👥 **フォローシステム** - 気に入った写真家をフォロー
 - 🔍 **検索** - タイトル、タグ、ユーザーで投稿を検索
 - 🚨 **通報システム** - 不適切なコンテンツを通報（管理者へメール通知）
+- 🔔 **プッシュ通知** - いいね、コメント、フォローの通知を受け取る
 
 #### 安全性とセキュリティ
 - 🔒 包括的なFirebaseセキュリティルール
@@ -80,10 +82,10 @@ Shakaは写真愛好家が作品を共有し、他の写真家とつながるた
 
 ### 今後実装予定の機能
 
-- 📱 **プッシュ通知** - Firebase Cloud Messaging（インフラ準備済み）
 - 📍 **リアルタイム位置情報共有** - Discoverマップ上でアクティブユーザーの位置を表示
 - 🎨 **UI改善** - ユーザーインターフェースの向上
 - 🚀 **パフォーマンス最適化** - アプリ動作の高速化
+- 🌐 **多言語対応** - 複数言語のサポート
 
 ### セットアップ
 
@@ -110,8 +112,13 @@ Shaka/
 
 ## Version / バージョン
 
-Current Version: 1.0 (Ready for TestFlight)  
-現在のバージョン: 1.0（TestFlight準備完了）
+Current Version: 1.0  
+- Build 1: Under Review (TestFlight)  
+- Build 2: Ready for TestFlight  
+
+現在のバージョン: 1.0  
+- ビルド1: TestFlight審査中  
+- ビルド2: TestFlight準備完了
 
 ## License / ライセンス
 

@@ -13,6 +13,8 @@ import FirebaseFirestore
 struct DiscoverView: View {
     @StateObject private var locationManager = LocationManager()
     @StateObject private var workViewModel = WorkPostViewModel()
+    @StateObject private var locationSharing = LocationSharingManager.shared
+    @EnvironmentObject var authManager: AuthManager
     
     @State private var region = MKCoordinateRegion(
         center: CLLocationCoordinate2D(latitude: 35.6814, longitude: 139.7667), // 東京駅
@@ -27,16 +29,49 @@ struct DiscoverView: View {
         center: CLLocationCoordinate2D(latitude: 35.6814, longitude: 139.7667),
         span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
     ))
+    @State private var showLocationSharingSheet = false
     
     var body: some View {
         ZStack {
             // 地図表示（iOS 17以降の新API）
             if #available(iOS 17.0, *) {
                     Map(position: $cameraPosition) {
-                        // ユーザー位置は表示しない（プライバシー対応）
-                        // UserAnnotation()
+                        // Show current user location if sharing
+                        if locationSharing.isSharing,
+                           let location = locationSharing.currentLocation {
+                            Annotation("Me", coordinate: location.coordinate) {
+                                Circle()
+                                    .fill(Color.blue)
+                                    .frame(width: 20, height: 20)
+                                    .overlay(
+                                        Circle()
+                                            .stroke(Color.white, lineWidth: 2)
+                                    )
+                            }
+                        }
                         
-                        // ピン表示
+                        // Show mutual followers' locations
+                        ForEach(locationSharing.mutualFollowersLocations) { userLocation in
+                            Annotation(userLocation.displayName, coordinate: userLocation.location) {
+                                VStack(spacing: 0) {
+                                    Circle()
+                                        .fill(Color.green)
+                                        .frame(width: 30, height: 30)
+                                        .overlay(
+                                            Text(String(userLocation.displayName.prefix(1)))
+                                                .foregroundColor(.white)
+                                                .font(.caption.bold())
+                                        )
+                                    
+                                    Image(systemName: "triangle.fill")
+                                        .font(.system(size: 10))
+                                        .foregroundColor(.green)
+                                        .offset(y: -5)
+                                }
+                            }
+                        }
+                        
+                        // Work posts pins
                         ForEach(workPins) { pin in
                             Annotation(pin.post.title, coordinate: pin.coordinate) {
                                 PinView(pinType: .work)
@@ -90,9 +125,36 @@ struct DiscoverView: View {
         }
         .navigationTitle("Discover")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    if authManager.userID != nil {
+                        Button(action: {
+                            if locationSharing.isSharing {
+                                locationSharing.stopSharingLocation()
+                            } else {
+                                showLocationSharingSheet = true
+                            }
+                        }) {
+                            HStack(spacing: 4) {
+                                Image(systemName: locationSharing.isSharing ? "location.fill" : "location")
+                                    .foregroundColor(locationSharing.isSharing ? .green : .primary)
+                                if locationSharing.isSharing {
+                                    Text(timeRemaining())
+                                        .font(.caption)
+                                        .foregroundColor(.green)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
             .onAppear {
-                // locationManager.requestLocationPermission() // 位置情報許可を求めない
+                locationSharing.checkSharingStatus()
+                locationSharing.startListeningToMutualLocations()
                 loadPosts()
+            }
+            .onDisappear {
+                locationSharing.stopListeningToMutualLocations()
             }
             .refreshable {
                 loadPosts()
@@ -107,6 +169,27 @@ struct DiscoverView: View {
                     loadPosts()
                 }
             }
+            .sheet(isPresented: $showLocationSharingSheet) {
+                LocationSharingSheet(
+                    isPresented: $showLocationSharingSheet,
+                    locationSharing: locationSharing
+                )
+            }
+    }
+    
+    private func timeRemaining() -> String {
+        guard let expiresAt = locationSharing.sharingExpiresAt else { return "" }
+        let remaining = expiresAt.timeIntervalSinceNow
+        if remaining <= 0 { return "Expired" }
+        
+        let minutes = Int(remaining / 60)
+        if minutes < 60 {
+            return "\(minutes)m"
+        } else {
+            let hours = minutes / 60
+            let mins = minutes % 60
+            return mins > 0 ? "\(hours)h \(mins)m" : "\(hours)h"
+        }
     }
     
     private func centerOnUserLocation() {
@@ -172,6 +255,121 @@ struct PinView: View {
                 .fill(Color.white)
                 .frame(width: 30, height: 30)
             )
+    }
+}
+
+// Location Sharing Sheet
+struct LocationSharingSheet: View {
+    @Binding var isPresented: Bool
+    @ObservedObject var locationSharing: LocationSharingManager
+    @State private var selectedDuration = 60.0 // Default 1 hour
+    
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 20) {
+                // Header
+                VStack(spacing: 8) {
+                    Image(systemName: "location.circle.fill")
+                        .font(.system(size: 60))
+                        .foregroundColor(.green)
+                    
+                    Text("Share Location with Mutual Followers")
+                        .font(.title2)
+                        .fontWeight(.semibold)
+                        .multilineTextAlignment(.center)
+                    
+                    Text("Only people you follow who also follow you can see your location")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                }
+                .padding(.top, 20)
+                
+                // Duration selector
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Duration")
+                        .font(.headline)
+                    
+                    Picker("Duration", selection: $selectedDuration) {
+                        Text("15 minutes").tag(15.0)
+                        Text("30 minutes").tag(30.0)
+                        Text("1 hour").tag(60.0)
+                        Text("2 hours").tag(120.0)
+                    }
+                    .pickerStyle(SegmentedPickerStyle())
+                }
+                .padding(.horizontal)
+                
+                // Permission check
+                if locationSharing.authorizationStatus == .notDetermined {
+                    Button(action: {
+                        locationSharing.requestLocationPermission()
+                    }) {
+                        Label("Enable Location Services", systemImage: "location")
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.blue)
+                            .foregroundColor(.white)
+                            .cornerRadius(10)
+                    }
+                    .padding(.horizontal)
+                } else if locationSharing.authorizationStatus == .denied || 
+                         locationSharing.authorizationStatus == .restricted {
+                    VStack(spacing: 10) {
+                        Label("Location Services Disabled", systemImage: "location.slash")
+                            .foregroundColor(.red)
+                        
+                        Text("Please enable location services in Settings to share your location")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
+                    .padding()
+                } else {
+                    // Start sharing button
+                    Button(action: {
+                        locationSharing.startSharingLocation(duration: selectedDuration * 60)
+                        isPresented = false
+                    }) {
+                        Label("Start Sharing", systemImage: "location.fill")
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.green)
+                            .foregroundColor(.white)
+                            .cornerRadius(10)
+                    }
+                    .padding(.horizontal)
+                }
+                
+                Spacer()
+                
+                // Privacy note
+                VStack(spacing: 8) {
+                    Label("Your Privacy", systemImage: "lock.shield")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    
+                    Text("• Location sharing automatically stops after the selected duration\n• You can stop sharing anytime\n• Only mutual followers can see your location")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.leading)
+                }
+                .padding()
+                .background(Color.gray.opacity(0.1))
+                .cornerRadius(10)
+                .padding(.horizontal)
+            }
+            .navigationTitle("Location Sharing")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Cancel") {
+                        isPresented = false
+                    }
+                }
+            }
+        }
     }
 }
 
