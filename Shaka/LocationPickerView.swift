@@ -21,48 +21,36 @@ struct LocationPickerView: View {
     )
     @State private var searchText = ""
     @State private var showingSearch = false
-    @State private var tempCoordinate: CLLocationCoordinate2D?
     @State private var tempLocationName = ""
     
     var body: some View {
         ZStack {
-            // 地図
+            // 地図（ピンなしで表示）
             Map(
                 coordinateRegion: $region,
-                showsUserLocation: true,
-                annotationItems: tempCoordinate != nil ? [TempPin(coordinate: tempCoordinate!)] : []
-            ) { pin in
-                MapAnnotation(coordinate: pin.coordinate) {
-                    VStack(spacing: 0) {
-                        Image(systemName: "mappin.circle.fill")
-                            .font(.system(size: 30))
-                            .foregroundColor(.red)
-                            .background(Circle().fill(Color(UIColor.systemBackground)).frame(width: 36, height: 36))
-                            .shadow(radius: 2)
-                        
-                        Image(systemName: "triangle.fill")
-                            .font(.system(size: 10))
-                            .foregroundColor(.red)
-                            .rotationEffect(.degrees(180))
-                            .offset(y: -5)
-                    }
-                }
+                showsUserLocation: true
+            )
+            .onChange(of: region.center.latitude) { _ in
+                updateLocationName(for: region.center)
             }
-            .onTapGesture { _ in
-                // 地図の中央位置を使用
-                setTemporaryLocation(region.center)
+            .onChange(of: region.center.longitude) { _ in
+                updateLocationName(for: region.center)
             }
             
-            // 中央のピン（選択用）
-            Button(action: {
-                setTemporaryLocation(region.center)
-            }) {
-                Image(systemName: "plus.circle")
-                    .font(.system(size: 30))
-                    .foregroundColor(.blue)
-                    .background(Circle().fill(Color(UIColor.systemBackground)))
-                    .opacity(0.8)
+            // 中央に固定されたピン（地図をドラッグして位置を調整）
+            VStack(spacing: 0) {
+                Image(systemName: "mappin.circle.fill")
+                    .font(.system(size: 35))
+                    .foregroundColor(.indigo)
+                    .background(Circle().fill(Color.white).frame(width: 40, height: 40))
+                
+                Image(systemName: "triangle.fill")
+                    .font(.system(size: 12))
+                    .foregroundColor(.indigo)
+                    .rotationEffect(.degrees(180))
+                    .offset(y: -5)
             }
+            .allowsHitTesting(false) // タップを透過させる
             
             // UI オーバーレイ
             VStack {
@@ -94,29 +82,35 @@ struct LocationPickerView: View {
                 // 位置情報表示と確定ボタン
                 VStack(spacing: 12) {
                     if !tempLocationName.isEmpty {
-                        Text(tempLocationName)
-                            .font(.subheadline)
-                            .padding(.horizontal)
-                            .padding(.vertical, 8)
-                            .background(Color(UIColor.systemBackground).opacity(0.95))
-                            .cornerRadius(8)
+                        HStack {
+                            Image(systemName: "location.fill")
+                                .foregroundColor(.gray)
+                                .font(.caption)
+                            Text(tempLocationName)
+                                .font(.subheadline)
+                                .lineLimit(1)
+                        }
+                        .padding(.horizontal)
+                        .padding(.vertical, 8)
+                        .background(Color(UIColor.systemBackground).opacity(0.95))
+                        .cornerRadius(8)
                     }
                     
-                    HStack(spacing: 16) {
-                        // 確定ボタン
-                        Button(action: {
-                            confirmLocation()
-                        }) {
-                            Text("Set This Location")
+                    // 確定ボタン
+                    Button(action: {
+                        confirmLocation()
+                    }) {
+                        HStack {
+                            Image(systemName: "location.circle.fill")
+                            Text("Set Location")
                                 .fontWeight(.semibold)
-                                .foregroundColor(Color.primary)
-                                .padding(.horizontal, 24)
-                                .padding(.vertical, 12)
-                                .background(Color.blue)
-                                .cornerRadius(25)
-                                .shadow(radius: 3)
                         }
-                        .disabled(false) // Always enable button since we can use region.center
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 32)
+                        .padding(.vertical, 14)
+                        .background(Color.blue)
+                        .cornerRadius(25)
+                        .shadow(radius: 3)
                     }
                 }
                 .padding()
@@ -132,23 +126,18 @@ struct LocationPickerView: View {
             }
         }
         .onAppear {
-            // locationManager.requestLocationPermission() // 位置情報許可を求めない
-            
             // 既に選択されている場所がある場合は表示
             if let coord = selectedCoordinate {
                 region.center = coord
-                tempCoordinate = coord
                 tempLocationName = locationName
             } else {
-                // 初期状態では地図の中央位置を一時位置として設定
-                setTemporaryLocation(region.center)
+                // 初期状態の地名を取得
+                updateLocationName(for: region.center)
             }
         }
     }
     
-    private func setTemporaryLocation(_ coordinate: CLLocationCoordinate2D) {
-        tempCoordinate = coordinate
-        
+    private func updateLocationName(for coordinate: CLLocationCoordinate2D) {
         // 逆ジオコーディング（座標から地名を取得）
         let geocoder = CLGeocoder()
         let location = CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
@@ -170,11 +159,11 @@ struct LocationPickerView: View {
                         }
                     }
                     
-                    tempLocationName = components.isEmpty ? 
+                    self.tempLocationName = components.isEmpty ? 
                         String(format: "%.4f, %.4f", coordinate.latitude, coordinate.longitude) :
                         components.joined(separator: ", ")
                 } else {
-                    tempLocationName = String(format: "%.4f, %.4f", coordinate.latitude, coordinate.longitude)
+                    self.tempLocationName = String(format: "%.4f, %.4f", coordinate.latitude, coordinate.longitude)
                 }
             }
         }
@@ -213,8 +202,8 @@ struct LocationPickerView: View {
             
             DispatchQueue.main.async {
                 withAnimation {
-                    region.center = coordinate
-                    setTemporaryLocation(coordinate)
+                    self.region.center = coordinate
+                    self.updateLocationName(for: coordinate)
                 }
             }
         }
@@ -226,8 +215,8 @@ struct LocationPickerView: View {
             if let location = placemarks?.first?.location {
                 DispatchQueue.main.async {
                     withAnimation {
-                        region.center = location.coordinate
-                        setTemporaryLocation(location.coordinate)
+                        self.region.center = location.coordinate
+                        self.updateLocationName(for: location.coordinate)
                     }
                 }
             }
@@ -235,21 +224,21 @@ struct LocationPickerView: View {
     }
     
     private func confirmLocation() {
-        let finalCoordinate = tempCoordinate ?? region.center
-        let finalLocationName = tempLocationName.isEmpty ? 
-            (searchText.isEmpty ? "Selected Location" : searchText) : tempLocationName
+        // 地図の中央位置を確定位置として使用
+        let centerCoord = region.center
+        selectedCoordinate = centerCoord
         
-        selectedCoordinate = finalCoordinate
-        locationName = finalLocationName
+        // 地名を設定
+        if tempLocationName.isEmpty {
+            locationName = searchText.isEmpty ? 
+                String(format: "%.4f, %.4f", centerCoord.latitude, centerCoord.longitude) : 
+                searchText
+        } else {
+            locationName = tempLocationName
+        }
         
         dismiss()
     }
-}
-
-// 一時的なピン
-struct TempPin: Identifiable {
-    let id = UUID()
-    let coordinate: CLLocationCoordinate2D
 }
 
 #Preview {
