@@ -20,20 +20,31 @@ struct ReportView: View {
         NavigationView {
             Form {
                 Section(header: Text("Why are you reporting this?")) {
-                    Picker("Reason", selection: $viewModel.selectedReason) {
-                        ForEach(ReportReason.allCases, id: \.self) { reason in
-                            VStack(alignment: .leading) {
-                                Text(reason.rawValue)
-                                    .font(.headline)
-                                Text(reason.description)
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
+                    ForEach(ReportReason.allCases, id: \.self) { reason in
+                        Button(action: {
+                            viewModel.selectedReason = reason
+                        }) {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(reason.rawValue)
+                                        .font(.system(size: 15, weight: .medium))
+                                        .foregroundColor(.primary)
+                                    Text(reason.description)
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
+                                Spacer()
+                                if viewModel.selectedReason == reason {
+                                    Image(systemName: "checkmark")
+                                        .foregroundColor(.teal)
+                                        .font(.system(size: 14, weight: .semibold))
+                                }
                             }
-                            .tag(reason)
+                            .contentShape(Rectangle())
                         }
+                        .buttonStyle(PlainButtonStyle())
                     }
-                    .pickerStyle(WheelPickerStyle())
-                    .frame(height: 150)
                 }
                 
                 Section(header: Text("Additional Details (Optional)")) {
