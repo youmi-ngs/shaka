@@ -44,7 +44,7 @@ class NotificationManager: NSObject, ObservableObject {
     
     /// 通知許可をリクエスト
     func requestNotificationPermission() {
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { [weak self] granted, error in
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { [weak self] granted, error in
             if let error = error {
                 return
             }
@@ -211,11 +211,11 @@ extension NotificationManager: UNUserNotificationCenterDelegate {
                                 withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
         let userInfo = notification.request.content.userInfo
         
-        // フォアグラウンドでも通知を表示
+        // フォアグラウンドでも通知を表示（バッジなし）
         if #available(iOS 14.0, *) {
-            completionHandler([.banner, .sound, .badge])
+            completionHandler([.banner, .sound])
         } else {
-            completionHandler([.alert, .sound, .badge])
+            completionHandler([.alert, .sound])
         }
     }
     

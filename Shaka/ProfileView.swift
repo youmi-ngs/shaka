@@ -78,8 +78,9 @@ struct ProfileView: View {
                     }
                 }
                 
-                // My Posts Section
+                // My Content Section
                 Section {
+                    // My Posts
                     ZStack {
                         NavigationLink {
                             if let userId = authManager.userID {
@@ -95,6 +96,19 @@ struct ProfileView: View {
                                 .foregroundColor(.teal)
                                 .frame(width: 30, alignment: .center)
                             Text("My Posts")
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    
+                    // Bookmarks
+                    NavigationLink(destination: BookmarkedPostsView()) {
+                        HStack {
+                            Image(systemName: "bookmark.fill")
+                                .foregroundColor(.teal)
+                                .frame(width: 30, alignment: .center)
+                            Text("Bookmarks")
                             Spacer()
                             Image(systemName: "chevron.right")
                                 .foregroundColor(.secondary)
@@ -195,17 +209,6 @@ struct ProfileView: View {
                     .padding(.vertical, 8)
                 }
                 
-                // Your Content Section
-                Section(header: Text("Your Content")) {
-                    NavigationLink(destination: BookmarkedPostsView()) {
-                        HStack {
-                            Image(systemName: "bookmark.fill")
-                                .foregroundColor(.teal)
-                                .frame(width: 30)
-                            Text("Bookmarks")
-                        }
-                    }
-                }
                 
                 // Legal Section
                 Section(header: Text("Legal")) {

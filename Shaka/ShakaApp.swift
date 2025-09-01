@@ -46,6 +46,10 @@ struct ShakaApp: App {
                         .onOpenURL { url in
                             _ = deepLinkManager.handleURL(url)
                         }
+                        .onAppear {
+                            // アプリ起動時にバッジをクリア
+                            UIApplication.shared.applicationIconBadgeNumber = 0
+                        }
                 } else {
                     // 初回起動時、またはフラグがリセットされた場合はオンボーディング画面を表示
                     OnboardingView()
