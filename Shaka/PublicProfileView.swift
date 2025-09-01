@@ -58,9 +58,6 @@ struct PublicProfileView: View {
         .navigationTitle("Profile")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
-            print("👁 PublicProfileView appeared for UID: \(authorUid)")
-            print("  Current displayName: \(viewModel.displayName)")
-            print("  Is loading: \(viewModel.isLoading)")
             viewModel.fetchProfile()
         }
         .alert("Error", isPresented: $showErrorAlert) {

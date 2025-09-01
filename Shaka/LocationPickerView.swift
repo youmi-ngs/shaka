@@ -197,14 +197,12 @@ struct LocationPickerView: View {
         let search = MKLocalSearch(request: request)
         search.start { response, error in
             if let error = error {
-                print("MKLocalSearch error: \(error)")
                 // フォールバック：CLGeocoderを使用
                 fallbackGeocodeSearch()
                 return
             }
             
             guard let response = response, !response.mapItems.isEmpty else {
-                print("No results from MKLocalSearch")
                 fallbackGeocodeSearch()
                 return
             }

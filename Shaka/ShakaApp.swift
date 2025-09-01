@@ -21,8 +21,6 @@ struct ShakaApp: App {
     init() {
         FirebaseApp.configure()
         let db = Firestore.firestore()
-        print("🔥 Firebase configured")
-        print("📚 Firestore instance:", db)
         
         // 既存ユーザーのマイグレーション（アップデート後の初回起動対応）
         // 一度だけ実行するためのフラグ
@@ -30,7 +28,6 @@ struct ShakaApp: App {
             if Auth.auth().currentUser != nil {
                 // 既にログイン済みのユーザーは自動的にオンボーディング完了とする
                 UserDefaults.standard.set(true, forKey: "hasCompletedOnboarding")
-                print("📱 Migrated existing user - skipping onboarding")
             }
             // マイグレーション完了フラグを設定
             UserDefaults.standard.set(true, forKey: "hasPerformedOnboardingMigration")
@@ -47,7 +44,6 @@ struct ShakaApp: App {
                         .environmentObject(deepLinkManager)
                         .environmentObject(notificationManager)
                         .onOpenURL { url in
-                            print("📱 Received URL: \(url)")
                             _ = deepLinkManager.handleURL(url)
                         }
                 } else {
@@ -60,9 +56,6 @@ struct ShakaApp: App {
             .task {
                 // セッション復元のチェックのみ行う（自動サインインはしない）
                 if let currentUser = Auth.auth().currentUser {
-                    print("✅ Session restored for user: \(currentUser.uid)")
-                    print("   Anonymous: \(currentUser.isAnonymous)")
-                    print("   Providers: \(currentUser.providerData.map { $0.providerID })")
                 }
             }
         }

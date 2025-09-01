@@ -130,9 +130,9 @@ struct ContentView: View {
         followViewModel.followUser(targetUid: uid) { result in
             switch result {
             case .success:
-                print("✅ User followed via deep link")
+                break
             case .failure(let error):
-                print("❌ Failed to follow user: \(error)")
+                break
             }
         }
         

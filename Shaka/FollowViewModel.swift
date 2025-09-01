@@ -43,7 +43,6 @@ class FollowViewModel: ObservableObject {
         // 既にフォローしているかチェック
         followingRef.getDocument { [weak self] snapshot, error in
             if let error = error {
-                print("❌ Error checking follow status: \(error.localizedDescription)")
                 completion(.failure(error))
                 return
             }
@@ -72,12 +71,8 @@ class FollowViewModel: ObservableObject {
             // バッチコミット
             batch?.commit { error in
                 if let error = error {
-                    print("❌ Error following user: \(error.localizedDescription)")
                     completion(.failure(error))
                 } else {
-                    print("✅ Successfully followed user: \(targetUid)")
-                    print("  - Added to following/\(currentUid)/users/\(targetUid)")
-                    print("  - Added to followers/\(targetUid)/users/\(currentUid)")
                     completion(.success(()))
                 }
             }
@@ -106,12 +101,8 @@ class FollowViewModel: ObservableObject {
         // バッチコミット
         batch.commit { error in
             if let error = error {
-                print("❌ Error unfollowing user: \(error.localizedDescription)")
                 completion(.failure(error))
             } else {
-                print("✅ Successfully unfollowed user: \(targetUid)")
-                print("  - Removed from following/\(currentUid)/users/\(targetUid)")
-                print("  - Removed from followers/\(targetUid)/users/\(currentUid)")
                 completion(.success(()))
             }
         }
@@ -188,7 +179,6 @@ class FollowViewModel: ObservableObject {
             .whereField(FieldPath.documentID(), in: uids)
             .getDocuments { [weak self] snapshot, error in
                 if let error = error {
-                    print("❌ Error fetching user profiles: \(error)")
                     return
                 }
                 

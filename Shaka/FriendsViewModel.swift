@@ -28,9 +28,6 @@ class FriendsViewModel: ObservableObject {
             return
         }
         
-        print("🔍 Debug - Adding friend:")
-        print("  Current UID: \(currentUid)")
-        print("  Target UID: \(targetUid)")
         
         // 自分自身は追加できない
         guard currentUid != targetUid else {
@@ -58,17 +55,11 @@ class FriendsViewModel: ObservableObject {
                 "createdAt": FieldValue.serverTimestamp()
             ]
             
-            print("🔍 Debug - Setting data at path: friends/\(currentUid)/list/\(targetUid)")
-            print("  Data: \(data)")
             
             friendRef.setData(data) { error in
                 if let error = error {
-                    print("❌ Error adding friend: \(error.localizedDescription)")
-                    print("  Error code: \((error as NSError).code)")
-                    print("  Error domain: \((error as NSError).domain)")
                     completion(.failure(error))
                 } else {
-                    print("✅ Friend added: \(targetUid)")
                     completion(.success(()))
                 }
             }
@@ -165,7 +156,6 @@ class FriendsViewModel: ObservableObject {
                     defer { group.leave() }
                     
                     if let error = error {
-                        print("❌ Error fetching user profiles: \(error)")
                         return
                     }
                     
@@ -210,7 +200,6 @@ class FriendsViewModel: ObservableObject {
                 if let error = error {
                     completion(.failure(error))
                 } else {
-                    print("✅ Friend removed: \(targetUid)")
                     completion(.success(()))
                 }
             }

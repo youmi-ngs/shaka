@@ -96,11 +96,9 @@ struct NotificationListView: View {
                 if targetType == "work" {
                     // 投稿詳細画面への遷移は現時点では無効化
                     // TODO: WorkDetailViewにpostIdだけで初期化できるイニシャライザを追加
-                    print("Navigate to work: \(targetId)")
                 } else if targetType == "question" {
                     // 質問詳細画面への遷移は現時点では無効化
                     // TODO: QuestionDetailViewにpostIdだけで初期化できるイニシャライザを追加
-                    print("Navigate to question: \(targetId)")
                 }
             }
         case "follow":

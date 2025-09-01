@@ -44,7 +44,6 @@ class BookmarkManager: ObservableObject {
             .document(uid)
             .addSnapshotListener { [weak self] snapshot, error in
                 if let error = error {
-                    print("❌ Error listening to bookmark: \(error)")
                     return
                 }
                 
@@ -68,9 +67,7 @@ class BookmarkManager: ObservableObject {
             bookmarkRef.delete { [weak self] error in
                 self?.isProcessing = false
                 if let error = error {
-                    print("❌ Error removing bookmark: \(error)")
                 } else {
-                    print("✅ Bookmark removed")
                     self?.saveToUserBookmarks(uid: uid, remove: true)
                 }
             }
@@ -83,9 +80,7 @@ class BookmarkManager: ObservableObject {
             bookmarkRef.setData(data) { [weak self] error in
                 self?.isProcessing = false
                 if let error = error {
-                    print("❌ Error adding bookmark: \(error)")
                 } else {
-                    print("✅ Bookmark added")
                     self?.saveToUserBookmarks(uid: uid, remove: false)
                 }
             }
@@ -102,7 +97,6 @@ class BookmarkManager: ObservableObject {
         if remove {
             userBookmarkRef.delete { error in
                 if let error = error {
-                    print("❌ Error removing from user bookmarks: \(error)")
                 }
             }
         } else {
@@ -113,7 +107,6 @@ class BookmarkManager: ObservableObject {
             
             userBookmarkRef.setData(data) { error in
                 if let error = error {
-                    print("❌ Error adding to user bookmarks: \(error)")
                 }
             }
         }

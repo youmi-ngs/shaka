@@ -75,9 +75,7 @@ struct SeeWorksView: View {
             refreshID = UUID()
         }
         
-        print("✅ Posts refreshed - Total: \(viewModel.posts.count)")
         for post in viewModel.posts {
-            print("📷 Post: \(post.title), URL: \(post.imageURL?.absoluteString ?? "No URL")")
         }
     }
 }

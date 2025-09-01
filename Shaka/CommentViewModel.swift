@@ -31,7 +31,6 @@ class CommentViewModel: ObservableObject {
                 guard let self = self else { return }
                 
                 if let error = error {
-                    print("❌ Error fetching comments: \(error)")
                     return
                 }
                 
@@ -83,9 +82,7 @@ class CommentViewModel: ObservableObject {
             .collection("comments")
             .addDocument(data: data) { error in
                 if let error = error {
-                    print("❌ Failed to add comment: \(error)")
                 } else {
-                    print("✅ Comment added successfully")
                 }
             }
     }
@@ -100,9 +97,7 @@ class CommentViewModel: ObservableObject {
             .document(comment.id)
             .delete { error in
                 if let error = error {
-                    print("❌ Failed to delete comment: \(error)")
                 } else {
-                    print("✅ Comment deleted successfully")
                 }
             }
     }

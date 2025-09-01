@@ -22,7 +22,6 @@ class WorkPostViewModel: ObservableObject {
     func addPost(title: String, description: String?, detail: String? = nil, imageURL: URL?, location: CLLocationCoordinate2D? = nil, locationName: String? = nil, tags: [String] = []) {
         let userID = AuthManager.shared.getCurrentUserID() ?? "anonymous"
         let displayName = AuthManager.shared.getDisplayName()
-        print("📝 Creating post with userID: \(userID), displayName: \(displayName)")
         
         var data: [String: Any] = [
             "title": title,
@@ -61,9 +60,7 @@ class WorkPostViewModel: ObservableObject {
         
         docRef.setData(data) { error in
             if let error = error {
-                print("🔥 Firestore 書き込み失敗:", error.localizedDescription)
             } else {
-                print("✅ Firestore に保存完了！")
                 // Add to local array after successful save
                 let geoPoint = location != nil ? GeoPoint(latitude: location!.latitude, longitude: location!.longitude) : nil
                 let newPost = WorkPost(
@@ -94,7 +91,6 @@ class WorkPostViewModel: ObservableObject {
             .order(by: "createdAt", descending: true)
             .getDocuments { snapshot, error in
                 if let error = error {
-                    print("Error fetching documents: \(error)")
                     return
                 }
 
@@ -137,10 +133,8 @@ class WorkPostViewModel: ObservableObject {
     func deletePost(_ post: WorkPost, completion: @escaping (Bool) -> Void) {
         db.collection("works").document(post.id).delete { error in
             if let error = error {
-                print("❌ Failed to delete post: \(error.localizedDescription)")
                 completion(false)
             } else {
-                print("✅ Post deleted successfully")
                 // Remove from local array
                 DispatchQueue.main.async {
                     self.posts.removeAll { $0.id == post.id }
@@ -157,9 +151,7 @@ class WorkPostViewModel: ObservableObject {
             "updatedAt": Timestamp(date: Date())
         ]) { error in
             if let error = error {
-                print("❌ Failed to toggle post status: \(error.localizedDescription)")
             } else {
-                print("✅ Post status toggled successfully to \(newStatus ? "active" : "inactive")")
                 // Update local array
                 DispatchQueue.main.async {
                     if let index = self.posts.firstIndex(where: { $0.id == post.id }) {
@@ -227,9 +219,7 @@ class WorkPostViewModel: ObservableObject {
         // 更新時もuserIDとdisplayNameを保持（変更しない）
         db.collection("works").document(post.id).updateData(data) { error in
             if let error = error {
-                print("❌ Failed to update post: \(error.localizedDescription)")
             } else {
-                print("✅ Post updated successfully")
                 // Update local array
                 DispatchQueue.main.async {
                     if let index = self.posts.firstIndex(where: { $0.id == post.id }) {
@@ -262,18 +252,15 @@ class WorkPostViewModel: ObservableObject {
             .order(by: "createdAt", descending: true)
             .getDocuments { snapshot, error in
                 if let error = error {
-                    print("❌ Error fetching documents with location: \(error)")
                     completion([])
                     return
                 }
 
                 guard let snapshot = snapshot else {
-                    print("❌ No snapshot returned")
                     completion([])
                     return
                 }
                 
-                print("📍 Found \(snapshot.documents.count) total works")
 
                 let posts = snapshot.documents.compactMap { doc -> WorkPost? in
                     let data = doc.data()
@@ -293,7 +280,6 @@ class WorkPostViewModel: ObservableObject {
                     
                     // locationがある投稿のみ返す（アクティブ/非アクティブ問わず地図に表示）
                     guard location != nil else { 
-                        print("⚠️ Skipping post \(title): no location")
                         return nil 
                     }
 
@@ -313,7 +299,6 @@ class WorkPostViewModel: ObservableObject {
                     )
                 }
                 
-                print("📍 Returning \(posts.count) posts with location")
                 completion(posts)
             }
     }

@@ -36,7 +36,6 @@ class BookmarkedPostsViewModel: ObservableObject {
                 guard let self = self else { return }
                 
                 if let error = error {
-                    print("❌ Error fetching bookmarked works: \(error)")
                     self.isLoadingWorks = false
                     return
                 }
@@ -67,7 +66,6 @@ class BookmarkedPostsViewModel: ObservableObject {
                     defer { group.leave() }
                     
                     if let error = error {
-                        print("❌ Error fetching work \(postId): \(error)")
                         return
                     }
                     
@@ -97,7 +95,6 @@ class BookmarkedPostsViewModel: ObservableObject {
                 guard let self = self else { return }
                 
                 if let error = error {
-                    print("❌ Error fetching bookmarked questions: \(error)")
                     self.isLoadingQuestions = false
                     return
                 }
@@ -128,7 +125,6 @@ class BookmarkedPostsViewModel: ObservableObject {
                     defer { group.leave() }
                     
                     if let error = error {
-                        print("❌ Error fetching question \(postId): \(error)")
                         return
                     }
                     

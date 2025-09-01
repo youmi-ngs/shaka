@@ -122,19 +122,14 @@ struct DiscoverView: View {
     }
     
     private func loadPosts() {
-        print("🗺 DiscoverView: Loading posts with location...")
         // 作品投稿を取得
         workViewModel.fetchPostsWithLocation { posts in
-            print("🗺 DiscoverView: Received \(posts.count) posts")
             self.workPins = posts.compactMap { post in
                 guard let coordinate = post.coordinate else { 
-                    print("⚠️ Post \(post.title) has no coordinate")
                     return nil 
                 }
-                print("📍 Adding pin for: \(post.title) at \(coordinate.latitude), \(coordinate.longitude)")
                 return WorkMapPin(post: post, coordinate: coordinate)
             }
-            print("🗺 DiscoverView: Created \(self.workPins.count) pins")
         }
     }
     

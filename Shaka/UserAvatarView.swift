@@ -71,7 +71,6 @@ struct UserAvatarView: View {
     private func fetchUserInfo() {
         db.collection("users").document(uid).getDocument { snapshot, error in
             if let error = error {
-                print("❌ Error fetching user info: \(error)")
                 isLoading = false
                 return
             }

@@ -46,7 +46,6 @@ class NotificationManager: NSObject, ObservableObject {
     func requestNotificationPermission() {
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { [weak self] granted, error in
             if let error = error {
-                print("❌ Error requesting notification permission: \(error)")
                 return
             }
             
@@ -55,9 +54,7 @@ class NotificationManager: NSObject, ObservableObject {
                 if granted {
                     // APNs登録
                     UIApplication.shared.registerForRemoteNotifications()
-                    print("✅ Notification permission granted")
                 } else {
-                    print("⚠️ Notification permission denied")
                 }
             }
         }
@@ -66,7 +63,6 @@ class NotificationManager: NSObject, ObservableObject {
     /// FCMトークンをFirestoreに保存
     func saveFCMToken(_ token: String) {
         guard let uid = Auth.auth().currentUser?.uid else {
-            print("⚠️ No user logged in, cannot save FCM token")
             return
         }
         
@@ -81,9 +77,7 @@ class NotificationManager: NSObject, ObservableObject {
             .document(token)
             .setData(tokenData) { error in
                 if let error = error {
-                    print("❌ Failed to save FCM token: \(error)")
                 } else {
-                    print("✅ FCM token saved successfully")
                 }
             }
         
@@ -102,9 +96,7 @@ class NotificationManager: NSObject, ObservableObject {
             .document(token)
             .delete { error in
                 if let error = error {
-                    print("❌ Failed to delete FCM token: \(error)")
                 } else {
-                    print("✅ FCM token deleted")
                 }
             }
     }
@@ -112,7 +104,6 @@ class NotificationManager: NSObject, ObservableObject {
     /// FCMトークンを強制的にリフレッシュ
     func refreshFCMToken() {
         guard let uid = Auth.auth().currentUser?.uid else {
-            print("⚠️ No user logged in")
             return
         }
         
@@ -122,7 +113,6 @@ class NotificationManager: NSObject, ObservableObject {
             .collection("fcmTokens")
             .getDocuments { [weak self] snapshot, error in
                 if let error = error {
-                    print("❌ Failed to get FCM tokens: \(error)")
                     return
                 }
                 
@@ -131,20 +121,16 @@ class NotificationManager: NSObject, ObservableObject {
                     doc.reference.delete()
                 }
                 
-                print("🗑️ Deleted all old FCM tokens")
                 
                 // 新しいトークンを要求
                 Messaging.messaging().deleteToken { error in
                     if let error = error {
-                        print("❌ Failed to delete FCM token from Firebase: \(error)")
                     }
                     
                     // 新しいトークンを取得
                     Messaging.messaging().token { token, error in
                         if let error = error {
-                            print("❌ Error fetching new FCM token: \(error)")
                         } else if let token = token {
-                            print("🔑 Got new FCM token: \(token)")
                             self?.saveFCMToken(token)
                         }
                     }
@@ -177,7 +163,6 @@ class NotificationManager: NSObject, ObservableObject {
         // 通知のタイプに応じて画面遷移
         guard let type = userInfo["type"] as? String else { return }
         
-        print("📱 Handling notification of type: \(type)")
         
         switch type {
         case "like":
@@ -198,25 +183,22 @@ class NotificationManager: NSObject, ObservableObject {
             }
             
         default:
-            print("⚠️ Unknown notification type: \(type)")
+            break
         }
     }
     
     private func handleLikeNotification(targetType: String, targetId: String) {
         // 投稿詳細画面に遷移
-        print("→ Navigate to \(targetType) with id: \(targetId)")
         // DeepLinkManagerを使って遷移（実装済みの場合）
     }
     
     private func handleFollowNotification(actorUid: String) {
         // プロフィール画面に遷移
-        print("→ Navigate to profile: \(actorUid)")
         // DeepLinkManagerを使って遷移（実装済みの場合）
     }
     
     private func handleCommentNotification(targetType: String, targetId: String) {
         // 投稿詳細画面に遷移
-        print("→ Navigate to \(targetType) with id: \(targetId)")
         // DeepLinkManagerを使って遷移（実装済みの場合）
     }
 }
@@ -228,7 +210,6 @@ extension NotificationManager: UNUserNotificationCenterDelegate {
                                 willPresent notification: UNNotification,
                                 withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
         let userInfo = notification.request.content.userInfo
-        print("📱 Notification received in foreground: \(userInfo)")
         
         // フォアグラウンドでも通知を表示
         if #available(iOS 14.0, *) {
@@ -243,7 +224,6 @@ extension NotificationManager: UNUserNotificationCenterDelegate {
                                 didReceive response: UNNotificationResponse,
                                 withCompletionHandler completionHandler: @escaping () -> Void) {
         let userInfo = response.notification.request.content.userInfo
-        print("📱 Notification tapped: \(userInfo)")
         
         handleNotification(userInfo)
         completionHandler()

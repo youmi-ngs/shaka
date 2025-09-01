@@ -33,13 +33,9 @@ class AuthManager: ObservableObject {
             self?.userID = user?.uid
             
             if let user = user {
-                print("✅ Auth state changed - User authenticated")
-                print("   UID: \(user.uid)")
-                print("   Anonymous: \(user.isAnonymous)")
                 self?.checkLinkedProviders()
                 self?.fetchUserProfile()
             } else {
-                print("❌ Auth state changed - No user authenticated")
                 self?.isLinkedWithApple = false
                 self?.displayName = nil
             }
@@ -50,15 +46,8 @@ class AuthManager: ObservableObject {
     func signInAnonymously() async throws {
         do {
             let authResult = try await Auth.auth().signInAnonymously()
-            print("🔐 Anonymous sign-in successful!")
-            print("🆔 User UID: \(authResult.user.uid)")
-            print("📅 Account created: \(authResult.user.metadata.creationDate?.description ?? "Unknown")")
-            print("🔄 Is new user: \(authResult.additionalUserInfo?.isNewUser ?? false)")
         } catch {
-            print("❌ Anonymous sign-in failed: \(error.localizedDescription)")
-            print("🔍 Error details: \(error)")
             if let errorCode = (error as NSError?)?.code {
-                print("🔍 Error code: \(errorCode)")
             }
             throw error
         }
@@ -81,9 +70,7 @@ class AuthManager: ObservableObject {
     func signOut() {
         do {
             try Auth.auth().signOut()
-            print("👋 User signed out successfully")
         } catch {
-            print("❌ Sign out failed: \(error.localizedDescription)")
         }
     }
     
@@ -97,8 +84,6 @@ class AuthManager: ObservableObject {
             provider.providerID == "apple.com"
         }
         
-        print("🔗 Linked providers: \(user.providerData.map { $0.providerID })")
-        print("🍎 Is linked with Apple: \(isLinkedWithApple)")
     }
     
     /// ランダムな文字列を生成（nonce用）
@@ -177,13 +162,9 @@ class AuthManager: ObservableObject {
         do {
             // Apple IDでサインイン
             let authResult = try await Auth.auth().signIn(with: credential)
-            print("✅ Signed in with Apple ID!")
-            print("🆔 User: \(authResult.user.uid)")
-            print("📧 Email: \(authResult.user.email ?? "No email")")
             
             checkLinkedProviders()
         } catch {
-            print("❌ Failed to sign in with Apple: \(error.localizedDescription)")
             throw error
         }
     }
@@ -211,37 +192,28 @@ class AuthManager: ObservableObject {
         do {
             // リンクを試みる
             let authResult = try await currentUser.link(with: credential)
-            print("🔗 Successfully linked with Apple ID!")
-            print("🍎 User: \(authResult.user.uid)")
             
             checkLinkedProviders()
         } catch let error as NSError {
             // エラーコードをチェック
             if error.code == 17025 { // FIRAuthErrorCodeProviderAlreadyLinked
-                print("ℹ️ This credential is already associated with a different account")
                 
                 // 既存のApple IDユーザーにサインインして、匿名データを移行
                 do {
                     // 現在の匿名ユーザーのUIDを保存
                     let anonymousUID = currentUser.uid
-                    print("📝 Current anonymous UID: \(anonymousUID)")
                     
                     // Apple IDでサインイン
                     let authResult = try await Auth.auth().signIn(with: credential)
-                    print("✅ Signed in with existing Apple ID")
-                    print("🆔 New UID: \(authResult.user.uid)")
                     
                     // TODO: ここで必要に応じてデータ移行処理を実装
                     // 例: Firestoreの匿名ユーザーのデータを新しいユーザーに移行
                     
                     checkLinkedProviders()
                 } catch {
-                    print("❌ Failed to sign in with Apple: \(error.localizedDescription)")
                     throw AuthError.credentialAlreadyInUse
                 }
             } else {
-                print("❌ Failed to link with Apple: \(error.localizedDescription)")
-                print("🔍 Error code: \(error.code)")
                 throw error
             }
         }
@@ -273,7 +245,6 @@ class AuthManager: ObservableObject {
         
         db.collection("users").document(uid).getDocument { [weak self] snapshot, error in
             if let error = error {
-                print("❌ Failed to fetch user profile: \(error.localizedDescription)")
                 return
             }
             
@@ -287,10 +258,7 @@ class AuthManager: ObservableObject {
                     self?.displayName = data["displayName"] as? String
                     self?.photoURL = data["photoURL"] as? String
                 }
-                print("📝 User profile loaded: \(self?.displayName ?? "No name")")
-                print("📸 Photo URL: \(self?.photoURL ?? "No photo")")
             } else {
-                print("📝 No user profile found, creating default...")
                 self?.createDefaultProfile()
             }
         }
@@ -312,10 +280,8 @@ class AuthManager: ObservableObject {
         
         db.collection("users").document(uid).setData(data) { [weak self] error in
             if let error = error {
-                print("❌ Failed to create user profile: \(error.localizedDescription)")
             } else {
                 self?.displayName = defaultName
-                print("✅ Default user profile created")
             }
         }
     }
@@ -338,7 +304,6 @@ class AuthManager: ObservableObject {
             self.displayName = newName
         }
         
-        print("✅ Display name updated to: \(newName)")
     }
     
     /// 表示名を取得（nilの場合はデフォルト値を返す）
@@ -366,8 +331,6 @@ class AuthManager: ObservableObject {
         // 連携状態を再チェック
         checkLinkedProviders()
         
-        print("✅ Apple ID unlinked successfully")
-        print("🔗 Remaining providers: \(user.providerData.map { $0.providerID })")
     }
     
     /// アカウントを完全に削除
@@ -377,14 +340,11 @@ class AuthManager: ObservableObject {
         }
         
         let uid = user.uid
-        print("🗑️ Starting account deletion for user: \(uid)")
         
         // 1. ユーザーの投稿を削除
-        print("📝 Deleting user's posts...")
         
         // Works削除（コメントも含む）
         let worksSnapshot = try await db.collection("works").whereField("userID", isEqualTo: uid).getDocuments()
-        print("  Found \(worksSnapshot.documents.count) works to delete")
         for doc in worksSnapshot.documents {
             // まず投稿のコメントを削除
             let commentsSnapshot = try await doc.reference.collection("comments").getDocuments()
@@ -397,7 +357,6 @@ class AuthManager: ObservableObject {
         
         // Questions削除（コメントも含む）
         let questionsSnapshot = try await db.collection("questions").whereField("userID", isEqualTo: uid).getDocuments()
-        print("  Found \(questionsSnapshot.documents.count) questions to delete")
         for doc in questionsSnapshot.documents {
             // まず質問のコメントを削除
             let commentsSnapshot = try await doc.reference.collection("comments").getDocuments()
@@ -409,7 +368,6 @@ class AuthManager: ObservableObject {
         }
         
         // 2. 他のユーザーの投稿に対するコメントを削除
-        print("💬 Deleting user's comments on other posts...")
         
         // 全てのWorksから自分のコメントを探して削除
         let allWorksSnapshot = try await db.collection("works").getDocuments()
@@ -434,11 +392,9 @@ class AuthManager: ObservableObject {
         }
         
         // 3. フォロー関係を削除
-        print("👥 Removing follow relationships...")
         
         // フォロー中のユーザーから自分を削除
         let followingSnapshot = try await db.collection("following").document(uid).collection("users").getDocuments()
-        print("  Unfollowing \(followingSnapshot.documents.count) users")
         for doc in followingSnapshot.documents {
             let followedUserId = doc.documentID
             // 相手のフォロワーリストから自分を削除
@@ -449,7 +405,6 @@ class AuthManager: ObservableObject {
         
         // フォロワーから自分へのフォローを削除
         let followersSnapshot = try await db.collection("followers").document(uid).collection("users").getDocuments()
-        print("  Removing \(followersSnapshot.documents.count) followers")
         for doc in followersSnapshot.documents {
             let followerUserId = doc.documentID
             // フォロワーのフォローリストから自分を削除
@@ -463,20 +418,16 @@ class AuthManager: ObservableObject {
         try? await db.collection("followers").document(uid).delete()
         
         // 4. ユーザープロフィールを削除
-        print("👤 Deleting user profile...")
         try await db.collection("users").document(uid).delete()
         
         // 5. Firebase Authenticationからアカウントを削除
-        print("🔐 Deleting authentication account...")
         try await user.delete()
         
         // 6. ローカルデータをクリア
-        print("📱 Clearing local data...")
         await MainActor.run {
             UserDefaults.standard.set(false, forKey: "hasCompletedOnboarding")
             UserDefaults.standard.synchronize()
         }
         
-        print("✅ Account and all associated data deleted successfully")
     }
 }

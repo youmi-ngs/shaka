@@ -45,16 +45,13 @@ class ImageLoader: ObservableObject {
     func load(from url: URL?) {
         guard let url = url else {
             self.error = .invalidURL
-            print("🖼❌ ImageLoader: Invalid URL")
             return
         }
         
         let urlString = url.absoluteString
-        print("🖼 ImageLoader: Loading from \(urlString)")
         
         // キャッシュチェック
         if let cachedImage = cache.get(forKey: urlString) {
-            print("🖼✅ ImageLoader: Cache hit")
             self.image = cachedImage
             return
         }
@@ -77,7 +74,6 @@ class ImageLoader: ObservableObject {
                     throw ImageLoadError.downloadFailed("Invalid response")
                 }
                 
-                print("🖼 HTTP Status: \(httpResponse.statusCode)")
                 
                 guard (200...299).contains(httpResponse.statusCode) else {
                     throw ImageLoadError.downloadFailed("HTTP \(httpResponse.statusCode)")
@@ -85,11 +81,9 @@ class ImageLoader: ObservableObject {
                 
                 // サイズチェック（10MB制限）
                 if data.count > 10 * 1024 * 1024 {
-                    print("🖼⚠️ Image too large: \(data.count / 1024 / 1024)MB")
                     throw ImageLoadError.tooLarge
                 }
                 
-                print("🖼 Downloaded: \(data.count / 1024)KB")
                 return data
             }
             .tryMap { data -> UIImage in
@@ -105,14 +99,12 @@ class ImageLoader: ObservableObject {
                     
                     switch completion {
                     case .finished:
-                        print("🖼✅ Image loaded successfully")
+                        break
                     case .failure(let error):
-                        print("🖼❌ Load failed: \(error.localizedDescription)")
                         
                         // リトライロジック
                         if let self = self, self.retryCount < self.maxRetries {
                             self.retryCount += 1
-                            print("🖼🔄 Retrying... (\(self.retryCount)/\(self.maxRetries))")
                             
                             DispatchQueue.main.asyncAfter(deadline: .now() + Double(self.retryCount)) {
                                 self.loadWithRetry(from: url)

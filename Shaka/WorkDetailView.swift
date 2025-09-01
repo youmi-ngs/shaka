@@ -18,8 +18,10 @@ struct WorkDetailView: View {
     @State private var showAuthorProfile = false
     @State private var showSearchForTag: String?
     @State private var showReportSheet = false
+    @State private var showFullscreenImage = false
     @StateObject private var likeManager: LikeManager
     @StateObject private var bookmarkManager: BookmarkManager
+    @Namespace private var imageNamespace
     
     init(post: WorkPost, viewModel: WorkPostViewModel) {
         self.post = post
@@ -29,9 +31,10 @@ struct WorkDetailView: View {
     }
     
     var body: some View {
-        ScrollView {
+        ZStack {
+            ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                // Image
+                // Image (Tappable for fullscreen)
                 if let url = post.imageURL {
                     AsyncImage(url: url) { phase in
                         switch phase {
@@ -40,7 +43,11 @@ struct WorkDetailView: View {
                                 .resizable()
                                 .scaledToFit()
                                 .frame(maxWidth: .infinity)
-//                                .cornerRadius(12)
+                                .onTapGesture {
+                                    withAnimation(.easeInOut(duration: 0.2)) {
+                                        showFullscreenImage = true
+                                    }
+                                }
                         case .failure(_):
                             Rectangle()
                                 .fill(Color(UIColor.tertiarySystemFill))
@@ -200,9 +207,11 @@ struct WorkDetailView: View {
                 Spacer(minLength: 50)
             }
             .padding(.top)
-        }
-        .navigationTitle("Work Detail")
+            }
+            .navigationTitle("Work Detail")
         .navigationBarTitleDisplayMode(.inline)
+        .navigationBarHidden(showFullscreenImage)
+        .toolbar(showFullscreenImage ? .hidden : .visible, for: .tabBar)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 HStack {
@@ -263,6 +272,18 @@ struct WorkDetailView: View {
         } message: {
             Text("Are you sure you want to delete this post? This action cannot be undone.")
         }
+            
+            // Fullscreen image overlay
+            if showFullscreenImage {
+                FullscreenImageView(
+                    imageURL: post.imageURL,
+                    title: post.title,
+                    isPresented: $showFullscreenImage
+                )
+                .transition(.opacity)
+                .zIndex(1)
+            }
+        }
     }
     
     private func deletePost() {
@@ -272,6 +293,136 @@ struct WorkDetailView: View {
                 dismiss()
             } else {
                 isDeleting = false
+            }
+        }
+    }
+}
+
+// Fullscreen Image Viewer
+struct FullscreenImageView: View {
+    let imageURL: URL?
+    let title: String
+    @Binding var isPresented: Bool
+    @State private var scale: CGFloat = 1.0
+    @State private var lastScale: CGFloat = 1.0
+    @State private var offset: CGSize = .zero
+    @State private var lastOffset: CGSize = .zero
+    @State private var opacity: Double = 0
+    
+    var body: some View {
+        ZStack {
+            // Black background
+            Color.black
+                .ignoresSafeArea()
+                .opacity(opacity)
+            
+            // Image with gestures
+            if let url = imageURL {
+                AsyncImage(url: url) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .scaledToFit()
+                            .scaleEffect(scale)
+                            .offset(offset)
+                            .gesture(
+                                MagnificationGesture()
+                                    .onChanged { value in
+                                        let delta = value / lastScale
+                                        lastScale = value
+                                        scale = min(max(scale * delta, 1), 4)
+                                    }
+                                    .onEnded { _ in
+                                        lastScale = 1.0
+                                        withAnimation(.spring()) {
+                                            if scale < 1.0 {
+                                                scale = 1.0
+                                                offset = .zero
+                                            }
+                                        }
+                                    }
+                            )
+                            .simultaneousGesture(
+                                DragGesture()
+                                    .onChanged { value in
+                                        if scale > 1.0 {
+                                            offset = CGSize(
+                                                width: lastOffset.width + value.translation.width,
+                                                height: lastOffset.height + value.translation.height
+                                            )
+                                        }
+                                    }
+                                    .onEnded { _ in
+                                        lastOffset = offset
+                                    }
+                            )
+                            .onTapGesture(count: 2) {
+                                withAnimation(.spring()) {
+                                    if scale > 1 {
+                                        scale = 1
+                                        offset = .zero
+                                        lastOffset = .zero
+                                    } else {
+                                        scale = 2
+                                    }
+                                }
+                            }
+                            .opacity(opacity)
+                    case .failure(_):
+                        Image(systemName: "photo")
+                            .font(.system(size: 50))
+                            .foregroundColor(.white)
+                    case .empty:
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                            .scaleEffect(1.5)
+                    @unknown default:
+                        EmptyView()
+                    }
+                }
+            }
+            
+            // Overlay with title and close button
+            VStack {
+                // Close button at top-right
+                HStack {
+                    Spacer()
+                    
+                    Button(action: {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            isPresented = false
+                        }
+                    }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 36))
+                            .foregroundStyle(.white, Color.black.opacity(0.6))
+                    }
+                }
+                .padding()
+                .padding(.top, 60)
+                
+                Spacer()
+                
+                // Title at bottom-left
+                HStack {
+                    Text(title)
+                        .font(.system(size: 42))
+                        .fontWeight(.bold)
+                        .foregroundColor(.white)
+                        .shadow(color: .black.opacity(0.8), radius: 4, x: 0, y: 2)
+                    
+                    Spacer()
+                }
+                .padding()
+                .padding(.bottom, 60)
+            }
+            .opacity(opacity)
+        }
+        .ignoresSafeArea()
+        .onAppear {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                opacity = 1
             }
         }
     }

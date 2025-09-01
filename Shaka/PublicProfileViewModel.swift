@@ -31,7 +31,6 @@ class PublicProfileViewModel: ObservableObject {
     
     init(authorUid: String) {
         self.authorUid = authorUid
-        print("🚀 PublicProfileViewModel init with UID: \(authorUid)")
     }
     
     // MARK: - プロフィール取得
@@ -39,7 +38,6 @@ class PublicProfileViewModel: ObservableObject {
         isLoading = true
         errorMessage = nil
         
-        print("🔍 Fetching profile for UID: \(authorUid)")
         
         db.collection("users").document(authorUid).getDocument { [weak self] snapshot, error in
             guard let self = self else { return }
@@ -48,18 +46,15 @@ class PublicProfileViewModel: ObservableObject {
                 self.isLoading = false
                 
                 if let error = error {
-                    print("❌ Error fetching profile: \(error.localizedDescription)")
                     self.errorMessage = "プロフィールの取得に失敗しました: \(error.localizedDescription)"
                     return
                 }
                 
                 guard let data = snapshot?.data() else {
-                    print("❌ No data found for user: \(self.authorUid)")
                     self.errorMessage = "ユーザーが見つかりません"
                     return
                 }
                 
-                print("📝 User data: \(data)")
                 
                 // public データ
                 if let publicData = data["public"] as? [String: Any] {
@@ -67,9 +62,7 @@ class PublicProfileViewModel: ObservableObject {
                     self.photoURL = publicData["photoURL"] as? String
                     self.bio = publicData["bio"] as? String
                     self.links = publicData["links"] as? [String: String] ?? [:]
-                    print("✅ Public data loaded: displayName=\(self.displayName)")
                 } else {
-                    print("⚠️ No public data found")
                     self.displayName = "Unknown User"
                 }
                 
@@ -77,9 +70,7 @@ class PublicProfileViewModel: ObservableObject {
                 if let statsData = data["stats"] as? [String: Any] {
                     self.worksCount = statsData["worksCount"] as? Int ?? 0
                     self.questionsCount = statsData["questionsCount"] as? Int ?? 0
-                    print("✅ Stats loaded: works=\(self.worksCount), questions=\(self.questionsCount)")
                 } else {
-                    print("⚠️ No stats data found")
                 }
                 
                 // フレンド状態をチェック
@@ -143,7 +134,6 @@ class PublicProfileViewModel: ObservableObject {
     
     // MARK: - 投稿取得
     func fetchUserPosts() {
-        print("🔍 Fetching posts for user: \(authorUid)")
         // 一時的にシンプルなクエリでテスト
         db.collection("works")
             .whereField("userID", isEqualTo: authorUid)
@@ -153,16 +143,13 @@ class PublicProfileViewModel: ObservableObject {
                 guard let self = self else { return }
                 
                 if let error = error {
-                    print("❌ Error fetching user posts: \(error)")
                     return
                 }
                 
                 guard let documents = snapshot?.documents else { 
-                    print("⚠️ No documents found")
                     return 
                 }
                 
-                print("📚 Found \(documents.count) posts for user")
                 
                 DispatchQueue.main.async {
                     self.workPosts = documents.compactMap { doc in
@@ -174,7 +161,6 @@ class PublicProfileViewModel: ObservableObject {
                         let imageURLString = data["imageURL"] as? String
                         let imageURL = imageURLString != nil ? URL(string: imageURLString!) : nil
                         
-                        print("📷 Post: \(title), Image URL: \(imageURLString ?? "no image")")
                         let createdAt = (data["createdAt"] as? Timestamp)?.dateValue() ?? Date()
                         let userID = data["userID"] as? String ?? ""
                         let displayName = data["displayName"] as? String ?? ""
@@ -198,7 +184,6 @@ class PublicProfileViewModel: ObservableObject {
                             tags: tags
                         )
                     }
-                    print("✅ Total posts loaded: \(self.workPosts.count)")
                 }
             }
     }

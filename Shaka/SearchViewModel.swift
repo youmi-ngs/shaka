@@ -80,7 +80,6 @@ class SearchViewModel: ObservableObject {
                 guard let self = self else { return }
                 
                 if let error = error {
-                    print("❌ Error searching works: \(error)")
                     self.isSearching = false
                     return
                 }
@@ -106,7 +105,6 @@ class SearchViewModel: ObservableObject {
                 guard let self = self else { return }
                 
                 if let error = error {
-                    print("❌ Error searching questions: \(error)")
                     return
                 }
                 
@@ -133,7 +131,6 @@ class SearchViewModel: ObservableObject {
                 guard let self = self else { return }
                 
                 if let error = error {
-                    print("❌ Error searching works by tag: \(error)")
                     self.isSearching = false
                     return
                 }
@@ -152,7 +149,6 @@ class SearchViewModel: ObservableObject {
                 guard let self = self else { return }
                 
                 if let error = error {
-                    print("❌ Error searching questions by tag: \(error)")
                     return
                 }
                 
@@ -171,7 +167,6 @@ class SearchViewModel: ObservableObject {
                 guard let self = self else { return }
                 
                 if let error = error {
-                    print("❌ Error searching users: \(error)")
                     self.isSearching = false
                     return
                 }

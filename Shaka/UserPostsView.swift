@@ -110,17 +110,14 @@ struct UserPostsView: View {
     // MARK: - Fetch User Posts
     private func fetchUserPosts() {
         isLoading = true
-        print("📱 Fetching posts for user: \(userId)")
         
         // Fetch works
         db.collection("works")
             .whereField("userID", isEqualTo: userId)
             .getDocuments { snapshot, error in
                 if let error = error {
-                    print("❌ Error fetching works: \(error)")
                 }
                 if let documents = snapshot?.documents {
-                    print("📊 Found \(documents.count) works")
                     self.works = documents.compactMap { doc in
                         let data = doc.data()
                         guard let title = data["title"] as? String,
@@ -145,10 +142,8 @@ struct UserPostsView: View {
                             locationName: data["locationName"] as? String,
                             isActive: data["isActive"] as? Bool ?? true
                         )
-                        print("✅ Parsed work: \(work.title)")
                         return work
                     }.sorted { $0.createdAt > $1.createdAt }
-                    print("📚 Total works loaded: \(self.works.count)")
                 }
             }
         
@@ -157,10 +152,8 @@ struct UserPostsView: View {
             .whereField("userID", isEqualTo: userId)
             .getDocuments { snapshot, error in
                 if let error = error {
-                    print("❌ Error fetching questions: \(error)")
                 }
                 if let documents = snapshot?.documents {
-                    print("📊 Found \(documents.count) questions")
                     self.questions = documents.compactMap { doc in
                         let data = doc.data()
                         guard let title = data["title"] as? String,
@@ -182,10 +175,8 @@ struct UserPostsView: View {
                             locationName: data["locationName"] as? String,
                             isActive: data["isActive"] as? Bool ?? true
                         )
-                        print("✅ Parsed question: \(question.title)")
                         return question
                     }.sorted { $0.createdAt > $1.createdAt }
-                    print("📚 Total questions loaded: \(self.questions.count)")
                 }
                 isLoading = false
             }

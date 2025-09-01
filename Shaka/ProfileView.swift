@@ -278,7 +278,8 @@ struct ProfileView: View {
                     AppleSignInButton()
                 }
                 
-                // Notifications Section
+                // Notifications Section (Debug only)
+                #if DEBUG
                 Section(header: Text("Notifications")) {
                     HStack {
                         Text("Push Notifications")
@@ -304,7 +305,7 @@ struct ProfileView: View {
                         }
                     }
                     
-                    // トークンリフレッシュボタン（デバッグ用）
+                    // トークンリフレッシュボタン
                     Button(action: {
                         notificationManager.refreshFCMToken()
                     }) {
@@ -315,10 +316,8 @@ struct ProfileView: View {
                         .foregroundColor(.blue)
                     }
                     
-                    // プッシュ通知設定状態（デバッグ用）
-                    #if DEBUG
+                    // プッシュ通知設定状態
                     Button(action: {
-                        print(notificationManager.checkPushNotificationSetup())
                     }) {
                         HStack {
                             Image(systemName: "info.circle")
@@ -326,8 +325,8 @@ struct ProfileView: View {
                         }
                         .foregroundColor(.orange)
                     }
-                    #endif
                 }
+                #endif
                 
                 // Sign In Section for anonymous users
                 if authManager.currentUser?.isAnonymous == true {
@@ -395,7 +394,6 @@ struct ProfileView: View {
                         UserDefaults.standard.removeObject(forKey: "hasCompletedOnboarding")
                         authManager.signOut()
                         // アプリを再起動する必要があることを通知
-                        print("⚠️ Please restart the app to see onboarding")
                     }) {
                         Text("Reset Onboarding")
                             .foregroundColor(.red)
@@ -521,7 +519,6 @@ struct ProfileView: View {
                 await MainActor.run {
                     isProcessing = false
                     // エラー処理（必要に応じて別のアラートを表示）
-                    print("❌ Failed to unlink Apple ID: \(error)")
                 }
             }
         }
@@ -538,7 +535,6 @@ struct ProfileView: View {
                 await MainActor.run {
                     isProcessing = false
                     // エラー処理（必要に応じて別のアラートを表示）
-                    print("❌ Failed to delete account: \(error)")
                 }
             }
         }

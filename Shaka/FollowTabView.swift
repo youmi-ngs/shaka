@@ -171,7 +171,7 @@ struct FollowingListView: View {
             case .success:
                 viewModel.fetchFollowing()
             case .failure(let error):
-                print("❌ Failed to remove friend: \(error)")
+                break
             }
         }
     }

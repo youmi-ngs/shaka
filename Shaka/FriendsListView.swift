@@ -137,10 +137,9 @@ struct FriendsListView: View {
         viewModel.unfollowUser(targetUid: friend.id) { result in
             switch result {
             case .success:
-                // リストから削除（リスナーが自動的に更新）
-                print("✅ Friend removed successfully")
-            case .failure(let error):
-                print("❌ Failed to remove friend: \(error)")
+                break // リストから削除（リスナーが自動的に更新）
+            case .failure(_):
+                break // エラー処理
             }
         }
     }

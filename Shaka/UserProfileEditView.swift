@@ -12,6 +12,9 @@ struct UserProfileEditView: View {
     @StateObject private var viewModel = UserProfileViewModel()
     @State private var selectedPhotoItem: PhotosPickerItem?
     @State private var showingImagePicker = false
+    @State private var tempPhotoURL: String?
+    @State private var tempSelectedImage: UIImage?
+    @State private var isProcessingPhoto = false
     @Environment(\.dismiss) var dismiss
     
     let uid: String
@@ -25,7 +28,15 @@ struct UserProfileEditView: View {
                         Spacer()
                         
                         VStack {
-                            if let photoURL = viewModel.profile?.photoURL {
+                            // Show temp image if selected, otherwise show current profile photo
+                            if let tempImage = tempSelectedImage {
+                                Image(uiImage: tempImage)
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(width: 100, height: 100)
+                                    .clipShape(Circle())
+                                    .overlay(Circle().stroke(Color.blue, lineWidth: 2))
+                            } else if let photoURL = viewModel.profile?.photoURL {
                                 AsyncImage(url: photoURL) { phase in
                                     switch phase {
                                     case .success(let image):
@@ -57,18 +68,18 @@ struct UserProfileEditView: View {
                                 matching: .images,
                                 photoLibrary: .shared()
                             ) {
-                                Text(viewModel.profile?.photoURL != nil ? "Change Photo" : "Add Photo")
+                                Text(viewModel.profile?.photoURL != nil || tempSelectedImage != nil ? "Change Photo" : "Add Photo")
                                     .font(.caption)
                                     .foregroundColor(.teal)
                             }
-                            .disabled(viewModel.isUploading)
+                            .disabled(isProcessingPhoto)
                             .onChange(of: selectedPhotoItem) { newItem in
                                 Task {
-                                    await viewModel.processPhotoSelection(newItem)
+                                    await processPhotoLocally(newItem)
                                 }
                             }
                             
-                            if viewModel.isUploading {
+                            if isProcessingPhoto {
                                 ProgressView()
                                     .scaleEffect(0.8)
                             }
@@ -251,9 +262,12 @@ struct UserProfileEditView: View {
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Save") {
-                        viewModel.saveProfile()
+                        Task {
+                            await saveProfileWithPhoto()
+                        }
                     }
                     .disabled(viewModel.isLoading || 
+                             isProcessingPhoto ||
                              viewModel.profile?.public.displayName.isEmpty == true ||
                              (viewModel.profile?.public.displayName.count ?? 0) > 50)
                 }
@@ -277,6 +291,70 @@ struct UserProfileEditView: View {
                     }
                 }
             )
+        }
+    }
+    
+    // MARK: - Helper Functions
+    
+    /// Process photo locally without saving
+    private func processPhotoLocally(_ item: PhotosPickerItem?) async {
+        guard let item = item else { return }
+        
+        await MainActor.run {
+            isProcessingPhoto = true
+        }
+        
+        do {
+            // Load image data
+            guard let data = try await item.loadTransferable(type: Data.self),
+                  let image = UIImage(data: data) else {
+                await MainActor.run {
+                    isProcessingPhoto = false
+                }
+                return
+            }
+            
+            await MainActor.run {
+                tempSelectedImage = image
+                isProcessingPhoto = false
+            }
+        } catch {
+            await MainActor.run {
+                isProcessingPhoto = false
+                viewModel.errorMessage = "Failed to load image"
+            }
+        }
+    }
+    
+    /// Save profile with photo if selected
+    private func saveProfileWithPhoto() async {
+        // If there's a selected photo, upload it first
+        if let tempImage = tempSelectedImage {
+            await MainActor.run {
+                viewModel.isUploading = true
+            }
+            
+            do {
+                // Upload avatar
+                let photoURL = try await viewModel.uploadAvatar(tempImage)
+                
+                // Update profile with new photo URL
+                await MainActor.run {
+                    viewModel.profile?.public.photoURL = photoURL
+                    viewModel.isUploading = false
+                }
+            } catch {
+                await MainActor.run {
+                    viewModel.isUploading = false
+                    viewModel.errorMessage = "Failed to upload photo: \(error.localizedDescription)"
+                }
+                return
+            }
+        }
+        
+        // Save profile
+        await MainActor.run {
+            viewModel.saveProfile()
         }
     }
 }

@@ -81,7 +81,6 @@ class NotificationViewModel: ObservableObject {
     
     private func setupListener() {
         guard let uid = Auth.auth().currentUser?.uid else {
-            print("⚠️ No user logged in")
             return
         }
         
@@ -96,12 +95,10 @@ class NotificationViewModel: ObservableObject {
             .limit(to: 50)
             .addSnapshotListener { [weak self] snapshot, error in
                 if let error = error {
-                    print("❌ Error fetching notifications: \(error)")
                     return
                 }
                 
                 guard let documents = snapshot?.documents else {
-                    print("⚠️ No notifications found")
                     self?.notifications = []
                     self?.unreadCount = 0
                     return
@@ -115,7 +112,6 @@ class NotificationViewModel: ObservableObject {
                 // 未読数を計算
                 self?.unreadCount = self?.notifications.filter { !$0.read }.count ?? 0
                 
-                print("📬 Loaded \(self?.notifications.count ?? 0) notifications, \(self?.unreadCount ?? 0) unread")
             }
     }
     
@@ -128,9 +124,7 @@ class NotificationViewModel: ObservableObject {
             .document(notification.id)
             .updateData(["read": true]) { error in
                 if let error = error {
-                    print("❌ Failed to mark as read: \(error)")
                 } else {
-                    print("✅ Marked notification as read")
                 }
             }
     }
@@ -151,9 +145,7 @@ class NotificationViewModel: ObservableObject {
         
         batch.commit { error in
             if let error = error {
-                print("❌ Failed to mark all as read: \(error)")
             } else {
-                print("✅ Marked all notifications as read")
             }
         }
     }
@@ -167,9 +159,7 @@ class NotificationViewModel: ObservableObject {
             .document(notification.id)
             .delete { error in
                 if let error = error {
-                    print("❌ Failed to delete notification: \(error)")
                 } else {
-                    print("✅ Deleted notification")
                 }
             }
     }

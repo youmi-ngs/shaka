@@ -238,33 +238,28 @@ struct PostWorkView: View {
                 
                 // Handle image upload if there's a new image
                 if let image = selectedImage {
-                    print("📸 Starting image upload to Firebase Storage...")
                     
                     // Convert image to JPEG data
                     guard let imageData = image.jpegData(compressionQuality: 0.8) else {
                         throw UploadError.imageConversionFailed
                     }
                     
-                    print("📸 Image data size: \(imageData.count / 1024)KB")
                     
                     // Create unique filename
                     let filename = "\(UUID().uuidString).jpg"
                     let storageRef = Storage.storage().reference().child("works/\(filename)")
                     
-                    print("📸 Uploading to: works/\(filename)")
                     
                     // Upload image
                     let metadata = StorageMetadata()
                     metadata.contentType = "image/jpeg"
                     
                     _ = try await storageRef.putDataAsync(imageData, metadata: metadata)
-                    print("✅ Upload successful!")
                     
                     // Get download URL
                     let downloadURL = try await storageRef.downloadURL()
                     imageURL = URL(string: downloadURL.absoluteString)
                     
-                    print("✅ Got download URL: \(downloadURL.absoluteString)")
                 } else if let existingPost = editingPost {
                     // Use existing image URL if editing without changing image
                     imageURL = existingPost.imageURL
@@ -320,7 +315,6 @@ struct PostWorkView: View {
                 
             } catch {
                 await MainActor.run {
-                    print("❌ Upload error: \(error)")
                     uploadError = "Failed to upload image: \(error.localizedDescription)"
                     isUploading = false
                 }

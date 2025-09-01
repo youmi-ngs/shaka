@@ -59,7 +59,6 @@ class LikeManager: ObservableObject {
         
         listener = likeRef.addSnapshotListener { [weak self] snapshot, error in
             if let error = error {
-                print("❌ Error listening to like status: \(error)")
                 return
             }
             
@@ -77,7 +76,6 @@ class LikeManager: ObservableObject {
             .collection("likes")
             .getDocuments { [weak self] snapshot, error in
                 if let error = error {
-                    print("❌ Error fetching likes count: \(error)")
                     return
                 }
                 
@@ -88,7 +86,6 @@ class LikeManager: ObservableObject {
     /// いいねをトグル
     func toggleLike() {
         guard let uid = Auth.auth().currentUser?.uid else {
-            print("⚠️ User not authenticated")
             return
         }
         
@@ -117,11 +114,9 @@ class LikeManager: ObservableObject {
             self?.isProcessing = false
             
             if let error = error {
-                print("❌ Failed to add like: \(error)")
                 // 楽観的更新をリバート
                 self?.isLiked = false
             } else {
-                print("✅ Like added successfully")
                 self?.likesCount += 1
             }
         }
@@ -136,11 +131,9 @@ class LikeManager: ObservableObject {
             self?.isProcessing = false
             
             if let error = error {
-                print("❌ Failed to remove like: \(error)")
                 // 楽観的更新をリバート
                 self?.isLiked = true
             } else {
-                print("✅ Like removed successfully")
                 self?.likesCount = max(0, (self?.likesCount ?? 1) - 1)
             }
         }

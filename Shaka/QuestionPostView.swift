@@ -276,7 +276,6 @@ class QuestionPostViewModel: ObservableObject {
             "updatedAt": Timestamp(date: Date())
         ]) { error in
             if let error = error {
-                print("Error updating resolved status: \(error)")
             } else {
                 // Update local array
                 DispatchQueue.main.async {
