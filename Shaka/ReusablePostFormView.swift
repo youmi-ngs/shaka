@@ -97,36 +97,25 @@ struct ReusablePostFormView<ImageContent: View, AdditionalContent: View>: View {
                         .font(.caption)
                 }
             }
-            
-            // Submit button section
-            Section {
-                Button(action: onSubmit) {
-                    if isSubmitting {
-                        HStack {
-                            ProgressView()
-                                .progressViewStyle(CircularProgressViewStyle())
-                                .scaleEffect(0.8)
-                            Text("Processing...")
-                                .padding(.leading, 8)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.gray)
-                        .foregroundColor(.white)
-                        .cornerRadius(8)
-                    } else {
-                        Text(submitButtonText)
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(canSubmit ? submitButtonColor : Color.gray)
-                            .foregroundColor(.white)
-                            .cornerRadius(8)
-                    }
-                }
-                .disabled(!canSubmit || isSubmitting)
-            }
         }
-        .navigationBarItems(trailing: Button("Cancel", action: onCancel))
+        .navigationBarItems(
+            leading: Button("Cancel", action: onCancel),
+            trailing: Button(action: onSubmit) {
+                HStack {
+                    if isSubmitting {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle())
+                            .scaleEffect(0.8)
+                    }
+                    Text("Submit")
+                        .fontWeight(.semibold)
+                        .foregroundColor(canSubmit ? submitButtonColor : .gray)
+                        .opacity(isSubmitting ? 0 : 1)
+                }
+                .frame(minWidth: 60)
+            }
+            .disabled(!canSubmit || isSubmitting)
+        )
     }
 }
 
