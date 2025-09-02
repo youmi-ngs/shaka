@@ -16,6 +16,10 @@ struct ContentView: View {
     @State private var pendingFriendToAdd: (uid: String, displayName: String)?
     @State private var showProfileView = false
     @State private var profileToShow: String?
+    @State private var showWorkDetail = false
+    @State private var workToShow: String?
+    @State private var showQuestionDetail = false
+    @State private var questionToShow: String?
     @State private var hasRequestedNotifications = false
     @State private var selectedTab = 0
     
@@ -106,6 +110,22 @@ struct ContentView: View {
             if let uid = notification.userInfo?["uid"] as? String {
                 profileToShow = uid
                 showProfileView = true
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("ShowWork"))) { notification in
+            if let id = notification.userInfo?["id"] as? String {
+                // Worksタブに切り替えて、詳細を表示
+                selectedTab = 1
+                // TODO: WorkDetailViewへの遷移を実装
+                // 現時点では、タブを切り替えるのみ
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("ShowQuestion"))) { notification in
+            if let id = notification.userInfo?["id"] as? String {
+                // Askタブに切り替えて、詳細を表示
+                selectedTab = 2
+                // TODO: QuestionDetailViewへの遷移を実装
+                // 現時点では、タブを切り替えるのみ
             }
         }
         .onAppear {
