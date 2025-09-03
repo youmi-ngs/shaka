@@ -34,86 +34,109 @@ struct DiscoverView: View {
     @State private var longPressLocation: CLLocationCoordinate2D?
     @State private var longPressLocationName: String = ""
     
+    @ViewBuilder
+    private var mapView: some View {
+        if #available(iOS 17.0, *) {
+            modernMapView
+        } else {
+            legacyMapView
+        }
+    }
+    
+    @available(iOS 17.0, *)
+    @ViewBuilder
+    private var modernMapView: some View {
+        MapReader { proxy in
+            Map(position: $cameraPosition) {
+                mapAnnotations
+            }
+            .mapStyle(.standard(elevation: .flat))
+            .edgesIgnoringSafeArea(.bottom)
+            .onLongPressGesture(minimumDuration: 0.5) { location in
+                handleLongPress(location: location, proxy: proxy)
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private var legacyMapView: some View {
+        Map(
+            coordinateRegion: $region,
+            showsUserLocation: true,
+            userTrackingMode: $trackingMode,
+            annotationItems: workPins
+        ) { pin in
+            MapAnnotation(coordinate: pin.coordinate) {
+                PinView(pinType: .work)
+                    .onTapGesture {
+                        selectedWork = pin.post
+                    }
+            }
+        }
+        .edgesIgnoringSafeArea(.bottom)
+    }
+    
+    @available(iOS 17.0, *)
+    @MapContentBuilder
+    private var mapAnnotations: some MapContent {
+        // Show current user location if sharing
+        if locationSharing.isSharing,
+           let location = locationSharing.currentLocation {
+            Annotation("Me", coordinate: location.coordinate) {
+                Circle()
+                    .fill(Color.blue)
+                    .frame(width: 20, height: 20)
+                    .overlay(
+                        Circle()
+                            .stroke(Color.white, lineWidth: 2)
+                    )
+            }
+        }
+        
+        // Show mutual followers' locations
+        ForEach(locationSharing.mutualFollowersLocations) { userLocation in
+            Annotation(userLocation.displayName, coordinate: userLocation.location) {
+                VStack(spacing: 0) {
+                    Circle()
+                        .fill(Color.green)
+                        .frame(width: 30, height: 30)
+                        .overlay(
+                            Text(String(userLocation.displayName.prefix(1)))
+                                .foregroundColor(.white)
+                                .font(.caption.bold())
+                        )
+                    
+                    Image(systemName: "triangle.fill")
+                        .font(.system(size: 10))
+                        .foregroundColor(.green)
+                        .offset(y: -5)
+                }
+            }
+        }
+        
+        // Work posts pins
+        ForEach(workPins) { pin in
+            Annotation(pin.post.title, coordinate: pin.coordinate) {
+                PinView(pinType: .work)
+                    .onTapGesture {
+                        selectedWork = pin.post
+                    }
+            }
+        }
+    }
+    
+    @available(iOS 17.0, *)
+    private func handleLongPress(location: CGPoint, proxy: MapProxy) {
+        if let coordinate = proxy.convert(location, from: .local) {
+            longPressLocation = coordinate
+            reverseGeocodeLocation(coordinate)
+            showPostWorkSheet = true
+        }
+    }
+    
     var body: some View {
         ZStack {
-            // 地図表示（iOS 17以降の新API）
-            if #available(iOS 17.0, *) {
-                MapReader { proxy in
-                    Map(position: $cameraPosition) {
-                        // Show current user location if sharing
-                        if locationSharing.isSharing,
-                           let location = locationSharing.currentLocation {
-                            Annotation("Me", coordinate: location.coordinate) {
-                                Circle()
-                                    .fill(Color.blue)
-                                    .frame(width: 20, height: 20)
-                                    .overlay(
-                                        Circle()
-                                            .stroke(Color.white, lineWidth: 2)
-                                    )
-                            }
-                        }
-                        
-                        // Show mutual followers' locations
-                        ForEach(locationSharing.mutualFollowersLocations) { userLocation in
-                            Annotation(userLocation.displayName, coordinate: userLocation.location) {
-                                VStack(spacing: 0) {
-                                    Circle()
-                                        .fill(Color.green)
-                                        .frame(width: 30, height: 30)
-                                        .overlay(
-                                            Text(String(userLocation.displayName.prefix(1)))
-                                                .foregroundColor(.white)
-                                                .font(.caption.bold())
-                                        )
-                                    
-                                    Image(systemName: "triangle.fill")
-                                        .font(.system(size: 10))
-                                        .foregroundColor(.green)
-                                        .offset(y: -5)
-                                }
-                            }
-                        }
-                        
-                        // Work posts pins
-                        ForEach(workPins) { pin in
-                            Annotation(pin.post.title, coordinate: pin.coordinate) {
-                                PinView(pinType: .work)
-                                    .onTapGesture {
-                                        selectedWork = pin.post
-                                    }
-                            }
-                        }
-                    }
-                    .mapStyle(.standard(elevation: .flat))
-                    .edgesIgnoringSafeArea(.bottom)
-                    .onLongPressGesture(minimumDuration: 0.5) { location in
-                        // Get coordinate from the tap location
-                        if let coordinate = proxy.convert(location, from: .local) {
-                            longPressLocation = coordinate
-                            // Get location name
-                            reverseGeocodeLocation(coordinate)
-                            showPostWorkSheet = true
-                        }
-                    }
-                }
-                } else {
-                    // iOS 16以前のフォールバック
-                    Map(
-                        coordinateRegion: $region,
-                        showsUserLocation: true,
-                        userTrackingMode: $trackingMode,
-                        annotationItems: workPins
-                    ) { pin in
-                        MapAnnotation(coordinate: pin.coordinate) {
-                            PinView(pinType: .work)
-                                .onTapGesture {
-                                    selectedWork = pin.post
-                                }
-                        }
-                    }
-                    .edgesIgnoringSafeArea(.bottom)
-                }
+            mapView
                 
                 // UI オーバーレイ（iOS 16以前のみ現在地ボタンを表示）
                 if #unavailable(iOS 17.0) {
