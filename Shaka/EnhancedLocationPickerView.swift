@@ -29,6 +29,9 @@ struct EnhancedLocationPickerView: View {
         self._selectedCoordinate = selectedCoordinate
         self._locationName = locationName
         
+        // Debug print
+        print("EnhancedLocationPickerView init - coordinate: \(String(describing: selectedCoordinate.wrappedValue)), name: \(locationName.wrappedValue)")
+        
         // Initialize region based on whether we have a selected coordinate
         let initialCenter = selectedCoordinate.wrappedValue ?? CLLocationCoordinate2D(latitude: 35.6814, longitude: 139.7667)
         self._region = State(initialValue: MKCoordinateRegion(
@@ -308,6 +311,7 @@ struct EnhancedLocationPickerView: View {
     private func confirmLocation() {
         selectedCoordinate = region.center
         locationName = customLocationName.isEmpty ? tempLocationName : customLocationName
+        print("confirmLocation - saved coordinate: \(region.center), name: \(locationName)")
         dismiss()
     }
 }
