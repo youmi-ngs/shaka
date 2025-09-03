@@ -250,32 +250,20 @@ struct PublicProfileView: View {
                     ForEach(viewModel.workPosts.prefix(12)) { post in
                         NavigationLink(destination: WorkDetailView(post: post, viewModel: WorkPostViewModel())) {
                             if let imageURL = post.imageURL {
-                                AsyncImage(url: imageURL) { phase in
-                                    switch phase {
-                                    case .success(let image):
-                                        image
-                                            .resizable()
-                                            .scaledToFill()
-                                            .frame(width: (UIScreen.main.bounds.width - 36) / 3, height: (UIScreen.main.bounds.width - 36) / 3)
-                                            .clipped()
-                                    case .failure(_):
-                                        Rectangle()
-                                            .fill(Color(UIColor.tertiarySystemFill))
-                                            .frame(width: (UIScreen.main.bounds.width - 36) / 3, height: (UIScreen.main.bounds.width - 36) / 3)
-                                            .overlay(
-                                                Image(systemName: "photo")
-                                                    .foregroundColor(.gray)
-                                            )
-                                    case .empty:
-                                        Rectangle()
-                                            .fill(Color(UIColor.quaternarySystemFill))
-                                            .frame(width: (UIScreen.main.bounds.width - 36) / 3, height: (UIScreen.main.bounds.width - 36) / 3)
-                                            .overlay(
-                                                ProgressView()
-                                            )
-                                    @unknown default:
-                                        EmptyView()
-                                    }
+                                CachedImage(url: imageURL) { image in
+                                    image
+                                        .resizable()
+                                        .scaledToFill()
+                                        .frame(width: (UIScreen.main.bounds.width - 36) / 3, height: (UIScreen.main.bounds.width - 36) / 3)
+                                        .clipped()
+                                } placeholder: {
+                                    Rectangle()
+                                        .fill(Color(UIColor.quaternarySystemFill))
+                                        .frame(width: (UIScreen.main.bounds.width - 36) / 3, height: (UIScreen.main.bounds.width - 36) / 3)
+                                        .overlay(
+                                            ProgressView()
+                                                .scaleEffect(0.5)
+                                        )
                                 }
                             } else {
                                 Rectangle()

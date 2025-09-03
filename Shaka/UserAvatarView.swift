@@ -21,22 +21,15 @@ struct UserAvatarView: View {
     var body: some View {
         Group {
             if let photoURL = photoURL, let url = URL(string: photoURL) {
-                AsyncImage(url: url) { phase in
-                    switch phase {
-                    case .success(let image):
-                        image
-                            .resizable()
-                            .scaledToFill()
-                            .frame(width: size, height: size)
-                            .clipShape(Circle())
-                    case .failure(_):
-                        defaultAvatar
-                    case .empty:
-                        ProgressView()
-                            .frame(width: size, height: size)
-                    @unknown default:
-                        defaultAvatar
-                    }
+                CachedImage(url: url) { image in
+                    image
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: size, height: size)
+                        .clipShape(Circle())
+                } placeholder: {
+                    ProgressView()
+                        .frame(width: size, height: size)
                 }
             } else if isLoading {
                 ProgressView()

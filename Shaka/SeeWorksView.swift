@@ -99,47 +99,19 @@ struct WorkPostCard: View {
         VStack(alignment: .leading, spacing: 12) {
             // Image
             if let url = post.imageURL {
-                AsyncImage(url: url, transaction: Transaction(animation: .easeInOut)) { phase in
-                    switch phase {
-                    case .success(let image):
-                        image
-                            .resizable()
-                            .scaledToFit()
-                            .frame(maxWidth: .infinity)
-                            .cornerRadius(12)
-                    case .failure(let error):
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(Color(UIColor.tertiarySystemFill))
-                            .frame(height: 200)
-                            .overlay(
-                                VStack {
-                                    Image(systemName: "wifi.slash")
-                                        .font(.system(size: 40))
-                                        .foregroundColor(.gray)
-                                    Text("Failed to load image")
-                                        .font(.caption)
-                                        .foregroundColor(.gray)
-                                    Text("\(error.localizedDescription)")
-                                        .font(.caption2)
-                                        .foregroundColor(.gray)
-                                        .multilineTextAlignment(.center)
-                                        .padding(.horizontal)
-                                }
-                            )
-                            .onTapGesture {
-                                // タップで再読み込みを試みる
-                                viewModel.fetchPosts()
-                            }
-                    case .empty:
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(Color(UIColor.quaternarySystemFill))
-                            .frame(height: 200)
-                            .overlay(
-                                ProgressView()
-                            )
-                    @unknown default:
-                        EmptyView()
-                    }
+                CachedImage(url: url) { image in
+                    image
+                        .resizable()
+                        .scaledToFit()
+                        .frame(maxWidth: .infinity)
+                        .cornerRadius(12)
+                } placeholder: {
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color(UIColor.quaternarySystemFill))
+                        .frame(height: 200)
+                        .overlay(
+                            ProgressView()
+                        )
                 }
                 .id("\(post.id)_\(refreshID)")
             } else {

@@ -36,44 +36,24 @@ struct WorkDetailView: View {
             VStack(alignment: .leading, spacing: 16) {
                 // Image (Tappable for fullscreen)
                 if let url = post.imageURL {
-                    AsyncImage(url: url) { phase in
-                        switch phase {
-                        case .success(let image):
-                            image
-                                .resizable()
-                                .scaledToFit()
-                                .frame(maxWidth: .infinity)
-                                .onTapGesture {
-                                    withAnimation(.easeInOut(duration: 0.2)) {
-                                        showFullscreenImage = true
-                                    }
+                    CachedImage(url: url) { image in
+                        image
+                            .resizable()
+                            .scaledToFit()
+                            .frame(maxWidth: .infinity)
+                            .onTapGesture {
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    showFullscreenImage = true
                                 }
-                        case .failure(_):
-                            Rectangle()
-                                .fill(Color(UIColor.tertiarySystemFill))
-                                .frame(height: 300)
-                                .cornerRadius(12)
-                                .overlay(
-                                    VStack {
-                                        Image(systemName: "photo")
-                                            .font(.system(size: 50))
-                                            .foregroundColor(.gray)
-                                        Text("Failed to load image")
-                                            .foregroundColor(.gray)
-                                    }
-                                )
-                        case .empty:
-                            Rectangle()
-                                .fill(Color(UIColor.quaternarySystemFill))
-                                .frame(height: 300)
-//                                .cornerRadius(12)
-                                .overlay(
-                                    ProgressView()
-                                        .scaleEffect(1.5)
-                                )
-                        @unknown default:
-                            EmptyView()
-                        }
+                            }
+                    } placeholder: {
+                        Rectangle()
+                            .fill(Color(UIColor.quaternarySystemFill))
+                            .frame(height: 300)
+                            .overlay(
+                                ProgressView()
+                                    .scaleEffect(1.5)
+                            )
                     }
                 } else {
                     Rectangle()
@@ -318,15 +298,13 @@ struct FullscreenImageView: View {
             
             // Image with gestures
             if let url = imageURL {
-                AsyncImage(url: url) { phase in
-                    switch phase {
-                    case .success(let image):
-                        image
-                            .resizable()
-                            .scaledToFit()
-                            .scaleEffect(scale)
-                            .offset(offset)
-                            .gesture(
+                CachedImage(url: url) { image in
+                    image
+                        .resizable()
+                        .scaledToFit()
+                        .scaleEffect(scale)
+                        .offset(offset)
+                        .gesture(
                                 MagnificationGesture()
                                     .onChanged { value in
                                         let delta = value / lastScale
@@ -369,17 +347,10 @@ struct FullscreenImageView: View {
                                 }
                             }
                             .opacity(opacity)
-                    case .failure(_):
-                        Image(systemName: "photo")
-                            .font(.system(size: 50))
-                            .foregroundColor(.white)
-                    case .empty:
-                        ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                            .scaleEffect(1.5)
-                    @unknown default:
-                        EmptyView()
-                    }
+                } placeholder: {
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                        .scaleEffect(1.5)
                 }
             }
             
