@@ -236,7 +236,9 @@ struct QuestionDetailView: View {
             get: { showSearchForTag.map { IdentifiableString(id: $0) } },
             set: { showSearchForTag = $0?.value }
         )) { item in
-            SearchView(initialSearchText: item.value, initialSearchType: .tag)
+            NavigationView {
+                SearchView(initialSearchText: item.value, initialSearchType: .tag)
+            }
         }
         .sheet(isPresented: $showReportSheet) {
             ReportView(
