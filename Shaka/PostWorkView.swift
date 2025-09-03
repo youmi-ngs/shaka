@@ -167,7 +167,6 @@ struct PostWorkView: View {
                     
                     if useCurrentLocation {
                         Button(action: {
-                            print("Opening location picker with coordinate: \(String(describing: selectedCoordinate)), location: \(location)")
                             showLocationPicker = true
                         }) {
                             HStack {
@@ -214,9 +213,9 @@ struct PostWorkView: View {
             .onAppear {
                 if let post = editingPost {
                     loadPostData(post)
-                } else if let presetCoord = presetLocation {
-                    // Use preset location from map long press
-                    selectedCoordinate = presetCoord
+                } else if selectedCoordinate == nil && presetLocation != nil {
+                    // Only use preset location if no location has been set yet
+                    selectedCoordinate = presetLocation
                     location = presetLocationName ?? ""
                     useCurrentLocation = true
                 }

@@ -16,10 +16,7 @@ struct EnhancedLocationPickerView: View {
     @StateObject private var locationManager = LocationManager()
     @StateObject private var searchCompleter = LocationSearchCompleter()
     
-    @State private var region = MKCoordinateRegion(
-        center: CLLocationCoordinate2D(latitude: 35.6814, longitude: 139.7667), // 東京駅
-        span: MKCoordinateSpan(latitudeDelta: 0.005, longitudeDelta: 0.005)
-    )
+    @State private var region: MKCoordinateRegion
     
     @State private var searchText = ""
     @State private var showingSearch = false
@@ -27,6 +24,24 @@ struct EnhancedLocationPickerView: View {
     @State private var showingCustomNameAlert = false
     @State private var customLocationName = ""
     @State private var isFromMapDrag = false
+    
+    init(selectedCoordinate: Binding<CLLocationCoordinate2D?>, locationName: Binding<String>) {
+        self._selectedCoordinate = selectedCoordinate
+        self._locationName = locationName
+        
+        // Initialize region based on whether we have a selected coordinate
+        if let coord = selectedCoordinate.wrappedValue {
+            self._region = State(initialValue: MKCoordinateRegion(
+                center: coord,
+                span: MKCoordinateSpan(latitudeDelta: 0.005, longitudeDelta: 0.005)
+            ))
+        } else {
+            self._region = State(initialValue: MKCoordinateRegion(
+                center: CLLocationCoordinate2D(latitude: 35.6814, longitude: 139.7667),
+                span: MKCoordinateSpan(latitudeDelta: 0.005, longitudeDelta: 0.005)
+            ))
+        }
+    }
     
     var body: some View {
         ZStack {
@@ -218,26 +233,12 @@ struct EnhancedLocationPickerView: View {
     }
     
     private func setupInitialLocation() {
-        print("setupInitialLocation - selectedCoordinate: \(String(describing: selectedCoordinate)), locationName: \(locationName)")
-        
-        if let coord = selectedCoordinate {
-            print("Moving to selected coordinate: \(coord)")
-            // Move to the previously selected location
-            region = MKCoordinateRegion(
-                center: coord,
-                span: MKCoordinateSpan(latitudeDelta: 0.005, longitudeDelta: 0.005)
-            )
+        // Set initial location name
+        if let _ = selectedCoordinate {
             tempLocationName = locationName.isEmpty ? "Selected Location" : locationName
-            // Keep the custom name if it was set before
-            if !locationName.isEmpty {
-                customLocationName = locationName
-            }
-        } else if let location = locationManager.userLocation {
-            print("Using user location")
-            region.center = location.coordinate
-            updateLocationName(for: location.coordinate)
+            customLocationName = locationName
         } else {
-            print("Using default region center")
+            // Get location name for current center
             updateLocationName(for: region.center)
         }
         
@@ -313,7 +314,6 @@ struct EnhancedLocationPickerView: View {
     private func confirmLocation() {
         selectedCoordinate = region.center
         locationName = customLocationName.isEmpty ? tempLocationName : customLocationName
-        print("confirmLocation - setting coordinate: \(region.center), locationName: \(locationName)")
         dismiss()
     }
 }
