@@ -218,7 +218,10 @@ struct EnhancedLocationPickerView: View {
     }
     
     private func setupInitialLocation() {
+        print("setupInitialLocation - selectedCoordinate: \(String(describing: selectedCoordinate)), locationName: \(locationName)")
+        
         if let coord = selectedCoordinate {
+            print("Moving to selected coordinate: \(coord)")
             // Move to the previously selected location
             region = MKCoordinateRegion(
                 center: coord,
@@ -230,9 +233,11 @@ struct EnhancedLocationPickerView: View {
                 customLocationName = locationName
             }
         } else if let location = locationManager.userLocation {
+            print("Using user location")
             region.center = location.coordinate
             updateLocationName(for: location.coordinate)
         } else {
+            print("Using default region center")
             updateLocationName(for: region.center)
         }
         
@@ -308,6 +313,7 @@ struct EnhancedLocationPickerView: View {
     private func confirmLocation() {
         selectedCoordinate = region.center
         locationName = customLocationName.isEmpty ? tempLocationName : customLocationName
+        print("confirmLocation - setting coordinate: \(region.center), locationName: \(locationName)")
         dismiss()
     }
 }

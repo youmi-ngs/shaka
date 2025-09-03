@@ -167,6 +167,7 @@ struct PostWorkView: View {
                     
                     if useCurrentLocation {
                         Button(action: {
+                            print("Opening location picker with coordinate: \(String(describing: selectedCoordinate)), location: \(location)")
                             showLocationPicker = true
                         }) {
                             HStack {
