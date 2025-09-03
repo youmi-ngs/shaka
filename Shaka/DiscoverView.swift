@@ -57,6 +57,10 @@ struct DiscoverView: View {
                 // For now, center of map will be used
                 handleMapLongPress()
             }
+            .onMapCameraChange { context in
+                // Keep region in sync with camera position for iOS 17+
+                region = context.region
+            }
         }
     }
     
@@ -257,14 +261,10 @@ struct DiscoverView: View {
     
     @available(iOS 17.0, *)
     private func handleMapLongPress() {
-        switch cameraPosition {
-        case .region(let region):
-            longPressLocation = region.center
-            reverseGeocodeLocation(region.center)
-            showPostWorkSheet = true
-        default:
-            break
-        }
+        // Use the region state variable which tracks the current map view
+        longPressLocation = region.center
+        reverseGeocodeLocation(region.center)
+        showPostWorkSheet = true
     }
     
     private func reverseGeocodeLocation(_ coordinate: CLLocationCoordinate2D) {
