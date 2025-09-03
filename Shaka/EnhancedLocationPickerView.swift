@@ -18,7 +18,7 @@ struct EnhancedLocationPickerView: View {
     
     @State private var region = MKCoordinateRegion(
         center: CLLocationCoordinate2D(latitude: 35.6814, longitude: 139.7667), // 東京駅
-        span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
+        span: MKCoordinateSpan(latitudeDelta: 0.005, longitudeDelta: 0.005)
     )
     
     @State private var searchText = ""
@@ -219,9 +219,16 @@ struct EnhancedLocationPickerView: View {
     
     private func setupInitialLocation() {
         if let coord = selectedCoordinate {
-            region.center = coord
-            tempLocationName = locationName
-            customLocationName = locationName
+            // Move to the previously selected location
+            region = MKCoordinateRegion(
+                center: coord,
+                span: MKCoordinateSpan(latitudeDelta: 0.005, longitudeDelta: 0.005)
+            )
+            tempLocationName = locationName.isEmpty ? "Selected Location" : locationName
+            // Keep the custom name if it was set before
+            if !locationName.isEmpty {
+                customLocationName = locationName
+            }
         } else if let location = locationManager.userLocation {
             region.center = location.coordinate
             updateLocationName(for: location.coordinate)
