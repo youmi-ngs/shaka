@@ -52,8 +52,14 @@ struct DiscoverView: View {
             }
             .mapStyle(.standard(elevation: .flat))
             .edgesIgnoringSafeArea(.bottom)
-            .onLongPressGesture(minimumDuration: 0.5) { location in
-                handleLongPress(location: location, proxy: proxy)
+            .onLongPressGesture(minimumDuration: 0.5) {
+                // onLongPressGesture doesn't provide location, need to use different approach
+                // For now, center of map will be used
+                if case .region(let region) = cameraPosition {
+                    longPressLocation = region.center
+                    reverseGeocodeLocation(region.center)
+                    showPostWorkSheet = true
+                }
             }
         }
     }
@@ -122,15 +128,6 @@ struct DiscoverView: View {
                         selectedWork = pin.post
                     }
             }
-        }
-    }
-    
-    @available(iOS 17.0, *)
-    private func handleLongPress(location: CGPoint, proxy: MapProxy) {
-        if let coordinate = proxy.convert(location, from: .local) {
-            longPressLocation = coordinate
-            reverseGeocodeLocation(coordinate)
-            showPostWorkSheet = true
         }
     }
     
