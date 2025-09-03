@@ -167,11 +167,6 @@ struct PostWorkView: View {
                     
                     if useCurrentLocation {
                         Button(action: {
-                            if let coord = selectedCoordinate {
-                                print("PostWorkView - Opening picker with coordinate: lat=\(coord.latitude), lon=\(coord.longitude)")
-                            } else {
-                                print("PostWorkView - Opening picker with nil coordinate")
-                            }
                             showLocationPicker = true
                         }) {
                             HStack {
@@ -225,10 +220,7 @@ struct PostWorkView: View {
                     useCurrentLocation = true
                 }
             }
-            .sheet(isPresented: $showLocationPicker, onDismiss: {
-                // Force refresh when sheet closes
-                print("Sheet dismissed - coordinate: \(String(describing: selectedCoordinate)), location: \(location)")
-            }) {
+            .sheet(isPresented: $showLocationPicker) {
                 NavigationView {
                     EnhancedLocationPickerView(
                         selectedCoordinate: $selectedCoordinate,
