@@ -172,37 +172,21 @@ struct EnhancedLocationPickerView: View {
                         .cornerRadius(12)
                     }
                     
-                    // アクションボタン
-                    HStack(spacing: 12) {
-                        // 現在地ボタン
-                        Button(action: {
-                            moveToCurrentLocation()
-                        }) {
-                            Image(systemName: "location.fill")
-                                .font(.title2)
-                                .foregroundColor(.white)
-                                .frame(width: 50, height: 50)
-                                .background(Color.gray)
-                                .clipShape(Circle())
-                                .shadow(radius: 3)
+                    // 確定ボタン
+                    Button(action: {
+                        confirmLocation()
+                    }) {
+                        HStack {
+                            Image(systemName: "location.circle.fill")
+                            Text("Set This Location")
+                                .fontWeight(.semibold)
                         }
-                        
-                        // 確定ボタン
-                        Button(action: {
-                            confirmLocation()
-                        }) {
-                            HStack {
-                                Image(systemName: "location.circle.fill")
-                                Text("Set This Location")
-                                    .fontWeight(.semibold)
-                            }
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 24)
-                            .padding(.vertical, 14)
-                            .background(Color.blue)
-                            .cornerRadius(25)
-                            .shadow(radius: 3)
-                        }
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 14)
+                        .background(Color.blue)
+                        .cornerRadius(25)
+                        .shadow(radius: 3)
                     }
                 }
                 .padding()
