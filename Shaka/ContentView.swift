@@ -92,12 +92,6 @@ struct ContentView: View {
             }
             .tag(4)
             
-            // TEMPORARY DEBUG for Live Activity
-            LiveActivityDebugView()
-            .tabItem {
-                Label("Debug", systemImage: "ladybug")
-            }
-            .tag(5)
         }
         .accentColor(tabAccentColor)
         .onChange(of: deepLinkManager.showAddFriendAlert) { newValue in
