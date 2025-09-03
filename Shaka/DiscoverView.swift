@@ -210,13 +210,12 @@ struct DiscoverView: View {
                 )
             }
             .sheet(isPresented: $showPostWorkSheet) {
-                if let location = longPressLocation {
-                    PostWorkView(
-                        viewModel: workViewModel,
-                        presetLocation: location,
-                        presetLocationName: longPressLocationName
-                    )
-                }
+                // Force unwrap or provide default location
+                PostWorkView(
+                    viewModel: workViewModel,
+                    presetLocation: longPressLocation ?? CLLocationCoordinate2D(latitude: 35.6814, longitude: 139.7667),
+                    presetLocationName: longPressLocationName.isEmpty ? "Selected Location" : longPressLocationName
+                )
             }
     }
     
@@ -262,9 +261,14 @@ struct DiscoverView: View {
     @available(iOS 17.0, *)
     private func handleMapLongPress() {
         // Use the region state variable which tracks the current map view
+        print("Long press detected, region center: \(region.center)")
         longPressLocation = region.center
+        longPressLocationName = "Loading location..."
         reverseGeocodeLocation(region.center)
-        showPostWorkSheet = true
+        // Delay sheet presentation slightly to ensure data is set
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            showPostWorkSheet = true
+        }
     }
     
     private func reverseGeocodeLocation(_ coordinate: CLLocationCoordinate2D) {
