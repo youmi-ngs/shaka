@@ -11,7 +11,6 @@ import AuthenticationServices
 struct ProfileView: View {
     @EnvironmentObject var authManager: AuthManager
     @EnvironmentObject var notificationManager: NotificationManager
-    @State private var showCopiedAlert = false
     @State private var showSignInView = false
     @State private var showFullProfileEdit = false
     @State private var showFriendsList = false
@@ -153,60 +152,20 @@ struct ProfileView: View {
                     }
                 }
                 
-                // User ID Section
-                Section(header: Text("Your ID")) {
-                    VStack(alignment: .leading, spacing: 12) {
-                        if let userID = authManager.userID {
-                            Text(userID)
-                                .font(.system(.caption, design: .monospaced))
+                // Share Profile Section
+                Section(header: Text("Share Profile")) {
+                    Button(action: {
+                        shareProfile()
+                    }) {
+                        HStack {
+                            Image(systemName: "square.and.arrow.up")
+                            Text("Share Profile Link")
+                            Spacer()
+                            Image(systemName: "chevron.right")
                                 .foregroundColor(.secondary)
-                                .textSelection(.enabled)
-                            
-                            Button(action: {
-                                UIPasteboard.general.string = userID
-                                showCopiedAlert = true
-                            }) {
-                                HStack {
-                                    Image(systemName: "doc.on.doc")
-                                    Text("Copy")
-                                }
-                                .font(.caption)
-                            }
-                            .buttonStyle(.bordered)
-                        } else {
-                            Text("Not signed in")
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                    .padding(.vertical, 8)
-                }
-                
-                // Share Link Section (for future friend feature)
-                Section(header: Text("Share Link")) {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Send to friends:")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        
-                        Text(authManager.getShareableUserID())
-                            .font(.system(.caption, design: .monospaced))
-                            .foregroundColor(.teal)
-                            .lineLimit(1)
-                            .truncationMode(.middle)
-                        
-                        Button(action: {
-                            UIPasteboard.general.string = authManager.getShareableUserID()
-                            showCopiedAlert = true
-                        }) {
-                            HStack {
-                                Image(systemName: "square.and.arrow.up")
-                                Text("Copy Link")
-                            }
                             .font(.caption)
                         }
-                        .buttonStyle(.borderedProminent)
                     }
-                    .padding(.vertical, 8)
                 }
                 
                 
@@ -441,12 +400,7 @@ struct ProfileView: View {
                 }
             }
         }
-        .alert("Copied!", isPresented: $showCopiedAlert) {
-                Button("OK", role: .cancel) { }
-            } message: {
-                Text("Saved to clipboard")
-            }
-            .sheet(isPresented: $showSignInView) {
+        .sheet(isPresented: $showSignInView) {
                 AppleSignInView()
                     .environmentObject(authManager)
             }
@@ -507,6 +461,37 @@ struct ProfileView: View {
                         .cornerRadius(12)
                 }
             }
+    }
+    
+    // MARK: - Share Profile
+    private func shareProfile() {
+        guard let uid = authManager.userID else { return }
+        
+        let shareMessage = "Follow me on Shaka!\n\(authManager.getDisplayName())"
+        let shareURL = URL(string: DeepLinkManager.shared.generateShareableURL(for: uid))!
+        let items: [Any] = [shareMessage, shareURL]
+        
+        let activityVC = UIActivityViewController(activityItems: items, applicationActivities: nil)
+        
+        // iPad対応
+        if let popover = activityVC.popoverPresentationController {
+            popover.sourceView = UIApplication.shared.windows.first
+            popover.sourceRect = CGRect(x: UIScreen.main.bounds.width / 2, y: UIScreen.main.bounds.height / 2, width: 0, height: 0)
+            popover.permittedArrowDirections = []
+        }
+        
+        // 現在のViewController取得して表示
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+           let window = windowScene.windows.first,
+           let rootViewController = window.rootViewController {
+            
+            var topController = rootViewController
+            while let presentedController = topController.presentedViewController {
+                topController = presentedController
+            }
+            
+            topController.present(activityVC, animated: true)
+        }
     }
     
     // MARK: - Account Management Actions

@@ -11,7 +11,7 @@ struct SearchView: View {
     @StateObject private var viewModel = SearchViewModel()
     @StateObject private var workViewModel = WorkPostViewModel()
     @StateObject private var questionViewModel = QuestionPostViewModel()
-    @State private var showingUserProfile: String?
+    @State private var selectedUser: IdentifiableString?
     
     let initialSearchText: String?
     let initialSearchType: SearchType?
@@ -23,151 +23,12 @@ struct SearchView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // 検索バー
-            VStack(spacing: 12) {
-                HStack {
-                    Image(systemName: "magnifyingglass")
-                        .foregroundColor(.gray)
-                    
-                    TextField("Search...", text: $viewModel.searchText)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                    
-                    if !viewModel.searchText.isEmpty {
-                        Button(action: {
-                            viewModel.searchText = ""
-                        }) {
-                            Image(systemName: "xmark.circle.fill")
-                                .foregroundColor(.gray)
-                        }
-                    }
-                }
-                .padding(.horizontal)
-                
-                // 検索タイプ選択
-                Picker("Search Type", selection: $viewModel.searchType) {
-                    ForEach(SearchType.allCases, id: \.self) { type in
-                        Label(type.rawValue, systemImage: type.icon)
-                            .tag(type)
-                    }
-                }
-                .pickerStyle(SegmentedPickerStyle())
-                .padding(.horizontal)
-                .onChange(of: viewModel.searchType) { _ in
-                    viewModel.performSearch()
-                }
-            }
-            .padding(.vertical)
-            .background(Color(UIColor.systemBackground))
-            
-            // 検索結果
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    if viewModel.isSearching {
-                        HStack {
-                            Spacer()
-                            ProgressView()
-                                .padding()
-                            Spacer()
-                        }
-                    } else if viewModel.searchText.isEmpty {
-                        EmptySearchView()
-                            .padding(.top, 50)
-                    } else {
-                        // Works結果
-                        if !viewModel.workResults.isEmpty {
-                            Section(header: Text("Works")
-                                .font(.headline)
-                                .padding(.horizontal)) {
-                                ForEach(viewModel.workResults) { post in
-                                    NavigationLink(destination: WorkDetailView(post: post, viewModel: workViewModel)) {
-                                        SearchResultCard(
-                                            title: post.title,
-                                            subtitle: post.displayName,
-                                            imageURL: post.imageURL,
-                                            tags: post.tags
-                                        )
-                                    }
-                                    .buttonStyle(PlainButtonStyle())
-                                }
-                            }
-                        }
-                        
-                        // Questions結果
-                        if !viewModel.questionResults.isEmpty {
-                            Section(header: Text("Questions")
-                                .font(.headline)
-                                .padding(.horizontal)) {
-                                ForEach(viewModel.questionResults) { post in
-                                    NavigationLink(destination: QuestionDetailView(post: post, viewModel: questionViewModel)) {
-                                        SearchResultCard(
-                                            title: post.title,
-                                            subtitle: post.displayName,
-                                            imageURL: nil,
-                                            tags: post.tags
-                                        )
-                                    }
-                                    .buttonStyle(PlainButtonStyle())
-                                }
-                            }
-                        }
-                        
-                        // Users結果
-                        if !viewModel.userResults.isEmpty {
-                            Section(header: Text("Users")
-                                .font(.headline)
-                                .padding(.horizontal)) {
-                                ForEach(viewModel.userResults, id: \.uid) { user in
-                                    Button(action: {
-                                        showingUserProfile = user.uid
-                                    }) {
-                                        HStack(spacing: 12) {
-                                            // ユーザーアバター
-                                            UserAvatarView(uid: user.uid, size: 50)
-                                            
-                                            VStack(alignment: .leading, spacing: 4) {
-                                                Text(user.displayName)
-                                                    .font(.headline)
-                                                    .foregroundColor(.primary)
-                                                
-                                                Text("@\(user.uid.prefix(8))...")
-                                                    .font(.caption)
-                                                    .foregroundColor(.secondary)
-                                            }
-                                            
-                                            Spacer()
-                                            
-                                            Image(systemName: "chevron.right")
-                                                .foregroundColor(.gray)
-                                        }
-                                        .padding()
-                                        .background(Color(UIColor.secondarySystemBackground))
-                                        .cornerRadius(12)
-                                        .padding(.horizontal)
-                                    }
-                                    .buttonStyle(PlainButtonStyle())
-                                }
-                            }
-                        }
-                        
-                        // 結果なし
-                        if viewModel.workResults.isEmpty && 
-                           viewModel.questionResults.isEmpty && 
-                           viewModel.userResults.isEmpty &&
-                           !viewModel.searchText.isEmpty {
-                            NoResultsView(searchText: viewModel.searchText, searchType: viewModel.searchType)
-                                .padding(.top, 50)
-                        }
-                    }
-                }
-                .padding(.vertical)
-            }
+            searchHeader
+            searchResults
         }
         .navigationTitle("Search")
         .navigationBarTitleDisplayMode(.inline)
-        .sheet(item: Binding<IdentifiableString?>(
-            get: { showingUserProfile.map { IdentifiableString(id: $0) } },
-            set: { showingUserProfile = $0?.value }
-        )) { item in
+        .sheet(item: $selectedUser) { item in
             NavigationView {
                 PublicProfileView(authorUid: item.value)
             }
@@ -178,6 +39,190 @@ struct SearchView: View {
             }
             if let initialType = initialSearchType {
                 viewModel.searchType = initialType
+            }
+        }
+    }
+    
+    // MARK: - Search Header
+    private var searchHeader: some View {
+        VStack(spacing: 12) {
+            searchBar
+            searchTypePicker
+        }
+        .padding(.top, 16)
+        .background(Color(UIColor.systemBackground))
+    }
+    
+    // MARK: - Search Bar
+    private var searchBar: some View {
+        HStack {
+            Image(systemName: "magnifyingglass")
+                .foregroundColor(.gray)
+            
+            TextField("Search...", text: $viewModel.searchText)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+            
+            if !viewModel.searchText.isEmpty {
+                Button(action: {
+                    viewModel.searchText = ""
+                }) {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundColor(.gray)
+                }
+            }
+        }
+        .padding(.horizontal)
+    }
+    
+    // MARK: - Search Type Picker
+    private var searchTypePicker: some View {
+        Picker("Search Type", selection: $viewModel.searchType) {
+            ForEach(SearchType.allCases, id: \.self) { type in
+                Label(type.rawValue, systemImage: type.icon)
+                    .tag(type)
+            }
+        }
+        .pickerStyle(SegmentedPickerStyle())
+        .padding(.horizontal)
+        .onChange(of: viewModel.searchType) { _ in
+            viewModel.performSearch()
+        }
+    }
+    
+    // MARK: - Search Results
+    private var searchResults: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                if viewModel.isSearching {
+                    searchLoadingView
+                } else if viewModel.searchText.isEmpty {
+                    EmptySearchView()
+                        .padding(.top, 50)
+                } else {
+                    searchResultsList
+                }
+            }
+        }
+        .padding(.vertical)
+    }
+    
+    // MARK: - Loading View
+    private var searchLoadingView: some View {
+        HStack {
+            Spacer()
+            ProgressView()
+                .padding()
+            Spacer()
+        }
+    }
+    
+    // MARK: - Results List
+    private var searchResultsList: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            workResultsSection
+            questionResultsSection  
+            userResultsSection
+            noResultsSection
+        }
+    }
+    
+    // MARK: - Work Results Section
+    private var workResultsSection: some View {
+        Group {
+            if !viewModel.workResults.isEmpty {
+                Section(header: Text("Works")
+                    .font(.headline)
+                    .padding(.horizontal)) {
+                    ForEach(viewModel.workResults) { post in
+                        NavigationLink(destination: WorkDetailView(post: post, viewModel: workViewModel)) {
+                            SearchResultCard(
+                                title: post.title,
+                                subtitle: post.displayName,
+                                imageURL: post.imageURL,
+                                tags: post.tags
+                            )
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                }
+            }
+        }
+    }
+    
+    // MARK: - Question Results Section
+    private var questionResultsSection: some View {
+        Group {
+            if !viewModel.questionResults.isEmpty {
+                Section(header: Text("Questions")
+                    .font(.headline)
+                    .padding(.horizontal)) {
+                    ForEach(viewModel.questionResults) { post in
+                        NavigationLink(destination: QuestionDetailView(post: post, viewModel: questionViewModel)) {
+                            SearchResultCard(
+                                title: post.title,
+                                subtitle: post.displayName,
+                                imageURL: nil,
+                                tags: post.tags
+                            )
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                }
+            }
+        }
+    }
+    
+    // MARK: - User Results Section
+    private var userResultsSection: some View {
+        Group {
+            if !viewModel.userResults.isEmpty {
+                Section(header: Text("Users")
+                    .font(.headline)
+                    .padding(.horizontal)) {
+                    ForEach(viewModel.userResults, id: \.uid) { user in
+                        userResultRow(user: user)
+                    }
+                }
+            }
+        }
+    }
+    
+    // MARK: - User Result Row
+    private func userResultRow(user: (uid: String, displayName: String, photoURL: String?)) -> some View {
+        Button(action: {
+            selectedUser = IdentifiableString(id: user.uid)
+        }) {
+            HStack(spacing: 12) {
+                UserAvatarView(uid: user.uid, size: 50)
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(user.displayName)
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                }
+                
+                Spacer()
+                
+                Image(systemName: "chevron.right")
+                    .foregroundColor(.gray)
+            }
+            .padding()
+            .background(Color(UIColor.secondarySystemBackground))
+            .cornerRadius(12)
+            .padding(.horizontal)
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+    
+    // MARK: - No Results Section
+    private var noResultsSection: some View {
+        Group {
+            if viewModel.workResults.isEmpty && 
+               viewModel.questionResults.isEmpty && 
+               viewModel.userResults.isEmpty &&
+               !viewModel.searchText.isEmpty {
+                NoResultsView(searchText: viewModel.searchText, searchType: viewModel.searchType)
+                    .padding(.top, 50)
             }
         }
     }
