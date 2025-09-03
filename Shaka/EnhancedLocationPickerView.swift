@@ -20,9 +20,9 @@ struct EnhancedLocationPickerView: View {
     
     @State private var searchText = ""
     @State private var showingSearch = false
-    @State private var tempLocationName = ""
+    @State private var tempLocationName: String
     @State private var showingCustomNameAlert = false
-    @State private var customLocationName = ""
+    @State private var customLocationName: String
     @State private var isFromMapDrag = false
     
     init(selectedCoordinate: Binding<CLLocationCoordinate2D?>, locationName: Binding<String>) {
@@ -30,17 +30,15 @@ struct EnhancedLocationPickerView: View {
         self._locationName = locationName
         
         // Initialize region based on whether we have a selected coordinate
-        if let coord = selectedCoordinate.wrappedValue {
-            self._region = State(initialValue: MKCoordinateRegion(
-                center: coord,
-                span: MKCoordinateSpan(latitudeDelta: 0.005, longitudeDelta: 0.005)
-            ))
-        } else {
-            self._region = State(initialValue: MKCoordinateRegion(
-                center: CLLocationCoordinate2D(latitude: 35.6814, longitude: 139.7667),
-                span: MKCoordinateSpan(latitudeDelta: 0.005, longitudeDelta: 0.005)
-            ))
-        }
+        let initialCenter = selectedCoordinate.wrappedValue ?? CLLocationCoordinate2D(latitude: 35.6814, longitude: 139.7667)
+        self._region = State(initialValue: MKCoordinateRegion(
+            center: initialCenter,
+            span: MKCoordinateSpan(latitudeDelta: 0.005, longitudeDelta: 0.005)
+        ))
+        
+        // Also initialize tempLocationName and customLocationName if we have a location name
+        self._tempLocationName = State(initialValue: locationName.wrappedValue)
+        self._customLocationName = State(initialValue: locationName.wrappedValue)
     }
     
     var body: some View {
@@ -233,12 +231,8 @@ struct EnhancedLocationPickerView: View {
     }
     
     private func setupInitialLocation() {
-        // Set initial location name
-        if let _ = selectedCoordinate {
-            tempLocationName = locationName.isEmpty ? "Selected Location" : locationName
-            customLocationName = locationName
-        } else {
-            // Get location name for current center
+        // Only update location name if we don't have a selected coordinate
+        if selectedCoordinate == nil {
             updateLocationName(for: region.center)
         }
         
