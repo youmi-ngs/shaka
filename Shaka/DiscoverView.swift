@@ -211,7 +211,7 @@ struct DiscoverView: View {
             }
             .sheet(isPresented: $showPostWorkSheet) {
                 if let location = longPressLocation {
-                    PostWorkViewWithLocation(
+                    PostWorkView(
                         viewModel: workViewModel,
                         presetLocation: location,
                         presetLocationName: longPressLocationName
@@ -297,22 +297,6 @@ struct DiscoverView: View {
         }
     }
     
-}
-
-// PostWorkView wrapper with preset location
-struct PostWorkViewWithLocation: View {
-    @ObservedObject var viewModel: WorkPostViewModel
-    let presetLocation: CLLocationCoordinate2D
-    let presetLocationName: String
-    @Environment(\.dismiss) var dismiss
-    
-    var body: some View {
-        PostWorkView(
-            viewModel: viewModel, 
-            presetLocation: presetLocation,
-            presetLocationName: presetLocationName
-        )
-    }
 }
 
 // マップピンのプロトコル
