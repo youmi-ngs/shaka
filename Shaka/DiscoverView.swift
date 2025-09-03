@@ -30,9 +30,6 @@ struct DiscoverView: View {
         span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
     ))
     @State private var showLocationSharingSheet = false
-    @State private var showPostWorkSheet = false
-    @State private var longPressLocation: CLLocationCoordinate2D?
-    @State private var longPressLocationName: String = ""
     
     @ViewBuilder
     private var mapView: some View {
@@ -52,11 +49,10 @@ struct DiscoverView: View {
             }
             .mapStyle(.standard(elevation: .flat))
             .edgesIgnoringSafeArea(.bottom)
-            .onLongPressGesture(minimumDuration: 0.5) {
-                // onLongPressGesture doesn't provide location, need to use different approach
-                // For now, center of map will be used
-                handleMapLongPress()
-            }
+            // 長押し機能は一旦無効化（場所の保持が正しく動作しないため）
+            // .onLongPressGesture(minimumDuration: 0.5) {
+            //     handleMapLongPress()
+            // }
             .onMapCameraChange { context in
                 // Keep region in sync with camera position for iOS 17+
                 region = context.region
@@ -209,14 +205,6 @@ struct DiscoverView: View {
                     locationSharing: locationSharing
                 )
             }
-            .sheet(isPresented: $showPostWorkSheet) {
-                // Force unwrap or provide default location
-                PostWorkView(
-                    viewModel: workViewModel,
-                    presetLocation: longPressLocation ?? CLLocationCoordinate2D(latitude: 35.6814, longitude: 139.7667),
-                    presetLocationName: longPressLocationName.isEmpty ? "Selected Location" : longPressLocationName
-                )
-            }
     }
     
     private func timeRemaining() -> String {
@@ -258,48 +246,6 @@ struct DiscoverView: View {
         }
     }
     
-    @available(iOS 17.0, *)
-    private func handleMapLongPress() {
-        // Use the region state variable which tracks the current map view
-        print("Long press detected, region center: \(region.center)")
-        longPressLocation = region.center
-        longPressLocationName = "Loading location..."
-        reverseGeocodeLocation(region.center)
-        // Delay sheet presentation slightly to ensure data is set
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            showPostWorkSheet = true
-        }
-    }
-    
-    private func reverseGeocodeLocation(_ coordinate: CLLocationCoordinate2D) {
-        let geocoder = CLGeocoder()
-        let location = CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
-        
-        geocoder.reverseGeocodeLocation(location) { placemarks, error in
-            DispatchQueue.main.async {
-                if let placemark = placemarks?.first {
-                    var components: [String] = []
-                    
-                    if let name = placemark.name {
-                        components.append(name)
-                    } else {
-                        if let locality = placemark.locality {
-                            components.append(locality)
-                        }
-                        if let administrativeArea = placemark.administrativeArea {
-                            components.append(administrativeArea)
-                        }
-                    }
-                    
-                    self.longPressLocationName = components.isEmpty ? 
-                        String(format: "%.4f, %.4f", coordinate.latitude, coordinate.longitude) :
-                        components.joined(separator: ", ")
-                } else {
-                    self.longPressLocationName = String(format: "%.4f, %.4f", coordinate.latitude, coordinate.longitude)
-                }
-            }
-        }
-    }
     
 }
 
