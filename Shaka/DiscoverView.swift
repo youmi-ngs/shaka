@@ -281,7 +281,7 @@ struct PinView: View {
         // 標準的な地図ピン（チョコミント風）
         Image(systemName: "mappin.circle.fill")
             .font(.system(size: 35))
-            .foregroundColor(isOwnPost ? .brown : .mint)
+            .foregroundColor(isOwnPost ? Color(red: 0.32, green: 0.18, blue: 0.1) : .mint)
             .background(
                 Circle()
                 .fill(Color.white)
