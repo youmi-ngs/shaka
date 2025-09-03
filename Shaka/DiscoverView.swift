@@ -69,7 +69,7 @@ struct DiscoverView: View {
             annotationItems: workPins
         ) { pin in
             MapAnnotation(coordinate: pin.coordinate) {
-                PinView(pinType: .work)
+                PinView(pinType: .work, isOwnPost: pin.post.userID == authManager.userID)
                     .onTapGesture {
                         selectedWork = pin.post
                     }
@@ -119,7 +119,7 @@ struct DiscoverView: View {
         // Work posts pins
         ForEach(workPins) { pin in
             Annotation(pin.post.title, coordinate: pin.coordinate) {
-                PinView(pinType: .work)
+                PinView(pinType: .work, isOwnPost: pin.post.userID == authManager.userID)
                     .onTapGesture {
                         selectedWork = pin.post
                     }
@@ -275,12 +275,13 @@ struct WorkMapPin: MapPinProtocol {
 // ピンビュー
 struct PinView: View {
     let pinType: PinType
+    var isOwnPost: Bool = false
     
     var body: some View {
         // 標準的な地図ピン
         Image(systemName: "mappin.circle.fill")
             .font(.system(size: 35))
-            .foregroundColor(.mint)
+            .foregroundColor(isOwnPost ? .orange : .mint)
             .background(
                 Circle()
                 .fill(Color.white)
