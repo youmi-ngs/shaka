@@ -30,7 +30,11 @@ struct EnhancedLocationPickerView: View {
         self._locationName = locationName
         
         // Debug print
-        print("EnhancedLocationPickerView init - coordinate: \(String(describing: selectedCoordinate.wrappedValue)), name: \(locationName.wrappedValue)")
+        if let coord = selectedCoordinate.wrappedValue {
+            print("EnhancedLocationPickerView init with coordinate: lat=\(coord.latitude), lon=\(coord.longitude)")
+        } else {
+            print("EnhancedLocationPickerView init with nil coordinate")
+        }
         
         // Initialize region based on whether we have a selected coordinate
         let initialCenter = selectedCoordinate.wrappedValue ?? CLLocationCoordinate2D(latitude: 35.6814, longitude: 139.7667)
