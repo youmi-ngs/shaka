@@ -22,6 +22,9 @@ struct ShakaApp: App {
         FirebaseApp.configure()
         let db = Firestore.firestore()
         
+        // Register Live Activity
+        ActivityRegistry.register()
+        
         // 既存ユーザーのマイグレーション（アップデート後の初回起動対応）
         // 一度だけ実行するためのフラグ
         if !UserDefaults.standard.bool(forKey: "hasPerformedOnboardingMigration") {
@@ -44,7 +47,12 @@ struct ShakaApp: App {
                         .environmentObject(deepLinkManager)
                         .environmentObject(notificationManager)
                         .onOpenURL { url in
-                            _ = deepLinkManager.handleURL(url)
+                            // Handle Live Activity deep links
+                            if url.absoluteString == "shaka://stoplocation" {
+                                LocationSharingManager.shared.stopSharingLocation()
+                            } else {
+                                _ = deepLinkManager.handleURL(url)
+                            }
                         }
                         .onAppear {
                             // アプリ起動時にバッジをクリア

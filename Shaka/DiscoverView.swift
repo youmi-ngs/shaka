@@ -461,99 +461,114 @@ struct LocationSharingSheet: View {
     
     var body: some View {
         NavigationView {
-            VStack(spacing: 20) {
-                // Header
-                VStack(spacing: 8) {
-                    Image(systemName: "location.circle.fill")
-                        .font(.system(size: 60))
-                        .foregroundColor(.green)
-                    
-                    Text("Share Location with Mutual Followers")
-                        .font(.title2)
-                        .fontWeight(.semibold)
-                        .multilineTextAlignment(.center)
-                    
-                    Text("Only people you follow who also follow you can see your location")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal)
-                }
-                .padding(.top, 20)
+            VStack {
+                Spacer()
                 
-                // Duration selector
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("Duration")
-                        .font(.headline)
-                    
-                    Picker("Duration", selection: $selectedDuration) {
-                        Text("15 minutes").tag(15.0)
-                        Text("30 minutes").tag(30.0)
-                        Text("1 hour").tag(60.0)
-                        Text("2 hours").tag(120.0)
-                    }
-                    .pickerStyle(SegmentedPickerStyle())
-                }
-                .padding(.horizontal)
-                
-                // Permission check
-                if locationSharing.authorizationStatus == .notDetermined {
-                    Button(action: {
-                        locationSharing.requestLocationPermission()
-                    }) {
-                        Label("Enable Location Services", systemImage: "location")
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.blue)
-                            .foregroundColor(.white)
-                            .cornerRadius(10)
-                    }
-                    .padding(.horizontal)
-                } else if locationSharing.authorizationStatus == .denied || 
-                         locationSharing.authorizationStatus == .restricted {
-                    VStack(spacing: 10) {
-                        Label("Location Services Disabled", systemImage: "location.slash")
-                            .foregroundColor(.red)
+                VStack(spacing: 25) {
+                    // Header
+                    VStack(spacing: 12) {
+                        Image(systemName: "location.circle.fill")
+                            .font(.system(size: 70))
+                            .foregroundColor(.green)
+                            .symbolRenderingMode(.hierarchical)
                         
-                        Text("Please enable location services in Settings to share your location")
-                            .font(.caption)
+                        Text("Share Location with Mutual Followers")
+                            .font(.title2)
+                            .fontWeight(.semibold)
+                            .multilineTextAlignment(.center)
+                        
+                        Text("Only people you follow who also follow you can see your location")
+                            .font(.subheadline)
                             .foregroundColor(.secondary)
                             .multilineTextAlignment(.center)
+                            .padding(.horizontal, 30)
                     }
-                    .padding()
-                } else {
-                    // Start sharing button
-                    Button(action: {
-                        locationSharing.startSharingLocation(duration: selectedDuration * 60)
-                        isPresented = false
-                    }) {
-                        Label("Start Sharing", systemImage: "location.fill")
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.green)
-                            .foregroundColor(.white)
-                            .cornerRadius(10)
+                    
+                    // Duration selector
+                    VStack(spacing: 12) {
+                        Text("Duration")
+                            .font(.headline)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        
+                        Picker("Duration", selection: $selectedDuration) {
+                            Text("15 min").tag(15.0)
+                            Text("30 min").tag(30.0)
+                            Text("1 hour").tag(60.0)
+                            Text("2 hours").tag(120.0)
+                        }
+                        .pickerStyle(SegmentedPickerStyle())
                     }
-                    .padding(.horizontal)
+                    .padding(.horizontal, 20)
+                    
+                    // Permission check and action button
+                    if locationSharing.authorizationStatus == .notDetermined {
+                        Button(action: {
+                            locationSharing.requestLocationPermission()
+                        }) {
+                            Label("Enable Location Services", systemImage: "location")
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(Color.blue)
+                                .foregroundColor(.white)
+                                .cornerRadius(12)
+                        }
+                        .padding(.horizontal, 20)
+                    } else if locationSharing.authorizationStatus == .denied || 
+                             locationSharing.authorizationStatus == .restricted {
+                        VStack(spacing: 10) {
+                            Label("Location Services Disabled", systemImage: "location.slash")
+                                .foregroundColor(.red)
+                            
+                            Text("Please enable location services in Settings to share your location")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.center)
+                        }
+                        .padding(.horizontal, 20)
+                    } else {
+                        // Start sharing button
+                        Button(action: {
+                            locationSharing.startSharingLocation(duration: selectedDuration * 60)
+                            isPresented = false
+                        }) {
+                            Label("Start Sharing", systemImage: "location.fill")
+                                .font(.headline)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 16)
+                                .background(Color.green)
+                                .foregroundColor(.white)
+                                .cornerRadius(12)
+                        }
+                        .padding(.horizontal, 20)
+                    }
                 }
                 
                 Spacer()
                 
                 // Privacy note
-                VStack(spacing: 8) {
-                    Label("Your Privacy", systemImage: "lock.shield")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                VStack(spacing: 10) {
+                    HStack {
+                        Image(systemName: "lock.shield")
+                            .font(.footnote)
+                            .foregroundColor(.secondary)
+                        Text("Your Privacy")
+                            .font(.footnote.weight(.medium))
+                            .foregroundColor(.secondary)
+                    }
                     
-                    Text("• Location sharing automatically stops after the selected duration\n• You can stop sharing anytime\n• Only mutual followers can see your location")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.leading)
+                    VStack(alignment: .leading, spacing: 6) {
+                        Label("Stops automatically after selected time", systemImage: "clock")
+                        Label("Stop sharing anytime", systemImage: "stop.circle")
+                        Label("Only mutual followers can see you", systemImage: "person.2")
+                    }
+                    .font(.caption)
+                    .foregroundColor(.secondary)
                 }
                 .padding()
-                .background(Color.gray.opacity(0.1))
-                .cornerRadius(10)
-                .padding(.horizontal)
+                .background(Color(.systemGray6))
+                .cornerRadius(12)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
             }
             .navigationTitle("Location Sharing")
             .navigationBarTitleDisplayMode(.inline)

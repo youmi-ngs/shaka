@@ -88,6 +88,15 @@ class LocationSharingManager: NSObject, ObservableObject {
                 self?.sharingExpiresAt = expiresAt
                 self?.startLocationUpdates()
                 self?.setupExpirationTimer(expiresAt: expiresAt)
+                
+                // Start Live Activity
+                Task {
+                    let mutualCount = self?.mutualFollowersLocations.count ?? 0
+                    await LocationActivityManager.shared.startActivity(
+                        duration: Int(duration),
+                        sharedWithCount: mutualCount
+                    )
+                }
             }
         }
     }
@@ -108,6 +117,11 @@ class LocationSharingManager: NSObject, ObservableObject {
                 self?.stopLocationUpdates()
                 self?.expirationTimer?.invalidate()
                 self?.expirationTimer = nil
+                
+                // End Live Activity
+                Task {
+                    await LocationActivityManager.shared.endActivity()
+                }
             }
         }
     }
