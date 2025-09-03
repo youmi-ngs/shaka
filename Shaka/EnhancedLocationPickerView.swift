@@ -238,17 +238,22 @@ struct EnhancedLocationPickerView: View {
             region.center = coord
             tempLocationName = locationName
             customLocationName = locationName
-        } else if let location = locationManager.lastLocation {
+        } else if let location = locationManager.userLocation {
             region.center = location.coordinate
             updateLocationName(for: location.coordinate)
         } else {
             updateLocationName(for: region.center)
         }
+        
+        // Request location permission if needed
+        if locationManager.authorizationStatus == .notDetermined {
+            locationManager.requestLocationPermission()
+        }
     }
     
     private func moveToCurrentLocation() {
-        locationManager.requestLocation()
-        if let location = locationManager.lastLocation {
+        locationManager.requestLocationPermission()
+        if let location = locationManager.userLocation {
             withAnimation {
                 region.center = location.coordinate
                 updateLocationName(for: location.coordinate)
