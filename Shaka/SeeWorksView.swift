@@ -143,6 +143,19 @@ struct WorkPostCard: View {
                         .lineLimit(3)
                 }
                 
+                // Location display
+                if let locationName = post.locationName, !locationName.isEmpty {
+                    HStack(spacing: 4) {
+                        Image(systemName: "location.fill")
+                            .font(.caption)
+                            .foregroundColor(.indigo)
+                        Text(locationName)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                    }
+                }
+                
                 // タグ表示
                 if !post.tags.isEmpty {
                     ScrollView(.horizontal, showsIndicators: false) {

@@ -213,7 +213,7 @@ struct PostWorkView: View {
             }
             .sheet(isPresented: $showLocationPicker) {
                 NavigationView {
-                    LocationPickerView(
+                    EnhancedLocationPickerView(
                         selectedCoordinate: $selectedCoordinate,
                         locationName: $location
                     )

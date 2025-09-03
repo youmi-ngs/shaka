@@ -6,6 +6,8 @@
 //
 
 import SwiftUI
+import MapKit
+import CoreLocation
 
 struct WorkDetailView: View {
     let post: WorkPost
@@ -160,6 +162,54 @@ struct WorkDetailView: View {
                         .padding(.horizontal)
                 }
                 
+                // Location Map (if exists)
+                if let coordinate = post.coordinate {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Divider()
+                            .padding(.horizontal)
+                        
+                        HStack {
+                            Image(systemName: "location.fill")
+                                .foregroundColor(.indigo)
+                            Text("Location")
+                                .font(.headline)
+                        }
+                        .padding(.horizontal)
+                        
+                        if let locationName = post.locationName, !locationName.isEmpty {
+                            Text(locationName)
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                                .padding(.horizontal)
+                        }
+                        
+                        // Interactive Map View
+                        Map(coordinateRegion: .constant(MKCoordinateRegion(
+                            center: coordinate,
+                            span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
+                        )), annotationItems: [LocationAnnotation(coordinate: coordinate)]) { item in
+                            MapAnnotation(coordinate: item.coordinate) {
+                                VStack(spacing: 0) {
+                                    Image(systemName: "mappin.circle.fill")
+                                        .font(.system(size: 30))
+                                        .foregroundColor(.indigo)
+                                        .background(Circle().fill(Color.white).frame(width: 32, height: 32))
+                                    
+                                    Image(systemName: "triangle.fill")
+                                        .font(.system(size: 10))
+                                        .foregroundColor(.indigo)
+                                        .rotationEffect(.degrees(180))
+                                        .offset(y: -5)
+                                }
+                            }
+                        }
+                        .frame(height: 200)
+                        .cornerRadius(12)
+                        .padding(.horizontal)
+                    }
+                    .padding(.vertical, 8)
+                }
+                
                 // Detail (if exists)
                 if let detail = post.detail, !detail.isEmpty {
                     Divider()
@@ -276,6 +326,12 @@ struct WorkDetailView: View {
             }
         }
     }
+}
+
+// Location annotation for Map
+struct LocationAnnotation: Identifiable {
+    let id = UUID()
+    let coordinate: CLLocationCoordinate2D
 }
 
 // Fullscreen Image Viewer
