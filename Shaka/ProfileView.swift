@@ -102,7 +102,12 @@ struct ProfileView: View {
                     }
                     
                     // Bookmarks
-                    NavigationLink(destination: BookmarkedPostsView()) {
+                    ZStack {
+                        NavigationLink(destination: BookmarkedPostsView()) {
+                            EmptyView()
+                        }
+                        .opacity(0)
+                        
                         HStack {
                             Image(systemName: "bookmark.fill")
                                 .foregroundColor(.teal)
@@ -160,10 +165,6 @@ struct ProfileView: View {
                         HStack {
                             Image(systemName: "square.and.arrow.up")
                             Text("Share Profile Link")
-                            Spacer()
-                            Image(systemName: "chevron.right")
-                                .foregroundColor(.secondary)
-                            .font(.caption)
                         }
                     }
                 }
