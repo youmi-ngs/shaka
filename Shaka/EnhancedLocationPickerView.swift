@@ -16,17 +16,26 @@ struct EnhancedLocationPickerView: View {
     @StateObject private var locationManager = LocationManager()
     @StateObject private var searchCompleter = LocationSearchCompleter()
     
-    @State private var region = MKCoordinateRegion(
-        center: CLLocationCoordinate2D(latitude: 35.6814, longitude: 139.7667),
-        span: MKCoordinateSpan(latitudeDelta: 0.005, longitudeDelta: 0.005)
-    )
-    
+    @State private var region: MKCoordinateRegion
     @State private var searchText = ""
     @State private var showingSearch = false
-    @State private var tempLocationName = ""
+    @State private var tempLocationName: String
     @State private var showingCustomNameAlert = false
-    @State private var customLocationName = ""
+    @State private var customLocationName: String
     @State private var isFromMapDrag = false
+    
+    init(selectedCoordinate: Binding<CLLocationCoordinate2D?>, locationName: Binding<String>) {
+        self._selectedCoordinate = selectedCoordinate
+        self._locationName = locationName
+        
+        let initialCenter = selectedCoordinate.wrappedValue ?? CLLocationCoordinate2D(latitude: 35.6814, longitude: 139.7667)
+        self._region = State(initialValue: MKCoordinateRegion(
+            center: initialCenter,
+            span: MKCoordinateSpan(latitudeDelta: 0.005, longitudeDelta: 0.005)
+        ))
+        self._tempLocationName = State(initialValue: locationName.wrappedValue)
+        self._customLocationName = State(initialValue: "")
+    }
     
     var body: some View {
         ZStack {
@@ -213,23 +222,14 @@ struct EnhancedLocationPickerView: View {
             Text("Enter a custom name for this location")
         }
         .onAppear {
-            // Always update region center if we have a selected coordinate
-            if let coord = selectedCoordinate {
-                DispatchQueue.main.async {
-                    self.region = MKCoordinateRegion(
-                        center: coord,
-                        span: MKCoordinateSpan(latitudeDelta: 0.005, longitudeDelta: 0.005)
-                    )
-                    self.tempLocationName = self.locationName
-                    self.customLocationName = self.locationName
-                }
-            } else {
-                updateLocationName(for: region.center)
-            }
-            
             // Request location permission if needed
             if locationManager.authorizationStatus == .notDetermined {
                 locationManager.requestLocationPermission()
+            }
+            
+            // Update location name if we don't have one
+            if tempLocationName.isEmpty && selectedCoordinate == nil {
+                updateLocationName(for: region.center)
             }
         }
     }

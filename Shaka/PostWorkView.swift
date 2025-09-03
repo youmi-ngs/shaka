@@ -213,8 +213,8 @@ struct PostWorkView: View {
             .onAppear {
                 if let post = editingPost {
                     loadPostData(post)
-                } else if selectedCoordinate == nil && presetLocation != nil {
-                    // Only use preset location if no location has been set yet
+                } else if presetLocation != nil && selectedCoordinate == nil {
+                    // Set preset location only if no location selected yet
                     selectedCoordinate = presetLocation
                     location = presetLocationName ?? ""
                     useCurrentLocation = true
