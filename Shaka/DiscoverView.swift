@@ -278,10 +278,10 @@ struct PinView: View {
     var isOwnPost: Bool = false
     
     var body: some View {
-        // 標準的な地図ピン
+        // 標準的な地図ピン（チョコミント風）
         Image(systemName: "mappin.circle.fill")
             .font(.system(size: 35))
-            .foregroundColor(isOwnPost ? .orange : .mint)
+            .foregroundColor(isOwnPost ? .brown : .mint)
             .background(
                 Circle()
                 .fill(Color.white)
