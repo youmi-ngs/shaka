@@ -15,6 +15,8 @@ struct PostWorkView: View {
     @Environment(\.dismiss) var dismiss
     
     let editingPost: WorkPost?
+    let presetLocation: CLLocationCoordinate2D?
+    let presetLocationName: String?
     
     @State private var title = ""
     @State private var description = ""
@@ -33,9 +35,11 @@ struct PostWorkView: View {
     @State private var selectedCoordinate: CLLocationCoordinate2D?
     @State private var showLocationPicker = false
     
-    init(viewModel: WorkPostViewModel, editingPost: WorkPost? = nil) {
+    init(viewModel: WorkPostViewModel, editingPost: WorkPost? = nil, presetLocation: CLLocationCoordinate2D? = nil, presetLocationName: String? = nil) {
         self.viewModel = viewModel
         self.editingPost = editingPost
+        self.presetLocation = presetLocation
+        self.presetLocationName = presetLocationName
     }
 
     var body: some View {
@@ -209,6 +213,11 @@ struct PostWorkView: View {
             .onAppear {
                 if let post = editingPost {
                     loadPostData(post)
+                } else if let presetCoord = presetLocation {
+                    // Use preset location from map long press
+                    selectedCoordinate = presetCoord
+                    location = presetLocationName ?? ""
+                    useCurrentLocation = true
                 }
             }
             .sheet(isPresented: $showLocationPicker) {

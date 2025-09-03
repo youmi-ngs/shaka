@@ -30,11 +30,15 @@ struct DiscoverView: View {
         span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
     ))
     @State private var showLocationSharingSheet = false
+    @State private var showPostWorkSheet = false
+    @State private var longPressLocation: CLLocationCoordinate2D?
+    @State private var longPressLocationName: String = ""
     
     var body: some View {
         ZStack {
             // 地図表示（iOS 17以降の新API）
             if #available(iOS 17.0, *) {
+                MapReader { proxy in
                     Map(position: $cameraPosition) {
                         // Show current user location if sharing
                         if locationSharing.isSharing,
@@ -83,6 +87,16 @@ struct DiscoverView: View {
                     }
                     .mapStyle(.standard(elevation: .flat))
                     .edgesIgnoringSafeArea(.bottom)
+                    .onLongPressGesture(minimumDuration: 0.5) { location in
+                        // Get coordinate from the tap location
+                        if let coordinate = proxy.convert(location, from: .local) {
+                            longPressLocation = coordinate
+                            // Get location name
+                            reverseGeocodeLocation(coordinate)
+                            showPostWorkSheet = true
+                        }
+                    }
+                }
                 } else {
                     // iOS 16以前のフォールバック
                     Map(
@@ -175,6 +189,15 @@ struct DiscoverView: View {
                     locationSharing: locationSharing
                 )
             }
+            .sheet(isPresented: $showPostWorkSheet) {
+                if let location = longPressLocation {
+                    PostWorkViewWithLocation(
+                        viewModel: workViewModel,
+                        presetLocation: location,
+                        presetLocationName: longPressLocationName
+                    )
+                }
+            }
     }
     
     private func timeRemaining() -> String {
@@ -216,6 +239,52 @@ struct DiscoverView: View {
         }
     }
     
+    private func reverseGeocodeLocation(_ coordinate: CLLocationCoordinate2D) {
+        let geocoder = CLGeocoder()
+        let location = CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
+        
+        geocoder.reverseGeocodeLocation(location) { placemarks, error in
+            DispatchQueue.main.async {
+                if let placemark = placemarks?.first {
+                    var components: [String] = []
+                    
+                    if let name = placemark.name {
+                        components.append(name)
+                    } else {
+                        if let locality = placemark.locality {
+                            components.append(locality)
+                        }
+                        if let administrativeArea = placemark.administrativeArea {
+                            components.append(administrativeArea)
+                        }
+                    }
+                    
+                    self.longPressLocationName = components.isEmpty ? 
+                        String(format: "%.4f, %.4f", coordinate.latitude, coordinate.longitude) :
+                        components.joined(separator: ", ")
+                } else {
+                    self.longPressLocationName = String(format: "%.4f, %.4f", coordinate.latitude, coordinate.longitude)
+                }
+            }
+        }
+    }
+    
+}
+
+// PostWorkView wrapper with preset location
+struct PostWorkViewWithLocation: View {
+    @ObservedObject var viewModel: WorkPostViewModel
+    let presetLocation: CLLocationCoordinate2D
+    let presetLocationName: String
+    @Environment(\.dismiss) var dismiss
+    
+    var body: some View {
+        PostWorkView(
+            viewModel: viewModel, 
+            presetLocation: presetLocation,
+            presetLocationName: presetLocationName
+        )
+    }
 }
 
 // マップピンのプロトコル
