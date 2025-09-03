@@ -22,6 +22,7 @@ struct ContentView: View {
     @State private var questionToShow: String?
     @State private var hasRequestedNotifications = false
     @State private var selectedTab = 0
+    @State private var tabSelection = UUID()  // NavigationViewをリセットするためのトリガー
     
     var tabAccentColor: Color {
         switch selectedTab {
@@ -34,10 +35,20 @@ struct ContentView: View {
     }
     
     var body: some View {
-        TabView(selection: $selectedTab) {
+        TabView(selection: Binding(
+            get: { selectedTab },
+            set: { newValue in
+                if selectedTab == newValue {
+                    // 同じタブが再度選択された場合、NavigationViewをルートに戻す
+                    NotificationCenter.default.post(name: Notification.Name("PopToRootView"), object: nil, userInfo: ["tab": newValue])
+                }
+                selectedTab = newValue
+            }
+        )) {
             
             NavigationView {
                 SeeWorksView()
+                    .popToRootOnTabReselect(tabIndex: 1)
             }
             .tabItem {
                 Label("Works", systemImage: "eyeglasses")
@@ -46,6 +57,7 @@ struct ContentView: View {
             
             NavigationView {
                 AskView()
+                    .popToRootOnTabReselect(tabIndex: 2)
             }
             .tabItem {
                 Label("Ask", systemImage: "questionmark.bubble")
@@ -54,6 +66,7 @@ struct ContentView: View {
             
             NavigationView {
                 DiscoverView()
+                    .popToRootOnTabReselect(tabIndex: 0)
             }
             .tabItem {
                 Label("Discover", systemImage: "globe")
@@ -63,6 +76,7 @@ struct ContentView: View {
             NavigationView {
                 SearchView()
                     .navigationBarHidden(true)
+                    .popToRootOnTabReselect(tabIndex: 3)
             }
             .tabItem {
                 Label("Search", systemImage: "magnifyingglass")
@@ -71,6 +85,7 @@ struct ContentView: View {
             
             NavigationView {
                 ProfileView()
+                    .popToRootOnTabReselect(tabIndex: 4)
             }
             .tabItem {
                 Label("Profile", systemImage: "person.circle")

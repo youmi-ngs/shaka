@@ -14,6 +14,7 @@ struct DiscoverView: View {
     @StateObject private var locationManager = LocationManager()
     @StateObject private var workViewModel = WorkPostViewModel()
     @StateObject private var locationSharing = LocationSharingManager.shared
+    @StateObject private var searchCompleter = DiscoverLocationSearchCompleter()
     @EnvironmentObject var authManager: AuthManager
     
     @State private var region = MKCoordinateRegion(
@@ -30,6 +31,9 @@ struct DiscoverView: View {
         span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
     ))
     @State private var showLocationSharingSheet = false
+    @State private var searchText = ""
+    @State private var showingSearch = false
+    @State private var showingSearchBar = false
     
     @ViewBuilder
     private var mapView: some View {
@@ -130,6 +134,85 @@ struct DiscoverView: View {
     var body: some View {
         ZStack {
             mapView
+            
+            // 検索バーをオーバーレイ表示（表示切り替え可能）
+            if showingSearchBar {
+                VStack {
+                    // 検索バーと予測候補
+                    VStack(spacing: 0) {
+                        // 検索バー
+                        HStack {
+                            Image(systemName: "magnifyingglass")
+                                .foregroundColor(.gray)
+                            
+                            TextField("Search for a place...", text: $searchText)
+                                .textFieldStyle(PlainTextFieldStyle())
+                                .onChange(of: searchText) { newValue in
+                                    searchCompleter.searchQuery = newValue
+                                    showingSearch = !newValue.isEmpty
+                                }
+                                .onSubmit {
+                                    if let firstResult = searchCompleter.searchResults.first {
+                                        selectSearchResult(firstResult)
+                                    }
+                                }
+                            
+                            Button(action: { 
+                                searchText = ""
+                                showingSearch = false
+                                showingSearchBar = false
+                                searchCompleter.searchResults = []
+                            }) {
+                                Image(systemName: "xmark.circle.fill")
+                                    .foregroundColor(.gray)
+                            }
+                        }
+                        .padding()
+                        .background(Color(UIColor.systemBackground))
+                        .cornerRadius(10, corners: showingSearch && !searchCompleter.searchResults.isEmpty ? [.topLeft, .topRight] : .allCorners)
+                        
+                        // 検索候補
+                        if showingSearch && !searchCompleter.searchResults.isEmpty {
+                            ScrollView {
+                                VStack(alignment: .leading, spacing: 0) {
+                                    ForEach(searchCompleter.searchResults, id: \.self) { result in
+                                        Button(action: {
+                                            selectSearchResult(result)
+                                        }) {
+                                            VStack(alignment: .leading, spacing: 4) {
+                                                Text(result.title)
+                                                    .font(.subheadline)
+                                                    .foregroundColor(.primary)
+                                                if !result.subtitle.isEmpty {
+                                                    Text(result.subtitle)
+                                                        .font(.caption)
+                                                        .foregroundColor(.secondary)
+                                                }
+                                            }
+                                            .padding(.horizontal)
+                                            .padding(.vertical, 8)
+                                            .frame(maxWidth: .infinity, alignment: .leading)
+                                        }
+                                        .buttonStyle(PlainButtonStyle())
+                                        
+                                        if result != searchCompleter.searchResults.last {
+                                            Divider()
+                                                .padding(.horizontal)
+                                        }
+                                    }
+                                }
+                            }
+                            .frame(maxHeight: 120)
+                            .background(Color(UIColor.systemBackground))
+                            .cornerRadius(10, corners: [.bottomLeft, .bottomRight])
+                        }
+                    }
+                    .padding(.horizontal)
+                    .padding(.top)
+                    
+                    Spacer()
+                }
+            }
                 
                 // UI オーバーレイ（iOS 16以前のみ現在地ボタンを表示）
                 if #unavailable(iOS 17.0) {
@@ -156,6 +239,24 @@ struct DiscoverView: View {
         .navigationTitle("Discover")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                // 検索ボタン（左側）
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(action: {
+                        withAnimation {
+                            showingSearchBar.toggle()
+                            if !showingSearchBar {
+                                searchText = ""
+                                showingSearch = false
+                                searchCompleter.searchResults = []
+                            }
+                        }
+                    }) {
+                        Image(systemName: "magnifyingglass")
+                            .foregroundColor(showingSearchBar ? .blue : .primary)
+                    }
+                }
+                
+                // 位置共有ボタン（右側）
                 ToolbarItem(placement: .navigationBarTrailing) {
                     if authManager.userID != nil {
                         Button(action: {
@@ -246,7 +347,69 @@ struct DiscoverView: View {
         }
     }
     
+    private func selectSearchResult(_ result: MKLocalSearchCompletion) {
+        // 検索結果からMKLocalSearchを実行して詳細な座標を取得
+        let request = MKLocalSearch.Request(completion: result)
+        let search = MKLocalSearch(request: request)
+        
+        search.start { response, error in
+            guard let response = response, 
+                  let item = response.mapItems.first else { return }
+            
+            DispatchQueue.main.async {
+                withAnimation {
+                    self.region = MKCoordinateRegion(
+                        center: item.placemark.coordinate,
+                        span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
+                    )
+                    
+                    if #available(iOS 17.0, *) {
+                        self.cameraPosition = .region(self.region)
+                    }
+                }
+                
+                // 検索をクリアして検索バーを閉じる
+                self.searchText = ""
+                self.showingSearch = false
+                self.showingSearchBar = false
+                self.searchCompleter.searchResults = []
+            }
+        }
+    }
     
+    
+}
+
+// MARK: - Discover Location Search Completer
+class DiscoverLocationSearchCompleter: NSObject, ObservableObject, MKLocalSearchCompleterDelegate {
+    @Published var searchResults: [MKLocalSearchCompletion] = []
+    
+    private let completer = MKLocalSearchCompleter()
+    var searchQuery = "" {
+        didSet {
+            completer.queryFragment = searchQuery
+        }
+    }
+    
+    override init() {
+        super.init()
+        completer.delegate = self
+        completer.resultTypes = [.address, .pointOfInterest]
+        
+        // 日本優先の検索設定
+        completer.region = MKCoordinateRegion(
+            center: CLLocationCoordinate2D(latitude: 35.6814, longitude: 139.7667),
+            span: MKCoordinateSpan(latitudeDelta: 10, longitudeDelta: 10)
+        )
+    }
+    
+    func completerDidUpdateResults(_ completer: MKLocalSearchCompleter) {
+        self.searchResults = completer.results
+    }
+    
+    func completer(_ completer: MKLocalSearchCompleter, didFailWithError error: Error) {
+        // エラーハンドリング（静かに失敗）
+    }
 }
 
 // マップピンのプロトコル
@@ -402,32 +565,6 @@ struct LocationSharingSheet: View {
                 }
             }
         }
-    }
-}
-
-// 位置情報管理クラス
-class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
-    private let locationManager = CLLocationManager()
-    @Published var userLocation: CLLocation?
-    @Published var authorizationStatus: CLAuthorizationStatus = .notDetermined
-    
-    override init() {
-        super.init()
-        locationManager.delegate = self
-        locationManager.desiredAccuracy = kCLLocationAccuracyBest
-    }
-    
-    func requestLocationPermission() {
-        locationManager.requestWhenInUseAuthorization()
-        locationManager.startUpdatingLocation()
-    }
-    
-    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
-        userLocation = locations.last
-    }
-    
-    func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
-        authorizationStatus = manager.authorizationStatus
     }
 }
 

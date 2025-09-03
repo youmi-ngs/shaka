@@ -15,6 +15,8 @@ struct UserProfileEditView: View {
     @State private var tempPhotoURL: String?
     @State private var tempSelectedImage: UIImage?
     @State private var isProcessingPhoto = false
+    @State private var showingCropper = false
+    @State private var imageToCrop: UIImage?
     @Environment(\.dismiss) var dismiss
     
     let uid: String
@@ -291,6 +293,15 @@ struct UserProfileEditView: View {
                     }
                 }
             )
+            .fullScreenCover(isPresented: $showingCropper) {
+                if let image = imageToCrop {
+                    ImageCropperView(
+                        image: image,
+                        croppedImage: $tempSelectedImage
+                    )
+                    .interactiveDismissDisabled()
+                }
+            }
         }
     }
     
@@ -315,7 +326,9 @@ struct UserProfileEditView: View {
             }
             
             await MainActor.run {
-                tempSelectedImage = image
+                // Show cropper instead of directly setting the image
+                imageToCrop = image
+                showingCropper = true
                 isProcessingPhoto = false
             }
         } catch {
