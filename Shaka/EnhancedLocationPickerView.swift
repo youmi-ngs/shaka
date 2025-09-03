@@ -28,6 +28,7 @@ struct EnhancedLocationPickerView: View {
         self._selectedCoordinate = selectedCoordinate
         self._locationName = locationName
         
+        
         let initialCenter = selectedCoordinate.wrappedValue ?? CLLocationCoordinate2D(latitude: 35.6814, longitude: 139.7667)
         self._region = State(initialValue: MKCoordinateRegion(
             center: initialCenter,
