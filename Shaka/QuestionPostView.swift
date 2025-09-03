@@ -74,7 +74,20 @@ class QuestionPostViewModel: ObservableObject {
         }
     }
     
-    func fetchPosts() {
+    func fetchPosts(filter: PostFilter = .all) {
+        switch filter {
+        case .all:
+            fetchAllPosts()
+        case .following:
+            guard let currentUserID = AuthManager.shared.getCurrentUserID() else {
+                self.posts = []
+                return
+            }
+            fetchPostsFromFollowing(currentUserID: currentUserID)
+        }
+    }
+    
+    private func fetchAllPosts() {
         db.collection("questions")
             .order(by: "createdAt", descending: true)
             .getDocuments { snapshot, error in
@@ -116,6 +129,164 @@ class QuestionPostViewModel: ObservableObject {
                     )
                 }
             }
+    }
+    
+    private func fetchPostsFromFollowing(currentUserID: String) {
+        // Get following users - 正しいパスを使用
+        db.collection("following").document(currentUserID).collection("users").getDocuments { snapshot, error in
+            if let error = error {
+                print("Error fetching following users: \(error)")
+                DispatchQueue.main.async {
+                    self.posts = []
+                }
+                return
+            }
+            
+            guard let documents = snapshot?.documents, !documents.isEmpty else {
+                print("No following users found or empty documents")
+                DispatchQueue.main.async {
+                    self.posts = []
+                }
+                return
+            }
+            
+            // ドキュメントIDではなく、uidフィールドを使用する
+            let followingIDs = documents.compactMap { doc -> String? in
+                return doc.data()["uid"] as? String
+            }
+            print("Following IDs count for questions: \(followingIDs.count), IDs: \(followingIDs)")
+            
+            // Firestore 'in' query has a limit of 10 items, so we need to batch if there are more
+            if followingIDs.count > 10 {
+                // For more than 10 users, fetch all posts and filter client-side
+                self.db.collection("questions")
+                    .order(by: "createdAt", descending: true)
+                    .limit(to: 100) // Limit to recent 100 posts for performance
+                    .getDocuments { snapshot, error in
+                        if let error = error {
+                            print("Error fetching all question posts: \(error)")
+                            DispatchQueue.main.async {
+                                self.posts = []
+                            }
+                            return
+                        }
+                        
+                        guard let snapshot = snapshot else {
+                            DispatchQueue.main.async {
+                                self.posts = []
+                            }
+                            return
+                        }
+                        
+                        let followingIDsSet = Set(followingIDs)
+                        let filteredPosts = self.parsePostsFromSnapshot(snapshot).filter { post in
+                            followingIDsSet.contains(post.userID)
+                        }
+                        
+                        DispatchQueue.main.async {
+                            self.posts = filteredPosts
+                            print("Filtered question posts count: \(self.posts.count)")
+                        }
+                    }
+            } else {
+                // For 10 or fewer users, use the 'in' query
+                // インデックスエラーを回避するため、whereFieldのみでクエリしてクライアント側でソート
+                self.db.collection("questions")
+                    .whereField("userID", in: followingIDs)
+                    .getDocuments { snapshot, error in
+                        if let error = error {
+                            print("Error fetching question posts: \(error)")
+                            DispatchQueue.main.async {
+                                self.posts = []
+                            }
+                            return
+                        }
+                        
+                        guard let snapshot = snapshot else {
+                            DispatchQueue.main.async {
+                                self.posts = []
+                            }
+                            return
+                        }
+                        
+                        DispatchQueue.main.async {
+                            // クライアント側でソート
+                            let posts = self.parsePostsFromSnapshot(snapshot)
+                            self.posts = posts.sorted { $0.createdAt > $1.createdAt }
+                            print("Question posts from following count: \(self.posts.count)")
+                        }
+                    }
+            }
+        }
+    }
+    
+    
+    private func parsePostsFromSnapshot(_ snapshot: QuerySnapshot) -> [QuestionPost] {
+        return snapshot.documents.compactMap { doc in
+            let data = doc.data()
+            let id = doc.documentID
+            let title = data["title"] as? String ?? ""
+            let body = data["body"] as? String ?? ""
+            let imageURLString = data["imageURL"] as? String
+            let imageURL = imageURLString != nil ? URL(string: imageURLString!) : nil
+            let createdAt = (data["createdAt"] as? Timestamp)?.dateValue() ?? Date()
+            let userID = data["userID"] as? String ?? "unknown"
+            let displayName = data["displayName"] as? String ?? "User_\(String(userID.prefix(6)))"
+            let location = data["location"] as? GeoPoint
+            let locationName = data["locationName"] as? String
+            let isActive = data["isActive"] as? Bool ?? true
+            let isResolved = data["isResolved"] as? Bool ?? false
+            let tags = data["tags"] as? [String] ?? []
+            
+            return QuestionPost(
+                id: id,
+                title: title,
+                body: body,
+                imageURL: imageURL,
+                createdAt: createdAt,
+                userID: userID,
+                displayName: displayName,
+                location: location,
+                locationName: locationName,
+                isActive: isActive,
+                isResolved: isResolved,
+                tags: tags
+            )
+        }
+    }
+    
+    private func parsePosts(from snapshot: QuerySnapshot) {
+        self.posts = snapshot.documents.compactMap { doc in
+            let data = doc.data()
+            let id = doc.documentID
+            let title = data["title"] as? String ?? ""
+            let body = data["body"] as? String ?? ""
+            let imageURLString = data["imageURL"] as? String
+            let imageURL = imageURLString != nil ? URL(string: imageURLString!) : nil
+            let createdAt = (data["createdAt"] as? Timestamp)?.dateValue() ?? Date()
+            let userID = data["userID"] as? String ?? "unknown"
+            let displayName = data["displayName"] as? String ?? "User_\(String(userID.prefix(6)))"
+            let location = data["location"] as? GeoPoint
+            let locationName = data["locationName"] as? String
+            let isActive = data["isActive"] as? Bool ?? true
+            let isResolved = data["isResolved"] as? Bool ?? false
+            let tags = data["tags"] as? [String] ?? []
+            
+            return QuestionPost(
+                id: id,
+                title: title,
+                body: body,
+                imageURL: imageURL,
+                createdAt: createdAt,
+                userID: userID,
+                displayName: displayName,
+                location: location,
+                locationName: locationName,
+                isActive: isActive,
+                isResolved: isResolved,
+                tags: tags
+            )
+        }
     }
     
     func deletePost(_ post: QuestionPost, completion: @escaping (Bool) -> Void) {
@@ -266,6 +437,18 @@ class QuestionPostViewModel: ObservableObject {
                 
                 completion(posts)
             }
+    }
+    
+    // Load posts with async wrapper for refresh
+    @MainActor
+    func loadPosts(filter: PostFilter) async {
+        await withCheckedContinuation { continuation in
+            fetchPosts(filter: filter)
+            // Give fetchPosts time to complete
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                continuation.resume()
+            }
+        }
     }
     
     // 解決済みステータスをトグル

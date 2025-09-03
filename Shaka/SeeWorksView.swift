@@ -7,13 +7,41 @@
 
 import SwiftUI
 
+enum PostFilter: String, CaseIterable {
+    case all = "All"
+    case following = "Following"
+    
+    var systemImage: String {
+        switch self {
+        case .all: return "person.3"
+        case .following: return "person.crop.circle.badge.checkmark"
+        }
+    }
+}
+
 struct SeeWorksView: View {
     @StateObject private var viewModel = WorkPostViewModel()
     @State private var showPostWork = false
     @State private var refreshID = UUID()
+    @State private var selectedFilter: PostFilter = .all
     
     var body: some View {
         ZStack {
+            VStack(spacing: 0) {
+                // Filter Picker
+                Picker("Filter", selection: $selectedFilter) {
+                    ForEach(PostFilter.allCases, id: \.self) { filter in
+                        Label(filter.rawValue, systemImage: filter.systemImage)
+                            .tag(filter)
+                    }
+                }
+                .pickerStyle(SegmentedPickerStyle())
+                .padding()
+                .background(Color(UIColor.systemBackground))
+                .onChange(of: selectedFilter) { _ in
+                    viewModel.fetchPosts(filter: selectedFilter)
+                }
+                
                 ScrollView {
                     VStack(spacing: 24) {
                         ForEach(Array(viewModel.posts.enumerated()), id: \.element.id) { index, post in
@@ -32,8 +60,9 @@ struct SeeWorksView: View {
                     // プルトゥリフレッシュ
                     await refreshPosts()
                 }
+            }
                 
-                VStack {
+            VStack {
                     Spacer()
                     HStack {
                         Spacer()
@@ -59,7 +88,7 @@ struct SeeWorksView: View {
             .navigationTitle("See Works")
             .background(Color(UIColor.systemGroupedBackground))
             .onAppear {
-                viewModel.fetchPosts()
+                viewModel.fetchPosts(filter: selectedFilter)
             }
     }
     
@@ -70,7 +99,7 @@ struct SeeWorksView: View {
         
         // メインスレッドでfetchを実行
         await MainActor.run {
-            viewModel.fetchPosts()
+            viewModel.fetchPosts(filter: selectedFilter)
             // 画像の再読み込みを強制
             refreshID = UUID()
         }

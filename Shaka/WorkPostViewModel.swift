@@ -86,7 +86,20 @@ class WorkPostViewModel: ObservableObject {
     
     private let db = Firestore.firestore()
     
-    func fetchPosts() {
+    func fetchPosts(filter: PostFilter = .all) {
+        switch filter {
+        case .all:
+            fetchAllPosts()
+        case .following:
+            guard let currentUserID = AuthManager.shared.getCurrentUserID() else {
+                self.posts = []
+                return
+            }
+            fetchPostsFromFollowing(currentUserID: currentUserID)
+        }
+    }
+    
+    private func fetchAllPosts() {
         db.collection("works")
             .order(by: "createdAt", descending: true)
             .getDocuments { snapshot, error in
@@ -128,6 +141,164 @@ class WorkPostViewModel: ObservableObject {
                     )
                 }
             }
+    }
+    
+    private func fetchPostsFromFollowing(currentUserID: String) {
+        // Get following users - 正しいパスを使用
+        db.collection("following").document(currentUserID).collection("users").getDocuments { snapshot, error in
+            if let error = error {
+                print("Error fetching following users: \(error)")
+                DispatchQueue.main.async {
+                    self.posts = []
+                }
+                return
+            }
+            
+            guard let documents = snapshot?.documents, !documents.isEmpty else {
+                print("No following users found or empty documents")
+                DispatchQueue.main.async {
+                    self.posts = []
+                }
+                return
+            }
+            
+            // ドキュメントIDではなく、uidフィールドを使用する
+            let followingIDs = documents.compactMap { doc -> String? in
+                return doc.data()["uid"] as? String
+            }
+            print("Following IDs count: \(followingIDs.count), IDs: \(followingIDs)")
+            
+            // Firestore 'in' query has a limit of 10 items, so we need to batch if there are more
+            if followingIDs.count > 10 {
+                // For more than 10 users, fetch all posts and filter client-side
+                self.db.collection("works")
+                    .order(by: "createdAt", descending: true)
+                    .limit(to: 100) // Limit to recent 100 posts for performance
+                    .getDocuments { snapshot, error in
+                        if let error = error {
+                            print("Error fetching all posts: \(error)")
+                            DispatchQueue.main.async {
+                                self.posts = []
+                            }
+                            return
+                        }
+                        
+                        guard let snapshot = snapshot else {
+                            DispatchQueue.main.async {
+                                self.posts = []
+                            }
+                            return
+                        }
+                        
+                        let followingIDsSet = Set(followingIDs)
+                        let filteredPosts = self.parsePostsFromSnapshot(snapshot).filter { post in
+                            followingIDsSet.contains(post.userID)
+                        }
+                        
+                        DispatchQueue.main.async {
+                            self.posts = filteredPosts
+                            print("Filtered posts count: \(self.posts.count)")
+                        }
+                    }
+            } else {
+                // For 10 or fewer users, use the 'in' query
+                // インデックスエラーを回避するため、whereFieldのみでクエリしてクライアント側でソート
+                self.db.collection("works")
+                    .whereField("userID", in: followingIDs)
+                    .getDocuments { snapshot, error in
+                        if let error = error {
+                            print("Error fetching posts: \(error)")
+                            DispatchQueue.main.async {
+                                self.posts = []
+                            }
+                            return
+                        }
+                        
+                        guard let snapshot = snapshot else {
+                            DispatchQueue.main.async {
+                                self.posts = []
+                            }
+                            return
+                        }
+                        
+                        DispatchQueue.main.async {
+                            // クライアント側でソート
+                            let posts = self.parsePostsFromSnapshot(snapshot)
+                            self.posts = posts.sorted { $0.createdAt > $1.createdAt }
+                            print("Posts from following count: \(self.posts.count)")
+                        }
+                    }
+            }
+        }
+    }
+    
+    
+    private func parsePostsFromSnapshot(_ snapshot: QuerySnapshot) -> [WorkPost] {
+        return snapshot.documents.compactMap { doc in
+            let data = doc.data()
+            let id = doc.documentID
+            let title = data["title"] as? String ?? ""
+            let description = data["description"] as? String
+            let detail = data["detail"] as? String
+            let imageURLString = data["imageURL"] as? String
+            let imageURL: URL? = imageURLString != nil ? URL(string: imageURLString!) : nil
+            let createdAt = (data["createdAt"] as? Timestamp)?.dateValue() ?? Date()
+            let userID = data["userID"] as? String ?? "unknown"
+            let displayName = data["displayName"] as? String ?? "User_\(String(userID.prefix(6)))"
+            let location = data["location"] as? GeoPoint
+            let locationName = data["locationName"] as? String
+            let isActive = data["isActive"] as? Bool ?? true
+            let tags = data["tags"] as? [String] ?? []
+
+            return WorkPost(
+                id: id,
+                title: title,
+                description: description,
+                detail: detail,
+                imageURL: imageURL,
+                createdAt: createdAt,
+                userID: userID,
+                displayName: displayName,
+                location: location,
+                locationName: locationName,
+                isActive: isActive,
+                tags: tags
+            )
+        }
+    }
+    
+    private func parsePosts(from snapshot: QuerySnapshot) {
+        self.posts = snapshot.documents.compactMap { doc in
+            let data = doc.data()
+            let id = doc.documentID
+            let title = data["title"] as? String ?? ""
+            let description = data["description"] as? String
+            let detail = data["detail"] as? String
+            let imageURLString = data["imageURL"] as? String
+            let imageURL: URL? = imageURLString != nil ? URL(string: imageURLString!) : nil
+            let createdAt = (data["createdAt"] as? Timestamp)?.dateValue() ?? Date()
+            let userID = data["userID"] as? String ?? "unknown"
+            let displayName = data["displayName"] as? String ?? "User_\(String(userID.prefix(6)))"
+            let location = data["location"] as? GeoPoint
+            let locationName = data["locationName"] as? String
+            let isActive = data["isActive"] as? Bool ?? true
+            let tags = data["tags"] as? [String] ?? []
+
+            return WorkPost(
+                id: id,
+                title: title,
+                description: description,
+                detail: detail,
+                imageURL: imageURL,
+                createdAt: createdAt,
+                userID: userID,
+                displayName: displayName,
+                location: location,
+                locationName: locationName,
+                isActive: isActive,
+                tags: tags
+            )
+        }
     }
     
     func deletePost(_ post: WorkPost, completion: @escaping (Bool) -> Void) {

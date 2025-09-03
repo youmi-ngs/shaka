@@ -10,9 +10,27 @@ import SwiftUI
 struct AskView: View {
     @StateObject private var viewModel = QuestionPostViewModel()
     @State private var showPostQuestion = false
+    @State private var selectedFilter: PostFilter = .all
     
     var body: some View {
         ZStack {
+            VStack(spacing: 0) {
+                // Filter Picker
+                Picker("Filter", selection: $selectedFilter) {
+                    ForEach(PostFilter.allCases, id: \.self) { filter in
+                        Label(filter.rawValue, systemImage: filter.systemImage)
+                            .tag(filter)
+                    }
+                }
+                .pickerStyle(SegmentedPickerStyle())
+                .padding()
+                .background(Color(UIColor.systemBackground))
+                .onChange(of: selectedFilter) { _ in
+                    Task {
+                        await viewModel.loadPosts(filter: selectedFilter)
+                    }
+                }
+                
                 ScrollView {
                     LazyVStack(spacing: 20) {
                         ForEach(viewModel.posts) { post in
@@ -53,8 +71,9 @@ struct AskView: View {
             .navigationTitle("Ask Friends")
             .background(Color(UIColor.systemGroupedBackground))
             .onAppear {
-                viewModel.fetchPosts()
+                viewModel.fetchPosts(filter: selectedFilter)
             }
+        }
     }
     
     // リフレッシュ処理
@@ -64,7 +83,7 @@ struct AskView: View {
         
         // メインスレッドでfetchを実行
         await MainActor.run {
-            viewModel.fetchPosts()
+            viewModel.fetchPosts(filter: selectedFilter)
         }
     }
 }
