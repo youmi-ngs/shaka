@@ -47,6 +47,7 @@ struct FollowingListView: View {
     @StateObject private var viewModel = FollowViewModel()
     @State private var showRemoveAlert = false
     @State private var friendToRemove: Friend?
+    @State private var selectedFriend: Friend?
     
     var body: some View {
         Group {
@@ -97,11 +98,22 @@ struct FollowingListView: View {
     private var followingList: some View {
         List {
             ForEach(viewModel.following) { friend in
-                NavigationLink(destination: PublicProfileView(authorUid: friend.id)) {
+                Button(action: {
+                    selectedFriend = friend
+                }) {
                     friendRow(friend: friend)
                 }
+                .buttonStyle(PlainButtonStyle())
             }
             .onDelete(perform: deleteFriend)
+        }
+        .sheet(item: $selectedFriend) { friend in
+            NavigationView {
+                PublicProfileView(authorUid: friend.id)
+                    .navigationBarItems(leading: Button("Close") {
+                        selectedFriend = nil
+                    })
+            }
         }
         .listStyle(InsetGroupedListStyle())
         .refreshable {
@@ -180,6 +192,8 @@ struct FollowingListView: View {
 // Followers List View (using existing FollowersListView)
 struct FollowersListContent: View {
     @StateObject private var viewModel = FollowViewModel()
+    @State private var selectedUserId: String?
+    @State private var showProfile = false
     
     var body: some View {
         Group {
@@ -220,8 +234,19 @@ struct FollowersListContent: View {
     private var followersList: some View {
         List {
             ForEach(viewModel.followers) { follower in
-                NavigationLink(destination: PublicProfileView(authorUid: follower.id)) {
+                Button(action: {
+                    selectedUserId = follower.id
+                    showProfile = true
+                }) {
                     followerRow(follower: follower)
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
+        }
+        .sheet(isPresented: $showProfile) {
+            if let userId = selectedUserId {
+                NavigationView {
+                    PublicProfileView(authorUid: userId)
                 }
             }
         }

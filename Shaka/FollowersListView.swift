@@ -11,6 +11,7 @@ struct FollowersListView: View {
     @StateObject private var viewModel = FollowViewModel()
     @State private var showRemoveAlert = false
     @State private var followerToRemove: Friend?
+    @State private var selectedFollower: Friend?
     
     var body: some View {
         Group {
@@ -51,9 +52,20 @@ struct FollowersListView: View {
     private var followersList: some View {
         List {
             ForEach(viewModel.followers) { follower in
-                NavigationLink(destination: PublicProfileView(authorUid: follower.id)) {
+                Button(action: {
+                    selectedFollower = follower
+                }) {
                     followerRow(follower: follower)
                 }
+                .buttonStyle(PlainButtonStyle())
+            }
+        }
+        .sheet(item: $selectedFollower) { follower in
+            NavigationView {
+                PublicProfileView(authorUid: follower.id)
+                    .navigationBarItems(leading: Button("Close") {
+                        selectedFollower = nil
+                    })
             }
         }
         .listStyle(InsetGroupedListStyle())

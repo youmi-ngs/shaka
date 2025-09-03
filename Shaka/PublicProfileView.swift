@@ -14,7 +14,6 @@ struct PublicProfileView: View {
     @State private var showErrorAlert = false
     @State private var errorMessage = ""
     @State private var isAddingFriend = false
-    @State private var showShareSheet = false
     @State private var showUnfollowAlert = false
     @State private var showAnonymousWarning = false
     @Environment(\.dismiss) private var dismiss
@@ -209,7 +208,7 @@ struct PublicProfileView: View {
     // MARK: - Share Profile Button
     private var shareProfileButton: some View {
         Button(action: {
-            showShareSheet = true
+            shareProfile()
         }) {
             HStack {
                 Image(systemName: "square.and.arrow.up")
@@ -221,9 +220,6 @@ struct PublicProfileView: View {
             .padding()
             .background(Color.blue.opacity(0.1))
             .cornerRadius(12)
-        }
-        .sheet(isPresented: $showShareSheet) {
-            ShareSheet(items: [generateShareMessage(), generateShareURL()])
         }
     }
     
@@ -302,7 +298,7 @@ struct PublicProfileView: View {
     // MARK: - Share My Profile Button
     private var shareMyProfileButton: some View {
         Button(action: {
-            showShareSheet = true
+            shareProfile()
         }) {
             HStack {
                 Image(systemName: "square.and.arrow.up")
@@ -314,9 +310,6 @@ struct PublicProfileView: View {
             .padding()
             .background(Color.blue)
             .cornerRadius(12)
-        }
-        .sheet(isPresented: $showShareSheet) {
-            ShareSheet(items: [generateShareMessage(), generateShareURL()])
         }
     }
     
@@ -394,6 +387,36 @@ struct PublicProfileView: View {
     private func generateShareURL() -> URL {
         let urlString = DeepLinkManager.shared.generateShareableURL(for: authorUid)
         return URL(string: urlString) ?? URL(string: "https://shaka.app")!
+    }
+    
+    private func shareProfile() {
+        let items: [Any] = [generateShareMessage(), generateShareURL()]
+        let activityVC = UIActivityViewController(activityItems: items, applicationActivities: nil)
+        
+        // iPad対応
+        if let popover = activityVC.popoverPresentationController {
+            popover.sourceView = UIApplication.shared.windows.first
+            popover.sourceRect = CGRect(x: UIScreen.main.bounds.width / 2, y: UIScreen.main.bounds.height / 2, width: 0, height: 0)
+            popover.permittedArrowDirections = []
+        }
+        
+        // completionハンドラーを追加してナビゲーションの問題を防ぐ
+        activityVC.completionWithItemsHandler = { activityType, completed, returnedItems, error in
+            // Share完了後は何もしない（ナビゲーションをそのままにする）
+        }
+        
+        // 現在のViewController取得して表示
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+           let window = windowScene.windows.first,
+           let rootViewController = window.rootViewController {
+            
+            var topController = rootViewController
+            while let presentedController = topController.presentedViewController {
+                topController = presentedController
+            }
+            
+            topController.present(activityVC, animated: true)
+        }
     }
 }
 
