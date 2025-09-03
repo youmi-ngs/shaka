@@ -55,13 +55,10 @@ struct DiscoverView: View {
             .onLongPressGesture(minimumDuration: 0.5) {
                 // onLongPressGesture doesn't provide location, need to use different approach
                 // For now, center of map will be used
-                switch cameraPosition {
-                case .region(let region):
+                if case let .region(region) = cameraPosition {
                     longPressLocation = region.center
                     reverseGeocodeLocation(region.center)
                     showPostWorkSheet = true
-                default:
-                    break
                 }
             }
         }
