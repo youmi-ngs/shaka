@@ -20,6 +20,8 @@ Shaka is a social networking app designed for photography enthusiasts to share t
 - 🔍 **Search** - Find posts by title, tags, or users
 - 🚨 **Report System** - Report inappropriate content with email notifications to admins
 - 🔔 **Push Notifications** - Get notified about likes, comments, and follows
+- 📍 **Location Sharing** - Share real-time location with mutual followers
+- 📱 **Live Activities** - Track location sharing status on lock screen (iOS 16.2+)
 
 #### Safety & Security
 - 🔒 Comprehensive Firebase security rules
@@ -35,10 +37,10 @@ Shaka is a social networking app designed for photography enthusiasts to share t
 
 ### Upcoming Features
 
-- 📍 **Real-time Location Sharing** - See active users' locations on Discover map
 - 🎨 **UI Improvements** - Enhanced user interface design
 - 🚀 **Performance Optimization** - App performance improvements
 - 🌐 **Multi-language Support** - Support for multiple languages
+- 🗺️ **Advanced Map Features** - Heatmaps, photo clustering on map
 
 ### Setup
 
@@ -67,6 +69,8 @@ Shakaは写真愛好家が作品を共有し、他の写真家とつながるた
 - 🔍 **検索** - タイトル、タグ、ユーザーで投稿を検索
 - 🚨 **通報システム** - 不適切なコンテンツを通報（管理者へメール通知）
 - 🔔 **プッシュ通知** - いいね、コメント、フォローの通知を受け取る
+- 📍 **位置情報共有** - 相互フォロワーとリアルタイム位置情報を共有
+- 📱 **Live Activity** - ロック画面で位置情報共有状態を表示（iOS 16.2以降）
 
 #### 安全性とセキュリティ
 - 🔒 包括的なFirebaseセキュリティルール
@@ -82,10 +86,10 @@ Shakaは写真愛好家が作品を共有し、他の写真家とつながるた
 
 ### 今後実装予定の機能
 
-- 📍 **リアルタイム位置情報共有** - Discoverマップ上でアクティブユーザーの位置を表示
 - 🎨 **UI改善** - ユーザーインターフェースの向上
 - 🚀 **パフォーマンス最適化** - アプリ動作の高速化
 - 🌐 **多言語対応** - 複数言語のサポート
+- 🗺️ **高度な地図機能** - ヒートマップ、地図上の写真クラスタリング
 
 ### セットアップ
 
@@ -103,6 +107,7 @@ Shakaは写真愛好家が作品を共有し、他の写真家とつながるた
 ```
 Shaka/
 ├── Shaka/              # iOS app source code / iOSアプリソースコード
+├── ShakaWidget/        # Widget Extension for Live Activities
 ├── functions/          # Firebase Cloud Functions
 ├── firestore.rules     # Firestore security rules / Firestoreセキュリティルール
 ├── storage.rules       # Storage security rules / Storageセキュリティルール
@@ -113,12 +118,14 @@ Shaka/
 ## Version / バージョン
 
 Current Version: 1.0  
-- Build 1: Under Review (TestFlight)  
-- Build 2: Ready for TestFlight  
+- Build 10: Latest - Location sharing with Live Activities
+- Build 9: TestFlight - UI improvements  
+- Build 8: Production release  
 
 現在のバージョン: 1.0  
-- ビルド1: TestFlight審査中  
-- ビルド2: TestFlight準備完了
+- ビルド10: 最新 - 位置情報共有とLive Activity機能
+- ビルド9: TestFlight - UI改善  
+- ビルド8: 本番リリース
 
 ## License / ライセンス
 
