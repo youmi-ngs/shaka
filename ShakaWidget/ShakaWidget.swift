@@ -55,6 +55,7 @@ struct LocationActivityWidget: Widget {
                 VStack(alignment: .leading) {
                     Text("Sharing Location")
                         .font(.headline)
+                        .foregroundColor(.primary)
                     Text("\(context.state.remainingMinutes) min • \(context.state.sharedWithCount) people")
                         .font(.caption)
                         .foregroundColor(.secondary)
@@ -63,7 +64,8 @@ struct LocationActivityWidget: Widget {
                 Spacer()
             }
             .padding()
-            .activityBackgroundTint(Color.black.opacity(0.8))
+            .activitySystemActionForegroundColor(.primary)
+            .activityBackgroundTint(Color(UIColor.systemBackground))
             
         } dynamicIsland: { context in
             DynamicIsland {
