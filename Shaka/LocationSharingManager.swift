@@ -65,37 +65,48 @@ class LocationSharingManager: NSObject, ObservableObject {
         
         let expiresAt = Date().addingTimeInterval(duration)
         
-        // Save to Firestore
-        let locationData: [String: Any] = [
-            "location": GeoPoint(
-                latitude: location.coordinate.latitude,
-                longitude: location.coordinate.longitude
-            ),
-            "updatedAt": FieldValue.serverTimestamp(),
-            "expiresAt": Timestamp(date: expiresAt),
-            "displayName": Auth.auth().currentUser?.displayName ?? "Unknown",
-            "photoURL": Auth.auth().currentUser?.photoURL?.absoluteString ?? ""
-        ]
-        
-        db.collection("user_locations").document(uid).setData(locationData) { [weak self] error in
-            if let error = error {
-                print("Error sharing location: \(error)")
-                return
-            }
+        // First fetch user's display name from Firestore
+        db.collection("users").document(uid).getDocument { [weak self] snapshot, error in
+            let displayName = snapshot?.data()?["public"] as? [String: Any]
+            let userName = displayName?["displayName"] as? String ?? "Unknown"
+            let photoURL = displayName?["photoURL"] as? String ?? ""
             
-            DispatchQueue.main.async {
-                self?.isSharing = true
-                self?.sharingExpiresAt = expiresAt
-                self?.startLocationUpdates()
-                self?.setupExpirationTimer(expiresAt: expiresAt)
+            // Save to Firestore with correct display name
+            let locationData: [String: Any] = [
+                "location": GeoPoint(
+                    latitude: location.coordinate.latitude,
+                    longitude: location.coordinate.longitude
+                ),
+                "updatedAt": FieldValue.serverTimestamp(),
+                "expiresAt": Timestamp(date: expiresAt),
+                "displayName": userName,
+                "photoURL": photoURL
+            ]
+            
+            self?.db.collection("user_locations").document(uid).setData(locationData) { [weak self] error in
+                if let error = error {
+                    print("Error sharing location: \(error)")
+                    return
+                }
                 
-                // Start Live Activity
-                Task {
-                    let mutualCount = self?.mutualFollowersLocations.count ?? 0
-                    await LocationActivityManager.shared.startActivity(
-                        duration: Int(duration),
-                        sharedWithCount: mutualCount
-                    )
+                DispatchQueue.main.async {
+                    self?.isSharing = true
+                    self?.sharingExpiresAt = expiresAt
+                    self?.startLocationUpdates()
+                    self?.setupExpirationTimer(expiresAt: expiresAt)
+                    
+                    // Start Live Activity
+                    Task { @MainActor in
+                        // 相互フォロワー数を取得してからLive Activityを開始
+                        self?.fetchMutualFollowers { mutualFollowers in
+                            Task {
+                                await LocationActivityManager.shared.startActivity(
+                                    duration: Int(duration),
+                                    sharedWithCount: mutualFollowers.count
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -170,6 +181,7 @@ class LocationSharingManager: NSObject, ObservableObject {
             }
             
             // Listen to their locations
+            print("Listening for locations of mutual followers: \(mutualFollowers)")
             self?.locationListener = self?.db.collection("user_locations")
                 .whereField(FieldPath.documentID(), in: mutualFollowers)
                 .addSnapshotListener { snapshot, error in
@@ -178,6 +190,7 @@ class LocationSharingManager: NSObject, ObservableObject {
                         return
                     }
                     
+                    print("Found \(snapshot?.documents.count ?? 0) location documents")
                     let locations = snapshot?.documents.compactMap { doc -> UserLocation? in
                         let data = doc.data()
                         guard let geoPoint = data["location"] as? GeoPoint,
@@ -220,22 +233,25 @@ class LocationSharingManager: NSObject, ObservableObject {
         var following: Set<String> = []
         var followers: Set<String> = []
         
-        // Fetch following
+        // Fetch following - 正しいパス: following/{uid}/users
         group.enter()
-        db.collection("users").document(uid).collection("following").getDocuments { snapshot, _ in
+        db.collection("following").document(uid).collection("users").getDocuments { snapshot, _ in
             following = Set(snapshot?.documents.map { $0.documentID } ?? [])
+            print("Following users: \(following)")
             group.leave()
         }
         
-        // Fetch followers
+        // Fetch followers - 正しいパス: followers/{uid}/users  
         group.enter()
-        db.collection("users").document(uid).collection("followers").getDocuments { snapshot, _ in
+        db.collection("followers").document(uid).collection("users").getDocuments { snapshot, _ in
             followers = Set(snapshot?.documents.map { $0.documentID } ?? [])
+            print("Follower users: \(followers)")
             group.leave()
         }
         
         group.notify(queue: .main) {
             let mutualFollowers = Array(following.intersection(followers))
+            print("Mutual followers: \(mutualFollowers)")
             completion(mutualFollowers)
         }
     }

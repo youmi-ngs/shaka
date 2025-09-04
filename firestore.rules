@@ -351,8 +351,8 @@ service cloud.firestore {
       // 読み取り: 相互フォローのみ
       allow read: if isAuthenticated() && (
         isOwner(userId) ||
-        (exists(/databases/$(database)/documents/users/$(userId)/following/$(request.auth.uid)) &&
-         exists(/databases/$(database)/documents/users/$(request.auth.uid)/following/$(userId)))
+        (exists(/databases/$(database)/documents/following/$(userId)/users/$(request.auth.uid)) &&
+         exists(/databases/$(database)/documents/following/$(request.auth.uid)/users/$(userId)))
       );
       
       // 書き込み: 本人のみ
