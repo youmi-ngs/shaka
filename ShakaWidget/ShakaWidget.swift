@@ -53,10 +53,10 @@ struct LocationActivityWidget: Widget {
                     )
                 
                 VStack(alignment: .leading) {
-                    Text("Sharing Location")
+                    Text("Shooting Journey")
                         .font(.headline)
                         .foregroundColor(.primary)
-                    Text("\(context.state.remainingMinutes) min • \(context.state.sharedWithCount) people")
+                    Text("Sharing location on Shaka • \(context.state.remainingMinutes) min • \(context.state.sharedWithCount) people")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }

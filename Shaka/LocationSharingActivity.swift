@@ -100,6 +100,17 @@ class LocationActivityManager {
         await activity.update(activityContent)
     }
     
+    // Method to update only the shared count (called when mutual followers change)
+    func updateSharedCount(_ count: Int) async {
+        guard let activity = currentActivity else { return }
+        
+        let elapsed = Date().timeIntervalSince(activity.attributes.startTime)
+        let remainingSeconds = max(0, activity.attributes.duration - Int(elapsed))
+        let remainingMinutes = (remainingSeconds + 59) / 60
+        
+        await updateActivity(remainingMinutes: remainingMinutes, sharedWithCount: count)
+    }
+    
     func endActivity() async {
         guard let activity = currentActivity else { return }
         
@@ -119,18 +130,21 @@ class LocationActivityManager {
         Task {
             guard let activity = currentActivity else { return }
             
+            // Store initial shared count
+            let initialSharedCount = activity.content.state.sharedWithCount
+            
             while activity.activityState == .active {
                 // Update every minute
                 try? await Task.sleep(nanoseconds: 60_000_000_000)
                 
                 let elapsed = Date().timeIntervalSince(activity.attributes.startTime)
-                let remaining = max(0, activity.attributes.duration - Int(elapsed))
-                let remainingMinutes = remaining / 60
+                let remainingSeconds = max(0, activity.attributes.duration - Int(elapsed))
+                let remainingMinutes = (remainingSeconds + 59) / 60 // Round up
                 
                 if remainingMinutes > 0 {
                     await updateActivity(
                         remainingMinutes: remainingMinutes,
-                        sharedWithCount: 0 // This should be updated from actual data
+                        sharedWithCount: initialSharedCount // Keep the original count
                     )
                 } else {
                     await endActivity()

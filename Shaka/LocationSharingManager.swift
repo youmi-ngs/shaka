@@ -212,6 +212,13 @@ class LocationSharingManager: NSObject, ObservableObject {
                     
                     DispatchQueue.main.async {
                         self?.mutualFollowersLocations = locations
+                        
+                        // Update Live Activity with new count
+                        if self?.isSharing == true {
+                            Task {
+                                await LocationActivityManager.shared.updateSharedCount(locations.count)
+                            }
+                        }
                     }
                 }
         }
