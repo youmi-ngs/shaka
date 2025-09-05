@@ -97,36 +97,8 @@ class QuestionPostViewModel: ObservableObject {
                 
                 guard let snapshot = snapshot else { return }
                 
-                self.posts = snapshot.documents.compactMap { doc in
-                    let data = doc.data()
-                    let id = doc.documentID
-                    let title = data["title"] as? String ?? ""
-                    let body = data["body"] as? String ?? ""
-                    let imageURLString = data["imageURL"] as? String
-                    let imageURL = imageURLString != nil ? URL(string: imageURLString!) : nil
-                    let createdAt = (data["createdAt"] as? Timestamp)?.dateValue() ?? Date()
-                    let userID = data["userID"] as? String ?? "unknown"
-                    let displayName = data["displayName"] as? String ?? "User_\(String(userID.prefix(6)))"
-                    let location = data["location"] as? GeoPoint
-                    let locationName = data["locationName"] as? String
-                    let isActive = data["isActive"] as? Bool ?? true
-                    let isResolved = data["isResolved"] as? Bool ?? false
-                    let tags = data["tags"] as? [String] ?? []
-                    
-                    return QuestionPost(
-                        id: id,
-                        title: title,
-                        body: body,
-                        imageURL: imageURL,
-                        createdAt: createdAt,
-                        userID: userID,
-                        displayName: displayName,
-                        location: location,
-                        locationName: locationName,
-                        isActive: isActive,
-                        isResolved: isResolved,
-                        tags: tags
-                    )
+                DispatchQueue.main.async {
+                    self.posts = self.parsePostsFromSnapshot(snapshot)
                 }
             }
     }
@@ -222,7 +194,7 @@ class QuestionPostViewModel: ObservableObject {
     
     
     private func parsePostsFromSnapshot(_ snapshot: QuerySnapshot) -> [QuestionPost] {
-        return snapshot.documents.compactMap { doc in
+        let posts = snapshot.documents.compactMap { doc in
             let data = doc.data()
             let id = doc.documentID
             let title = data["title"] as? String ?? ""
@@ -252,6 +224,54 @@ class QuestionPostViewModel: ObservableObject {
                 isResolved: isResolved,
                 tags: tags
             )
+        }
+        
+        // Update display names with current user data
+        updateDisplayNames(for: posts)
+        return posts
+    }
+    
+    private func updateDisplayNames(for posts: [QuestionPost]) {
+        let userIDs = Array(Set(posts.map { $0.userID }))
+        
+        guard !userIDs.isEmpty else { return }
+        
+        // Fetch current user display names
+        db.collection("users").whereField(FieldPath.documentID(), in: userIDs).getDocuments { snapshot, error in
+            guard let documents = snapshot?.documents else { return }
+            
+            var userNameMap: [String: String] = [:]
+            for doc in documents {
+                if let publicData = doc.data()["public"] as? [String: Any],
+                   let displayName = publicData["displayName"] as? String {
+                    userNameMap[doc.documentID] = displayName
+                }
+            }
+            
+            // Update posts with current display names
+            DispatchQueue.main.async {
+                if let index = self.posts.firstIndex(where: { userNameMap.keys.contains($0.userID) }) {
+                    for i in 0..<self.posts.count {
+                        if let newName = userNameMap[self.posts[i].userID] {
+                            let post = self.posts[i]
+                            self.posts[i] = QuestionPost(
+                                id: post.id,
+                                title: post.title,
+                                body: post.body,
+                                imageURL: post.imageURL,
+                                createdAt: post.createdAt,
+                                userID: post.userID,
+                                displayName: newName,
+                                location: post.location,
+                                locationName: post.locationName,
+                                isActive: post.isActive,
+                                isResolved: post.isResolved,
+                                tags: post.tags
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
     
