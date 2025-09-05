@@ -12,5 +12,14 @@
 	<string>Share your location with mutual followers to discover who's nearby</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>Share your location with mutual followers to discover who's nearby</string>
+	<key>UIRequiresFullScreen</key>
+	<false/>
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
 </dict>
 </plist>

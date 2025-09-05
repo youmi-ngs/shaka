@@ -24,6 +24,17 @@ struct SeeWorksView: View {
     @State private var showPostWork = false
     @State private var refreshID = UUID()
     @State private var selectedFilter: PostFilter = .all
+    @Environment(\.horizontalSizeClass) var horizontalSizeClass
+    
+    var columns: [GridItem] {
+        if horizontalSizeClass == .regular {
+            // iPad/Mac: 2 columns with tight spacing for masonry
+            return Array(repeating: GridItem(.flexible(), spacing: 8), count: 2)
+        } else {
+            // iPhone: 1 column
+            return [GridItem(.flexible())]
+        }
+    }
     
     var body: some View {
         ZStack {
@@ -36,25 +47,44 @@ struct SeeWorksView: View {
                     }
                 }
                 .pickerStyle(SegmentedPickerStyle())
-                .padding()
+                .padding(.horizontal)
+                .padding(.vertical, 4)
                 .background(Color(UIColor.systemBackground))
                 .onChange(of: selectedFilter) { _ in
                     viewModel.fetchPosts(filter: selectedFilter)
                 }
                 
-                ScrollView {
-                    VStack(spacing: 24) {
-                        ForEach(Array(viewModel.posts.enumerated()), id: \.element.id) { index, post in
+                Group {
+                    if horizontalSizeClass == .regular {
+                        // iPad/Mac: Pinterest-style Masonry layout
+                        MasonryVGrid(
+                            columns: 2,
+                            spacing: 16,
+                            items: viewModel.posts
+                        ) { post in
                             NavigationLink(destination: WorkDetailView(post: post, viewModel: viewModel)) {
                                 WorkPostCard(post: post, viewModel: viewModel, refreshID: refreshID)
                             }
                             .buttonStyle(PlainButtonStyle())
-                            .padding(.horizontal)
-                            .id(post.id)
-                            .zIndex(Double(viewModel.posts.count - index))
+                        }
+                    } else {
+                        // iPhone: Original layout
+                        ScrollView {
+                            VStack(spacing: 20) {
+                                ForEach(Array(viewModel.posts.enumerated()), id: \.element.id) { index, post in
+                                    NavigationLink(destination: WorkDetailView(post: post, viewModel: viewModel)) {
+                                        WorkPostCard(post: post, viewModel: viewModel, refreshID: refreshID)
+                                    }
+                                    .buttonStyle(PlainButtonStyle())
+                                    .padding(.horizontal, 24)
+                                    .id(post.id)
+                                    .zIndex(Double(viewModel.posts.count - index))
+                                }
+                            }
+                            .padding(.vertical)
+                            .padding(.bottom, 80)
                         }
                     }
-                    .padding(.vertical)
                 }
                 .refreshable {
                     // プルトゥリフレッシュ
@@ -79,6 +109,7 @@ struct SeeWorksView: View {
                                 .shadow(radius: 5)
                         }
                         .padding()
+                        .padding(.bottom, 20)
                         .sheet(isPresented: $showPostWork) {
                             PostWorkView(viewModel: viewModel)
                         }
@@ -86,6 +117,7 @@ struct SeeWorksView: View {
                 }
             }
             .navigationTitle("See Works")
+            .navigationBarTitleDisplayMode(horizontalSizeClass == .regular ? .large : .inline)
             .background(Color(UIColor.systemGroupedBackground))
             .onAppear {
                 viewModel.fetchPosts(filter: selectedFilter)
@@ -125,8 +157,8 @@ struct WorkPostCard: View {
     }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            // Image
+        VStack(alignment: .leading, spacing: 8) {
+            // Image keeping original aspect ratio
             if let url = post.imageURL {
                 CachedImage(url: url) { image in
                     image

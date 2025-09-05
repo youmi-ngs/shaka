@@ -12,6 +12,7 @@ struct QuestionDetailView: View {
     @ObservedObject var viewModel: QuestionPostViewModel
     @EnvironmentObject var authManager: AuthManager
     @Environment(\.dismiss) var dismiss
+    @Environment(\.horizontalSizeClass) var horizontalSizeClass
     @State private var showDeleteAlert = false
     @State private var isDeleting = false
     @State private var showEditSheet = false
@@ -39,44 +40,47 @@ struct QuestionDetailView: View {
                 
                 // Image (if exists)
                 if let imageURL = post.imageURL {
-                    AsyncImage(url: imageURL) { phase in
-                        switch phase {
-                        case .success(let image):
-                            image
-                                .resizable()
-                                .scaledToFit()
-                                .frame(maxWidth: .infinity)
-                                .cornerRadius(12)
-                                .padding(.horizontal)
-                        case .failure(_):
-                            Rectangle()
-                                .fill(Color(UIColor.tertiarySystemFill))
-                                .frame(height: 200)
-                                .cornerRadius(12)
-                                .overlay(
-                                    VStack {
-                                        Image(systemName: "photo")
-                                            .font(.system(size: 50))
-                                            .foregroundColor(.gray)
-                                        Text("Failed to load image")
-                                            .foregroundColor(.gray)
-                                    }
-                                )
-                                .padding(.horizontal)
-                        case .empty:
-                            Rectangle()
-                                .fill(Color(UIColor.quaternarySystemFill))
-                                .frame(height: 200)
-                                .cornerRadius(12)
-                                .overlay(
-                                    ProgressView()
-                                        .scaleEffect(1.5)
-                                )
-                                .padding(.horizontal)
-                        @unknown default:
-                            EmptyView()
+                    HStack {
+                        Spacer()
+                        AsyncImage(url: imageURL) { phase in
+                            switch phase {
+                            case .success(let image):
+                                image
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(maxWidth: horizontalSizeClass == .regular ? 800 : .infinity)
+                                    .frame(maxHeight: horizontalSizeClass == .regular ? 600 : .infinity)
+                                    .cornerRadius(12)
+                            case .failure(_):
+                                Rectangle()
+                                    .fill(Color(UIColor.tertiarySystemFill))
+                                    .frame(width: horizontalSizeClass == .regular ? 800 : nil, height: horizontalSizeClass == .regular ? 600 : 200)
+                                    .cornerRadius(12)
+                                    .overlay(
+                                        VStack {
+                                            Image(systemName: "photo")
+                                                .font(.system(size: 50))
+                                                .foregroundColor(.gray)
+                                            Text("Failed to load image")
+                                                .foregroundColor(.gray)
+                                        }
+                                    )
+                            case .empty:
+                                Rectangle()
+                                    .fill(Color(UIColor.quaternarySystemFill))
+                                    .frame(width: horizontalSizeClass == .regular ? 800 : nil, height: horizontalSizeClass == .regular ? 600 : 200)
+                                    .cornerRadius(12)
+                                    .overlay(
+                                        ProgressView()
+                                            .scaleEffect(1.5)
+                                    )
+                            @unknown default:
+                                EmptyView()
+                            }
                         }
+                        Spacer()
                     }
+                    .padding(.horizontal)
                 }
                 
                 // Tags

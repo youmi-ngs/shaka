@@ -50,6 +50,7 @@ struct ContentView: View {
                 SeeWorksView()
                     .popToRootOnTabReselect(tabIndex: 1)
             }
+            .navigationViewStyle(StackNavigationViewStyle())
             .tabItem {
                 Label("Works", systemImage: "eyeglasses")
             }
@@ -59,6 +60,7 @@ struct ContentView: View {
                 AskView()
                     .popToRootOnTabReselect(tabIndex: 2)
             }
+            .navigationViewStyle(StackNavigationViewStyle())
             .tabItem {
                 Label("Ask", systemImage: "questionmark.bubble")
             }
@@ -68,6 +70,7 @@ struct ContentView: View {
                 DiscoverView()
                     .popToRootOnTabReselect(tabIndex: 0)
             }
+            .navigationViewStyle(StackNavigationViewStyle())
             .tabItem {
                 Label("Discover", systemImage: "globe")
             }
@@ -78,6 +81,7 @@ struct ContentView: View {
                     .navigationBarHidden(true)
                     .popToRootOnTabReselect(tabIndex: 3)
             }
+            .navigationViewStyle(StackNavigationViewStyle())
             .tabItem {
                 Label("Search", systemImage: "magnifyingglass")
             }
@@ -87,6 +91,7 @@ struct ContentView: View {
                 ProfileView()
                     .popToRootOnTabReselect(tabIndex: 4)
             }
+            .navigationViewStyle(StackNavigationViewStyle())
             .tabItem {
                 Label("Profile", systemImage: "person.circle")
             }

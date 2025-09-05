@@ -9,7 +9,7 @@ import Foundation
 import CoreLocation
 import FirebaseFirestore
 
-struct QuestionPost: Identifiable {
+struct QuestionPost: Identifiable, Hashable {
     let id: String
     let title: String
     let body: String

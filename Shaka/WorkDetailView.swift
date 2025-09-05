@@ -14,6 +14,7 @@ struct WorkDetailView: View {
     @ObservedObject var viewModel: WorkPostViewModel
     @EnvironmentObject var authManager: AuthManager
     @Environment(\.dismiss) var dismiss
+    @Environment(\.horizontalSizeClass) var horizontalSizeClass
     @State private var showDeleteAlert = false
     @State private var isDeleting = false
     @State private var showEditSheet = false
@@ -38,24 +39,29 @@ struct WorkDetailView: View {
             VStack(alignment: .leading, spacing: 16) {
                 // Image (Tappable for fullscreen)
                 if let url = post.imageURL {
-                    CachedImage(url: url) { image in
-                        image
-                            .resizable()
-                            .scaledToFit()
-                            .frame(maxWidth: .infinity)
-                            .onTapGesture {
-                                withAnimation(.easeInOut(duration: 0.2)) {
-                                    showFullscreenImage = true
+                    HStack {
+                        Spacer()
+                        CachedImage(url: url) { image in
+                            image
+                                .resizable()
+                                .scaledToFit()
+                                .frame(maxWidth: horizontalSizeClass == .regular ? 800 : .infinity)
+                                .frame(maxHeight: horizontalSizeClass == .regular ? 600 : .infinity)
+                                .onTapGesture {
+                                    withAnimation(.easeInOut(duration: 0.2)) {
+                                        showFullscreenImage = true
+                                    }
                                 }
-                            }
-                    } placeholder: {
-                        Rectangle()
-                            .fill(Color(UIColor.quaternarySystemFill))
-                            .frame(height: 300)
-                            .overlay(
-                                ProgressView()
-                                    .scaleEffect(1.5)
-                            )
+                        } placeholder: {
+                            Rectangle()
+                                .fill(Color(UIColor.quaternarySystemFill))
+                                .frame(width: horizontalSizeClass == .regular ? 800 : nil, height: horizontalSizeClass == .regular ? 600 : 300)
+                                .overlay(
+                                    ProgressView()
+                                        .scaleEffect(1.5)
+                                )
+                        }
+                        Spacer()
                     }
                 } else {
                     Rectangle()

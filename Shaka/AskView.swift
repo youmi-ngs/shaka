@@ -11,6 +11,17 @@ struct AskView: View {
     @StateObject private var viewModel = QuestionPostViewModel()
     @State private var showPostQuestion = false
     @State private var selectedFilter: PostFilter = .all
+    @Environment(\.horizontalSizeClass) var horizontalSizeClass
+    
+    var columns: [GridItem] {
+        if horizontalSizeClass == .regular {
+            // iPad/Mac: 2 columns with tight spacing
+            return Array(repeating: GridItem(.flexible(), spacing: 8), count: 2)
+        } else {
+            // iPhone: 1 column
+            return [GridItem(.flexible())]
+        }
+    }
     
     var body: some View {
         ZStack {
@@ -23,7 +34,8 @@ struct AskView: View {
                     }
                 }
                 .pickerStyle(SegmentedPickerStyle())
-                .padding()
+                .padding(.horizontal)
+                .padding(.vertical, 4)
                 .background(Color(UIColor.systemBackground))
                 .onChange(of: selectedFilter) { _ in
                     Task {
@@ -31,48 +43,66 @@ struct AskView: View {
                     }
                 }
                 
-                ScrollView {
-                    LazyVStack(spacing: 20) {
-                        ForEach(viewModel.posts) { post in
+                Group {
+                    if horizontalSizeClass == .regular {
+                        // iPad/Mac: Pinterest-style Masonry
+                        MasonryVGrid(
+                            columns: 2,
+                            spacing: 16,
+                            items: viewModel.posts
+                        ) { post in
                             QuestionPostCardWithLink(post: post, viewModel: viewModel)
-                                .padding(.horizontal)
+                        }
+                    } else {
+                        // iPhone: Original layout
+                        ScrollView {
+                            LazyVStack(spacing: 20) {
+                                ForEach(viewModel.posts) { post in
+                                    QuestionPostCardWithLink(post: post, viewModel: viewModel)
+                                        .padding(.horizontal, 24)
+                                }
+                            }
+                            .padding(.vertical)
+                            .padding(.bottom, 80)
                         }
                     }
-                    .padding(.vertical)
                 }
                 .refreshable {
                     // プルトゥリフレッシュ
                     await refreshQuestions()
                 }
                 
-                VStack {
+            }
+            
+            VStack {
+                Spacer()
+                HStack {
                     Spacer()
-                    HStack {
-                        Spacer()
-                        Button(action: {
-                            showPostQuestion = true
-                        }) {
-                            Image(systemName: "plus")
-                                .resizable()
-                                .frame(width: 24, height: 24)
-                                .padding()
-                                .background(.purple)
-                                .foregroundStyle(.white)
-                                .clipShape(Circle())
-                                .shadow(radius: 5)
-                        }
-                        .padding()
-                        .sheet(isPresented: $showPostQuestion) {
-                            PostQuestionView(viewModel: viewModel)
-                        }
+                    Button(action: {
+                        showPostQuestion = true
+                    }) {
+                        Image(systemName: "plus")
+                            .resizable()
+                            .frame(width: 24, height: 24)
+                            .padding()
+                            .background(.purple)
+                            .foregroundStyle(.white)
+                            .clipShape(Circle())
+                            .shadow(radius: 5)
+                    }
+                    .padding()
+                    .padding(.bottom, 20)
+                    .sheet(isPresented: $showPostQuestion) {
+                        PostQuestionView(viewModel: viewModel)
                     }
                 }
             }
-            .navigationTitle("Ask Friends")
-            .background(Color(UIColor.systemGroupedBackground))
-            .onAppear {
-                viewModel.fetchPosts(filter: selectedFilter)
-            }
+        }
+        .navigationTitle("Ask Friends")
+        .navigationBarTitleDisplayMode(horizontalSizeClass == .regular ? .large : .inline)
+        .background(Color(UIColor.systemGroupedBackground))
+        .onAppear {
+            viewModel.fetchPosts(filter: selectedFilter)
         }
     }
     
