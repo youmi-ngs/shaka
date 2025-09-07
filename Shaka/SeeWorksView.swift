@@ -28,8 +28,8 @@ struct SeeWorksView: View {
     
     var columns: [GridItem] {
         if horizontalSizeClass == .regular {
-            // iPad/Mac: 2 columns with tight spacing for masonry
-            return Array(repeating: GridItem(.flexible(), spacing: 8), count: 2)
+            // iPad and Mac: 3 columns
+            return Array(repeating: GridItem(.flexible(), spacing: 8), count: 3)
         } else {
             // iPhone: 1 column
             return [GridItem(.flexible())]
@@ -58,7 +58,7 @@ struct SeeWorksView: View {
                     if horizontalSizeClass == .regular {
                         // iPad/Mac: Pinterest-style Masonry layout
                         MasonryVGrid(
-                            columns: 2,
+                            columns: 3,
                             spacing: 16,
                             items: viewModel.posts
                         ) { post in

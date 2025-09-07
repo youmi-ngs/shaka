@@ -6,7 +6,9 @@
 //
 
 import SwiftUI
+#if !targetEnvironment(macCatalyst)
 import ActivityKit
+#endif
 
 struct TestLiveActivityView: View {
     @State private var activityID: String?
@@ -16,6 +18,7 @@ struct TestLiveActivityView: View {
             Text("Live Activity Test")
                 .font(.title)
             
+            #if !targetEnvironment(macCatalyst)
             Button("Start Test Activity") {
                 startTestActivity()
             }
@@ -31,10 +34,15 @@ struct TestLiveActivityView: View {
                 stopAllActivities()
             }
             .buttonStyle(.bordered)
+            #else
+            Text("Live Activities are not supported on Mac")
+                .foregroundColor(.secondary)
+            #endif
         }
         .padding()
     }
     
+    #if !targetEnvironment(macCatalyst)
     func startTestActivity() {
         Task {
             // まず全てのActivityを終了
@@ -54,8 +62,7 @@ struct TestLiveActivityView: View {
             
             let content = ActivityContent(
                 state: state,
-                staleDate: Date().addingTimeInterval(3600),
-                relevanceScore: 100
+                staleDate: Date().addingTimeInterval(3600)
             )
             
             do {
@@ -65,18 +72,11 @@ struct TestLiveActivityView: View {
                     pushType: nil
                 )
                 
-                await MainActor.run {
+                DispatchQueue.main.async {
                     self.activityID = activity.id
                 }
                 
-                print("Test Activity Started: \(activity.id)")
-                print("State: \(activity.activityState)")
-                
-                // List all activities
-                for act in Activity<LocationSharingAttributes>.activities {
-                    print("Active: \(act.id)")
-                }
-                
+                print("Test Activity started: \(activity.id)")
             } catch {
                 print("Failed to start test activity: \(error)")
             }
@@ -88,6 +88,18 @@ struct TestLiveActivityView: View {
             for activity in Activity<LocationSharingAttributes>.activities {
                 await activity.end(dismissalPolicy: .immediate)
             }
+            
+            DispatchQueue.main.async {
+                self.activityID = nil
+            }
         }
     }
+    #else
+    func startTestActivity() {}
+    func stopAllActivities() {}
+    #endif
+}
+
+#Preview {
+    TestLiveActivityView()
 }

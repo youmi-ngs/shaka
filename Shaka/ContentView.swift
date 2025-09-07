@@ -26,11 +26,11 @@ struct ContentView: View {
     
     var tabAccentColor: Color {
         switch selectedTab {
-        case 0: return .mint //DiscoverView
-        case 1: return .indigo  // SeeWorksView
-        case 2: return .purple  // AskView
-        case 3: return .cyan //SearchView
-        default: return .teal //ProfileView
+        case 0: return Color.mint //DiscoverView
+        case 1: return Color.indigo  // SeeWorksView
+        case 2: return Color.purple  // AskView
+        case 3: return Color.cyan //SearchView
+        default: return Color.teal //ProfileView
         }
     }
     
@@ -99,6 +99,16 @@ struct ContentView: View {
             
         }
         .accentColor(tabAccentColor)
+        .onAppear {
+            #if targetEnvironment(macCatalyst)
+            // Mac Catalystの場合、TabBarの色を明示的に設定
+            UITabBar.appearance().tintColor = UIColor.systemIndigo
+            UITabBar.appearance().unselectedItemTintColor = UIColor.systemGray
+            #else
+            // iOSの場合は動的に色を変更
+            UITabBar.appearance().tintColor = UIColor(tabAccentColor)
+            #endif
+        }
         .onChange(of: deepLinkManager.showAddFriendAlert) { newValue in
             if newValue, let friend = deepLinkManager.friendToAdd {
                 pendingFriendToAdd = friend

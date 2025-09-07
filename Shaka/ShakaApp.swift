@@ -22,8 +22,10 @@ struct ShakaApp: App {
         FirebaseApp.configure()
         let db = Firestore.firestore()
         
-        // Register Live Activity
-        ActivityRegistry.register()
+        // Register Live Activity (if needed and available)
+        #if !targetEnvironment(macCatalyst)
+        // ActivityRegistry.register() // Commented out as it's not defined
+        #endif
         
         // 既存ユーザーのマイグレーション（アップデート後の初回起動対応）
         // 一度だけ実行するためのフラグ

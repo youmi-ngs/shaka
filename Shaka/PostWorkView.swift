@@ -53,7 +53,7 @@ struct PostWorkView: View {
                 bodyPlaceholder: "Enter the work description",
                 bodyLabel: "Description",
                 submitButtonText: editingPost != nil ? "Save Changes" : "Submit Work",
-                submitButtonColor: .orange,
+                submitButtonColor: .indigo,
                 errorMessage: uploadError,
                 canSubmit: canSubmit,
                 onSubmit: submitWork,

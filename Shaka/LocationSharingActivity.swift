@@ -5,8 +5,10 @@
 //  Live Activity for location sharing
 //
 
-import ActivityKit
 import SwiftUI
+
+#if !targetEnvironment(macCatalyst)
+import ActivityKit
 
 // Live Activity Attributes (must match exactly with Widget Extension)
 public struct LocationSharingAttributes: ActivityAttributes {
@@ -28,14 +30,18 @@ public struct LocationSharingAttributes: ActivityAttributes {
         self.duration = duration
     }
 }
-
+#endif
 
 // Activity Manager
 class LocationActivityManager {
     static let shared = LocationActivityManager()
+    
+    #if !targetEnvironment(macCatalyst)
     private var currentActivity: Activity<LocationSharingAttributes>?
+    #endif
     
     func startActivity(duration: Int, sharedWithCount: Int) async {
+        #if !targetEnvironment(macCatalyst)
         print("Starting Live Activity...")
         guard ActivityAuthorizationInfo().areActivitiesEnabled else { 
             print("Live Activities are not enabled")
@@ -58,6 +64,7 @@ class LocationActivityManager {
         )
         
         do {
+            print("Creating activity with duration: \(duration) seconds, count: \(sharedWithCount)")
             currentActivity = try Activity.request(
                 attributes: attributes,
                 content: activityContent,
@@ -82,9 +89,13 @@ class LocationActivityManager {
             print("Failed to start Live Activity: \(error)")
             print("Error details: \(error.localizedDescription)")
         }
+        #else
+        print("Live Activities are not supported on Mac Catalyst")
+        #endif
     }
     
     func updateActivity(remainingMinutes: Int, sharedWithCount: Int) async {
+        #if !targetEnvironment(macCatalyst)
         guard let activity = currentActivity else { return }
         
         let contentState = LocationSharingAttributes.ContentState(
@@ -98,10 +109,12 @@ class LocationActivityManager {
         )
         
         await activity.update(activityContent)
+        #endif
     }
     
     // Method to update only the shared count (called when mutual followers change)
     func updateSharedCount(_ count: Int) async {
+        #if !targetEnvironment(macCatalyst)
         guard let activity = currentActivity else { return }
         
         let elapsed = Date().timeIntervalSince(activity.attributes.startTime)
@@ -109,9 +122,11 @@ class LocationActivityManager {
         let remainingMinutes = (remainingSeconds + 59) / 60
         
         await updateActivity(remainingMinutes: remainingMinutes, sharedWithCount: count)
+        #endif
     }
     
     func endActivity() async {
+        #if !targetEnvironment(macCatalyst)
         guard let activity = currentActivity else { return }
         
         let finalContent = LocationSharingAttributes.ContentState(
@@ -124,9 +139,11 @@ class LocationActivityManager {
             dismissalPolicy: .immediate
         )
         currentActivity = nil
+        #endif
     }
     
     private func startUpdateTimer() {
+        #if !targetEnvironment(macCatalyst)
         Task {
             guard let activity = currentActivity else { return }
             
@@ -139,76 +156,19 @@ class LocationActivityManager {
                 
                 let elapsed = Date().timeIntervalSince(activity.attributes.startTime)
                 let remainingSeconds = max(0, activity.attributes.duration - Int(elapsed))
-                let remainingMinutes = (remainingSeconds + 59) / 60 // Round up
                 
-                if remainingMinutes > 0 {
+                if remainingSeconds > 0 {
+                    let remainingMinutes = (remainingSeconds + 59) / 60
                     await updateActivity(
                         remainingMinutes: remainingMinutes,
-                        sharedWithCount: initialSharedCount // Keep the original count
+                        sharedWithCount: initialSharedCount
                     )
                 } else {
                     await endActivity()
+                    break
                 }
             }
         }
-    }
-}
-
-// Lock Screen View  
-struct LocationSharingLockScreenView: View {
-    let attributes: LocationSharingAttributes
-    let state: LocationSharingAttributes.ContentState
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Image(systemName: "location.circle.fill")
-                    .font(.title2)
-                    .foregroundColor(.green)
-                
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Sharing Location")
-                        .font(.headline)
-                    
-                    HStack(spacing: 4) {
-                        Text("\(state.remainingMinutes) min remaining")
-                        Text("•")
-                        Text("\(state.sharedWithCount) followers")
-                    }
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                }
-                
-                Spacer()
-                
-                // Stop button
-                Image(systemName: "stop.circle.fill")
-                    .font(.title2)
-                    .foregroundColor(.red)
-            }
-            
-            // Progress bar
-            GeometryReader { geometry in
-                ZStack(alignment: .leading) {
-                    Rectangle()
-                        .fill(Color.gray.opacity(0.3))
-                        .frame(height: 6)
-                        .cornerRadius(3)
-                    
-                    Rectangle()
-                        .fill(Color.green)
-                        .frame(width: geometry.size.width * progressPercentage(), height: 6)
-                        .cornerRadius(3)
-                }
-            }
-            .frame(height: 6)
-        }
-        .padding()
-    }
-    
-    private func progressPercentage() -> CGFloat {
-        let elapsed = Date().timeIntervalSince(attributes.startTime)
-        let total = Double(attributes.duration)
-        return min(max(0, 1 - (elapsed / total)), 1)
+        #endif
     }
 }

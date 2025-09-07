@@ -9,7 +9,7 @@
 /* Begin PBXBuildFile section */
 		0F460E7D2E68A81E00CAC2D0 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0F460E572E689A9000CAC2D0 /* WidgetKit.framework */; };
 		0F460E7E2E68A81E00CAC2D0 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0F460E592E689A9000CAC2D0 /* SwiftUI.framework */; };
-		0F460E8B2E68A82000CAC2D0 /* ShakaWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 0F460E7C2E68A81E00CAC2D0 /* ShakaWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		0F460E8B2E68A82000CAC2D0 /* ShakaWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 0F460E7C2E68A81E00CAC2D0 /* ShakaWidgetExtension.appex */; platformFilter = ios; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		0F6A8D622E4C9BFB00FF8ABD /* PhotosUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0F6A8D612E4C9BFB00FF8ABD /* PhotosUI.framework */; };
 		0F6A8D822E4DEF4100FF8ABD /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = 0F6A8D812E4DEF4100FF8ABD /* FirebaseMessaging */; };
 		0F6C6AC72E41DB3900C08E94 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 0F6C6AC62E41DB3900C08E94 /* FirebaseAuth */; };
@@ -411,6 +411,7 @@
 		};
 		0F460E8A2E68A82000CAC2D0 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
+			platformFilter = ios;
 			target = 0F460E7B2E68A81E00CAC2D0 /* ShakaWidgetExtension */;
 			targetProxy = 0F460E892E68A82000CAC2D0 /* PBXContainerItemProxy */;
 		};
@@ -546,7 +547,7 @@
 				CODE_SIGN_ENTITLEMENTS = Shaka/Shaka.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 11;
+				CURRENT_PROJECT_VERSION = 12;
 				DEVELOPMENT_TEAM = 3Y8APYUG2G;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -564,6 +565,8 @@
 				PRODUCT_BUNDLE_IDENTIFIER = computer.ngs.youmi.Shaka;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -578,7 +581,7 @@
 				CODE_SIGN_ENTITLEMENTS = Shaka/ShakaRelease.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 11;
+				CURRENT_PROJECT_VERSION = 12;
 				DEVELOPMENT_TEAM = 3Y8APYUG2G;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -596,6 +599,8 @@
 				PRODUCT_BUNDLE_IDENTIFIER = computer.ngs.youmi.Shaka;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";

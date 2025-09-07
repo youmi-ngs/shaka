@@ -19,7 +19,7 @@ struct MasonryVGrid<Content: View, T: Identifiable>: View where T: Hashable {
         items: [T],
         @ViewBuilder content: @escaping (T) -> Content
     ) {
-        self.columns = columns
+        self.columns = columns  // 呼び出し側で指定された列数を使用
         self.spacing = spacing
         self.items = items
         self.content = content

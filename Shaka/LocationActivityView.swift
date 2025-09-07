@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+#if !targetEnvironment(macCatalyst)
 import ActivityKit
 import WidgetKit
 
@@ -29,68 +30,72 @@ struct LocationSharingLiveActivity: Widget {
                 // Info
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Sharing Location")
-                        .font(.subheadline.weight(.semibold))
+                        .font(.headline)
+                        .foregroundColor(.primary)
                     
-                    HStack(spacing: 8) {
-                        Label("\(context.state.remainingMinutes)m left", systemImage: "clock")
+                    HStack(spacing: 6) {
+                        Image(systemName: "person.2.fill")
                             .font(.caption)
                             .foregroundColor(.secondary)
                         
-                        if context.state.sharedWithCount > 0 {
-                            Label("\(context.state.sharedWithCount)", systemImage: "person.2")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
+                        Text("\(context.state.sharedWithCount) people")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        
+                        Text("•")
+                            .foregroundColor(.secondary)
+                        
+                        Text("\(context.state.remainingMinutes) min left")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
                     }
                 }
                 
                 Spacer()
                 
                 // Stop button
-                Link(destination: URL(string: "shaka://stoplocation")!) {
-                    ZStack {
-                        Circle()
-                            .fill(Color.red.opacity(0.2))
-                            .frame(width: 36, height: 36)
-                        
-                        Image(systemName: "stop.fill")
-                            .font(.caption)
-                            .foregroundColor(.red)
-                    }
+                Button {
+                    // This doesn't actually stop it, just a visual
+                } label: {
+                    Image(systemName: "stop.circle.fill")
+                        .font(.title)
+                        .foregroundColor(.red)
                 }
             }
             .padding()
-            .activityBackgroundTint(Color.green.opacity(0.1))
-            
+            .background(Color(UIColor.systemBackground))
         } dynamicIsland: { context in
             DynamicIsland {
-                // Expanded
+                // Expanded region
                 DynamicIslandExpandedRegion(.leading) {
-                    Image(systemName: "location.fill")
+                    Image(systemName: "location.circle.fill")
                         .foregroundColor(.green)
                 }
                 
                 DynamicIslandExpandedRegion(.center) {
-                    Text("Sharing Location")
-                        .font(.caption)
+                    VStack {
+                        Text("Sharing Location")
+                            .font(.headline)
+                        Text("\(context.state.sharedWithCount) people • \(context.state.remainingMinutes) min")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
                 }
                 
                 DynamicIslandExpandedRegion(.trailing) {
-                    Text("\(context.state.remainingMinutes)m")
-                        .font(.caption2)
-                }
-                
-                DynamicIslandExpandedRegion(.bottom) {
-                    Text("\(context.state.sharedWithCount) followers can see you")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
+                    Button {
+                        // Stop action
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundColor(.red)
+                    }
                 }
             } compactLeading: {
                 Image(systemName: "location.fill")
                     .foregroundColor(.green)
             } compactTrailing: {
-                Text("\(context.state.remainingMinutes)")
-                    .font(.caption2)
+                Text("\(context.state.remainingMinutes)m")
+                    .font(.caption)
                     .foregroundColor(.green)
             } minimal: {
                 Image(systemName: "location.fill")
@@ -99,11 +104,15 @@ struct LocationSharingLiveActivity: Widget {
         }
     }
 }
+#endif
 
-// Register in main app
-struct ActivityRegistry {
-    static func register() {
-        // This ensures the activity configuration is registered
-        _ = LocationSharingLiveActivity()
+// Preview for debugging
+struct LocationActivityView_Previews: PreviewProvider {
+    static var previews: some View {
+        #if !targetEnvironment(macCatalyst)
+        Text("Live Activity Preview")
+        #else
+        Text("Live Activities not supported on Mac")
+        #endif
     }
 }

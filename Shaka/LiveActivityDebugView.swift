@@ -6,7 +6,9 @@
 //
 
 import SwiftUI
+#if !targetEnvironment(macCatalyst)
 import ActivityKit
+#endif
 import UserNotifications
 
 struct LiveActivityDebugView: View {
@@ -15,6 +17,7 @@ struct LiveActivityDebugView: View {
     @State private var hasLiveActivityPermission = false
     
     var body: some View {
+        #if !targetEnvironment(macCatalyst)
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 Text("Live Activity Debug")
@@ -49,139 +52,172 @@ struct LiveActivityDebugView: View {
                 
                 // Test Activity Section
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("Test Activity")
+                    Text("Test Live Activity")
                         .font(.headline)
                     
-                    Button("Start Simple Activity") {
-                        startSimpleActivity()
+                    Button("Start Test Activity (30 min)") {
+                        startTestActivity(duration: 30)
                     }
                     .buttonStyle(.borderedProminent)
                     
-                    Button("List All Activities") {
-                        listAllActivities()
+                    Button("Update Activity") {
+                        updateTestActivity()
                     }
                     .buttonStyle(.bordered)
                     
-                    Button("End All Activities") {
-                        endAllActivities()
+                    Button("End Activity") {
+                        endTestActivity()
                     }
                     .buttonStyle(.bordered)
-                    .foregroundColor(.red)
+                    .tint(.red)
                 }
                 .padding()
                 .background(Color.gray.opacity(0.1))
                 .cornerRadius(10)
                 
-                // Debug Info
-                if !debugInfo.isEmpty {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("Debug Info")
-                            .font(.headline)
-                        
+                // Debug Info Section
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Debug Info")
+                        .font(.headline)
+                    
+                    ScrollView {
                         Text(debugInfo)
                             .font(.system(.caption, design: .monospaced))
+                            .frame(maxWidth: .infinity, alignment: .leading)
                     }
+                    .frame(height: 200)
                     .padding()
-                    .background(Color.gray.opacity(0.1))
-                    .cornerRadius(10)
+                    .background(Color.black.opacity(0.05))
+                    .cornerRadius(5)
+                    
+                    Button("Refresh Debug Info") {
+                        checkPermissions()
+                        listAllActivities()
+                    }
+                    .buttonStyle(.bordered)
                 }
+                .padding()
+                .background(Color.gray.opacity(0.1))
+                .cornerRadius(10)
             }
             .padding()
         }
         .onAppear {
             checkPermissions()
+            listAllActivities()
         }
+        #else
+        // Mac Catalyst doesn't support Live Activities
+        VStack {
+            Text("Live Activities Not Supported")
+                .font(.largeTitle)
+                .bold()
+            
+            Text("Live Activities are not available on Mac")
+                .foregroundColor(.secondary)
+        }
+        .padding()
+        #endif
     }
     
-    func checkPermissions() {
+    #if !targetEnvironment(macCatalyst)
+    private func checkPermissions() {
         // Check notification permission
         UNUserNotificationCenter.current().getNotificationSettings { settings in
             DispatchQueue.main.async {
-                self.hasNotificationPermission = settings.authorizationStatus == .authorized
-                self.debugInfo += "Notification Status: \(settings.authorizationStatus.rawValue)\n"
+                hasNotificationPermission = settings.authorizationStatus == .authorized
+                
+                // Check Live Activity permission
+                hasLiveActivityPermission = ActivityAuthorizationInfo().areActivitiesEnabled
+                let frequentPushes = ActivityAuthorizationInfo().frequentPushesEnabled
+                
+                debugInfo += "Notification Status: \(settings.authorizationStatus.rawValue)\n"
+                debugInfo += "Live Activities Enabled: \(hasLiveActivityPermission)\n"
+                debugInfo += "Frequent Pushes Enabled: \(frequentPushes)\n"
+                debugInfo += "---\n"
             }
         }
-        
-        // Check Live Activity permission
-        self.hasLiveActivityPermission = ActivityAuthorizationInfo().areActivitiesEnabled
-        self.debugInfo += "Live Activities Enabled: \(ActivityAuthorizationInfo().areActivitiesEnabled)\n"
-        self.debugInfo += "Frequent Updates: \(ActivityAuthorizationInfo().frequentPushesEnabled)\n"
     }
     
-    func requestNotificationPermission() {
+    private func requestNotificationPermission() {
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { granted, error in
             DispatchQueue.main.async {
-                self.hasNotificationPermission = granted
-                self.debugInfo += "Permission granted: \(granted)\n"
+                hasNotificationPermission = granted
+                debugInfo += "Notification permission: \(granted ? "Granted" : "Denied")\n"
                 if let error = error {
-                    self.debugInfo += "Error: \(error)\n"
+                    debugInfo += "Error: \(error.localizedDescription)\n"
                 }
+                debugInfo += "---\n"
             }
         }
     }
     
-    func startSimpleActivity() {
+    private func listAllActivities() {
         Task {
-            // End existing activities
+            debugInfo += "Current Activities:\n"
             for activity in Activity<LocationSharingAttributes>.activities {
-                await activity.end(dismissalPolicy: .immediate)
+                debugInfo += "ID: \(activity.id)\n"
+                debugInfo += "State: \(activity.activityState)\n"
+                debugInfo += "Content: \(activity.content.state)\n"
+                debugInfo += "---\n"
             }
             
-            let attributes = LocationSharingAttributes(
-                startTime: Date(),
-                duration: 3600
-            )
-            
-            let state = LocationSharingAttributes.ContentState(
-                remainingMinutes: 60,
-                sharedWithCount: 1
-            )
-            
-            do {
-                let activity = try Activity.request(
-                    attributes: attributes,
-                    content: ActivityContent(
-                        state: state,
-                        staleDate: Date().addingTimeInterval(3600)
-                    ),
-                    pushType: nil
-                )
-                
-                await MainActor.run {
-                    self.debugInfo = "Activity Started!\n"
-                    self.debugInfo += "ID: \(activity.id)\n"
-                    self.debugInfo += "State: \(activity.activityState)\n"
-                }
-                
-            } catch {
-                await MainActor.run {
-                    self.debugInfo = "Failed: \(error)\n"
-                    self.debugInfo += "Error Type: \(type(of: error))\n"
-                    self.debugInfo += "Localized: \(error.localizedDescription)\n"
-                }
+            if Activity<LocationSharingAttributes>.activities.isEmpty {
+                debugInfo += "No active Live Activities\n"
+                debugInfo += "---\n"
             }
         }
     }
     
-    func listAllActivities() {
-        debugInfo = "Active Activities:\n"
-        for activity in Activity<LocationSharingAttributes>.activities {
-            debugInfo += "- ID: \(activity.id)\n"
-            debugInfo += "  State: \(activity.activityState)\n"
-        }
-        if Activity<LocationSharingAttributes>.activities.isEmpty {
-            debugInfo += "No active activities\n"
-        }
-    }
-    
-    func endAllActivities() {
+    private func startTestActivity(duration: Int) {
         Task {
-            for activity in Activity<LocationSharingAttributes>.activities {
-                await activity.end(dismissalPolicy: .immediate)
-            }
-            await MainActor.run {
-                self.debugInfo = "All activities ended\n"
-            }
+            debugInfo += "Starting test activity...\n"
+            await LocationActivityManager.shared.startActivity(
+                duration: duration * 60,
+                sharedWithCount: 3
+            )
+            debugInfo += "Test activity started\n"
+            debugInfo += "---\n"
+            
+            // List activities after starting
+            listAllActivities()
         }
     }
+    
+    private func updateTestActivity() {
+        Task {
+            debugInfo += "Updating test activity...\n"
+            await LocationActivityManager.shared.updateActivity(
+                remainingMinutes: 15,
+                sharedWithCount: 5
+            )
+            debugInfo += "Test activity updated\n"
+            debugInfo += "---\n"
+        }
+    }
+    
+    private func endTestActivity() {
+        Task {
+            debugInfo += "Ending test activity...\n"
+            await LocationActivityManager.shared.endActivity()
+            debugInfo += "Test activity ended\n"
+            debugInfo += "---\n"
+            
+            // List activities after ending
+            listAllActivities()
+        }
+    }
+    #else
+    // Empty implementations for Mac Catalyst
+    private func checkPermissions() {}
+    private func requestNotificationPermission() {}
+    private func listAllActivities() {}
+    private func startTestActivity(duration: Int) {}
+    private func updateTestActivity() {}
+    private func endTestActivity() {}
+    #endif
+}
+
+#Preview {
+    LiveActivityDebugView()
 }
