@@ -20,6 +20,7 @@ class PublicProfileViewModel: ObservableObject {
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
     @Published var workPosts: [WorkPost] = []
+    @Published var isDeleted: Bool = false  // ユーザーが削除されているかどうか
     
     private let db = Firestore.firestore()
     private let followViewModel = FollowViewModel()
@@ -52,6 +53,15 @@ class PublicProfileViewModel: ObservableObject {
                 
                 guard let data = snapshot?.data() else {
                     self.errorMessage = "ユーザーが見つかりません"
+                    self.isDeleted = true  // ユーザーが存在しない場合は削除済みとして扱う
+                    return
+                }
+                
+                // ユーザーが削除済みかチェック
+                if let isDeleted = data["isDeleted"] as? Bool, isDeleted {
+                    self.errorMessage = "このユーザーは削除されています"
+                    self.isDeleted = true
+                    self.displayName = "Deleted User"
                     return
                 }
                 
@@ -97,6 +107,13 @@ class PublicProfileViewModel: ObservableObject {
     
     // MARK: - フォロー
     func addFriend(completion: @escaping (Result<Void, Error>) -> Void) {
+        // 削除されたユーザーはフォローできない
+        guard !isDeleted else {
+            completion(.failure(NSError(domain: "PublicProfileViewModel", code: 404, 
+                                       userInfo: [NSLocalizedDescriptionKey: "Cannot follow a deleted user"])))
+            return
+        }
+        
         // 未ログインチェック
         guard Auth.auth().currentUser != nil else {
             completion(.failure(NSError(domain: "PublicProfileViewModel", code: 401, 

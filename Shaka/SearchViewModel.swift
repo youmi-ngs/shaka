@@ -173,6 +173,12 @@ class SearchViewModel: ObservableObject {
                 
                 self.userResults = snapshot?.documents.compactMap { doc in
                     let data = doc.data()
+                    
+                    // 削除されたユーザーを除外
+                    if let isDeleted = data["isDeleted"] as? Bool, isDeleted {
+                        return nil
+                    }
+                    
                     if let publicData = data["public"] as? [String: Any],
                        let displayName = publicData["displayName"] as? String {
                         // 前方一致検索

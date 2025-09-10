@@ -40,13 +40,22 @@ struct PublicProfileView: View {
                     linksSection
                 }
                 
-                // フレンド追加ボタン（自分以外の場合のみ）
-                if !viewModel.isCurrentUser {
+                // フレンド追加ボタン（自分以外かつ削除されていない場合のみ）
+                if !viewModel.isCurrentUser && !viewModel.isDeleted {
                     friendActionButton
                     shareProfileButton
-                } else {
+                } else if viewModel.isCurrentUser {
                     // 自分のプロフィールの場合は共有ボタンを表示
                     shareMyProfileButton
+                } else if viewModel.isDeleted {
+                    // 削除されたユーザーの場合は警告メッセージを表示
+                    Text("This user has been deleted")
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                        .padding()
+                        .frame(maxWidth: .infinity)
+                        .background(Color.gray.opacity(0.1))
+                        .cornerRadius(12)
                 }
                 
                 // 投稿グリッド

@@ -362,6 +362,17 @@ struct ProfileView: View {
                             .foregroundColor(.red)
                     }
                     
+                    Button(action: {
+                        // 画像キャッシュをクリア
+                        ImageCacheManager.shared.clearCache()
+                    }) {
+                        HStack {
+                            Image(systemName: "trash.circle")
+                            Text("Clear Image Cache")
+                        }
+                        .foregroundColor(.purple)
+                    }
+                    
                     // テスト専用：安全な削除テスト
                     if let uid = authManager.userID, uid.starts(with: "TEST_") {
                         Button(action: {

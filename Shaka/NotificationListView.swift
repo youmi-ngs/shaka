@@ -105,6 +105,10 @@ struct NotificationListView: View {
                     }
                 .refreshable {
                     viewModel.refresh()
+                    // 少し待ってからタイトルを再取得
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        fetchPostTitles()
+                    }
                 }
             }
         }
@@ -173,40 +177,42 @@ struct NotificationListView: View {
     
     private func formatNotificationMessage(_ notification: AppNotification, postTitle: String? = nil) -> String {
         let formattedMessage: String
+        // 現在の名前があればそれを使用、なければ通知作成時の名前を使用
+        let displayName = notification.currentActorName ?? notification.actorName
         
         switch notification.type {
         case "like":
             // キャッシュされたタイトルがあればそれを使用
             if let title = postTitle, !title.isEmpty {
-                formattedMessage = "\(notification.actorName) liked your \(notification.targetType ?? "post") \"\(title)\""
+                formattedMessage = "\(displayName) liked your \(notification.targetType ?? "post") \"\(title)\""
             } else if let snippet = notification.snippet, !snippet.isEmpty {
-                formattedMessage = "\(notification.actorName) liked your \(notification.targetType ?? "post") \"\(snippet)\""
+                formattedMessage = "\(displayName) liked your \(notification.targetType ?? "post") \"\(snippet)\""
             } else {
                 // targetTypeによってメッセージを変える
                 if notification.targetType == "work" {
-                    formattedMessage = "\(notification.actorName) liked your work"
+                    formattedMessage = "\(displayName) liked your work"
                 } else if notification.targetType == "question" {
-                    formattedMessage = "\(notification.actorName) liked your question"
+                    formattedMessage = "\(displayName) liked your question"
                 } else {
-                    formattedMessage = "\(notification.actorName) liked your post"
+                    formattedMessage = "\(displayName) liked your post"
                 }
             }
         case "comment":
             if let title = postTitle, !title.isEmpty {
-                formattedMessage = "\(notification.actorName) commented on \"\(title)\""
+                formattedMessage = "\(displayName) commented on \"\(title)\""
             } else if let snippet = notification.snippet, !snippet.isEmpty {
-                formattedMessage = "\(notification.actorName) commented on \"\(snippet)\""
+                formattedMessage = "\(displayName) commented on \"\(snippet)\""
             } else {
                 if notification.targetType == "work" {
-                    formattedMessage = "\(notification.actorName) commented on your work"
+                    formattedMessage = "\(displayName) commented on your work"
                 } else if notification.targetType == "question" {
-                    formattedMessage = "\(notification.actorName) commented on your question"
+                    formattedMessage = "\(displayName) commented on your question"
                 } else {
-                    formattedMessage = "\(notification.actorName) commented on your post"
+                    formattedMessage = "\(displayName) commented on your post"
                 }
             }
         case "follow":
-            formattedMessage = "\(notification.actorName) started following you"
+            formattedMessage = "\(displayName) started following you"
         default:
             formattedMessage = notification.message
         }

@@ -41,6 +41,14 @@ struct UserAvatarView: View {
         .onAppear {
             fetchUserInfo()
         }
+        .onChange(of: uid) { _ in
+            // uidが変わったら情報をリセットして再取得
+            photoURL = nil
+            displayName = ""
+            isLoading = true
+            fetchUserInfo()
+        }
+        .id(uid) // uidごとに別のビューとして扱う
     }
     
     private var defaultAvatar: some View {

@@ -33,8 +33,16 @@ struct CachedImage<Content: View, Placeholder: View>: View {
             case .empty:
                 placeholder()
                     .onAppear { loadImage() }
+                    .onChange(of: url) { _ in
+                        phase = .empty
+                        loadImage()
+                    }
             case .success(let image):
                 content(image)
+                    .onChange(of: url) { _ in
+                        phase = .empty
+                        loadImage()
+                    }
             case .failure(_):
                 Image(systemName: "photo")
                     .foregroundColor(.gray)
@@ -66,8 +74,8 @@ class ImageCacheManager: ObservableObject {
     
     private init() {
         // メモリキャッシュの設定
-        cache.countLimit = 100 // 最大100枚
-        cache.totalCostLimit = 100 * 1024 * 1024 // 100MB
+        cache.countLimit = 50 // 最大50枚に減らす
+        cache.totalCostLimit = 50 * 1024 * 1024 // 50MBに減らす
         
         // ディスクキャッシュディレクトリの設定
         let paths = fileManager.urls(for: .cachesDirectory, in: .userDomainMask)
@@ -82,15 +90,21 @@ class ImageCacheManager: ObservableObject {
     
     @MainActor
     func loadImage(from url: URL, scale: CGFloat) async -> AsyncImagePhase {
+        // URLの完全なパスをキーとして使用（クエリパラメータも含む）
+        let cacheKey = url.absoluteString
+        let nsKey = NSURL(string: cacheKey)!
+        
         // メモリキャッシュから取得
-        if let cachedImage = cache.object(forKey: url as NSURL) {
+        if let cachedImage = cache.object(forKey: nsKey) {
             return .success(Image(uiImage: cachedImage))
         }
         
         // ディスクキャッシュから取得
-        let diskCacheURL = cacheDirectory.appendingPathComponent(url.lastPathComponent)
+        // URLの完全なパスのハッシュ値を使って一意のファイル名を生成
+        let fileName = "\(cacheKey.hashValue).jpg"
+        let diskCacheURL = cacheDirectory.appendingPathComponent(fileName)
         if let diskImage = UIImage(contentsOfFile: diskCacheURL.path) {
-            cache.setObject(diskImage, forKey: url as NSURL)
+            cache.setObject(diskImage, forKey: nsKey)
             return .success(Image(uiImage: diskImage))
         }
         
@@ -105,7 +119,7 @@ class ImageCacheManager: ObservableObject {
             let compressedImage = compressImage(uiImage)
             
             // メモリキャッシュに保存
-            cache.setObject(compressedImage, forKey: url as NSURL)
+            cache.setObject(compressedImage, forKey: nsKey)
             
             // ディスクキャッシュに保存
             if let jpegData = compressedImage.jpegData(compressionQuality: 0.8) {
@@ -138,7 +152,7 @@ class ImageCacheManager: ObservableObject {
     }
     
     private func cleanOldCache() {
-        let expirationDate = Date().addingTimeInterval(-7 * 24 * 60 * 60) // 7日前
+        let expirationDate = Date().addingTimeInterval(-3 * 24 * 60 * 60) // 3日前に短縮
         
         guard let files = try? fileManager.contentsOfDirectory(at: cacheDirectory, includingPropertiesForKeys: [.creationDateKey]) else { return }
         

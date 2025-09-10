@@ -14,7 +14,9 @@ struct AppNotification: Identifiable {
     let id: String
     let type: String // like, follow, comment
     let actorUid: String
-    let actorName: String
+    let actorName: String  // 通知作成時の名前（フォールバック用）
+    var currentActorName: String? // 現在の表示名（リアルタイム更新用）
+    var currentPhotoURL: String? // 現在のプロフィール画像URL
     let targetType: String? // work, question
     let targetId: String?
     let message: String
@@ -112,6 +114,9 @@ class NotificationViewModel: ObservableObject {
                 // 未読数を計算
                 self?.unreadCount = self?.notifications.filter { !$0.read }.count ?? 0
                 
+                // 最新のユーザー情報を取得
+                self?.updateUserInfo()
+                
             }
     }
     
@@ -166,5 +171,34 @@ class NotificationViewModel: ObservableObject {
     
     func refresh() {
         setupListener()
+    }
+    
+    // 最新のユーザー情報を取得
+    private func updateUserInfo() {
+        // ユニークなactorUidのリストを作成
+        let uniqueActorUids = Array(Set(notifications.map { $0.actorUid }))
+        
+        for uid in uniqueActorUids {
+            db.collection("users").document(uid).getDocument { [weak self] snapshot, error in
+                guard let self = self,
+                      let data = snapshot?.data(),
+                      let publicData = data["public"] as? [String: Any] else {
+                    return
+                }
+                
+                let currentName = publicData["displayName"] as? String ?? ""
+                let currentPhoto = publicData["photoURL"] as? String
+                
+                // 該当するすべての通知を更新
+                DispatchQueue.main.async {
+                    for index in self.notifications.indices {
+                        if self.notifications[index].actorUid == uid {
+                            self.notifications[index].currentActorName = currentName
+                            self.notifications[index].currentPhotoURL = currentPhoto
+                        }
+                    }
+                }
+            }
+        }
     }
 }
